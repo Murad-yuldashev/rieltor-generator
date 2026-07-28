@@ -4,9 +4,9 @@
 
 **Goal:** Rieltor uchun bitta ko'chmas mulk obyektining mobil sahifasini quradi; sahifa havolasi Telegram'ga tashlanganda rasm + sarlavha + narx bilan preview chiqadi.
 
-**Architecture:** pnpm monorepo — `apps/web` (React 19 + Vite SPA), `apps/api` (NestJS 11 + Prisma + Postgres), `packages/shared` (Zod sxemalar = front va back uchun yagona tip manbasi). Prod'da NestJS bitta konteynerda API'ni ham, statik front'ni ham serve qiladi va `/obj/:id` so'roviga `index.html` ning `<head>` iga OG teglarini server tomonda inject qiladi — SPA bo'lishiga qaramay Telegram preview ishlaydi.
+**Architecture:** Yarn 4 monorepo — `apps/web` (React 19 + Vite SPA), `apps/api` (NestJS 11 + Prisma + Postgres), `packages/shared` (Zod sxemalar = front va back uchun yagona tip manbasi). Prod'da NestJS bitta konteynerda API'ni ham, statik front'ni ham serve qiladi va `/obj/:id` so'roviga `index.html` ning `<head>` iga OG teglarini server tomonda inject qiladi — SPA bo'lishiga qaramay Telegram preview ishlaydi.
 
-**Tech Stack:** Node 22 LTS · pnpm · Turborepo · TypeScript · React 19 · Vite · Tailwind CSS v4 · React Router v7 · TanStack Query v5 · NestJS 11 · Prisma · PostgreSQL 16 · Zod v4 + nestjs-zod · sharp · Vitest + React Testing Library + supertest · Playwright · Docker · GitHub Actions
+**Tech Stack:** Node 22 LTS · Yarn 4 · Turborepo · TypeScript · React 19 · Vite · Tailwind CSS v4 · React Router v7 · TanStack Query v5 · NestJS 11 · Prisma · PostgreSQL 16 · Zod v4 + nestjs-zod · sharp · Vitest + React Testing Library + supertest · Playwright · Docker · GitHub Actions
 
 **Spec:** [2026-07-28-rieltor-generator-design.md](../specs/2026-07-28-rieltor-generator-design.md)
 
@@ -16,7 +16,7 @@
 
 Bu bo'lim har bir taskning talablariga kiradi.
 
-- **Node.js 22 LTS**, **pnpm** (npm/yarn ishlatilmaydi). Har bir `pnpm add` workspace ichida `--filter` bilan bajariladi.
+- **Node.js 22 LTS**, **Yarn 4** (npm ishlatilmaydi). Har bir `yarn add` workspace ichida `yarn workspace <nom>` bilan bajariladi. `.yarnrc.yml` `nodeLinker: node-modules` ni ataylab o'rnatadi — Yarn'ning standart Plug'n'Play rejimi Prisma'ning generatsiya qilingan klientini va `sharp`'ning native binarylarini buzadi; keyingi hech qanday task buni PnP'ga "modernizatsiya" qilmasligi kerak.
 - **UI matnlari o'zbekcha.** Kod identifikatorlari ham o'zbekcha domen atamalarida (`sarlavha`, `narxSom`, `xona`, `qavat`, `tuman`, `moljal`, `tavsif`, `rasmlar`, `turi`, `tartib`) — bu spec §3 modelidan keladi.
 - **Narx formati:** `480 000 000 so'm` va `$40 000` — uch xonadan **oddiy probel** (ASCII ` `) bilan ajratiladi. `so'm` ASCII apostrof bilan yoziladi.
 - **Mobil-first:** 360px kenglikda mukammal; desktopda kontent `max-width: 480px` markazda.
@@ -33,8 +33,8 @@ Bu bo'lim har bir taskning talablariga kiradi.
 
 ```
 rieltor-app/
-├─ package.json                    root skriptlar (turbo orqali)
-├─ pnpm-workspace.yaml
+├─ package.json                    root skriptlar (turbo orqali) + "workspaces" massivi
+├─ .yarnrc.yml
 ├─ turbo.json
 ├─ tsconfig.base.json              barcha workspace meros oladigan compilerOptions
 ├─ eslint.config.mjs               flat config, butun monorepo uchun
@@ -81,18 +81,18 @@ rieltor-app/
 
 ## Task 1: Monorepo poydevori va tooling
 
-Eski `tsc`-only skeletni o'chirib, pnpm workspace + Turborepo + lint/format/CI o'rnatiladi. Hali hech qanday app yo'q — bu taskning natijasi: `pnpm install` va `pnpm lint` toza ishlaydi, CI fayli mavjud.
+Eski `tsc`-only skeletni o'chirib, Yarn 4 workspace + Turborepo + lint/format/CI o'rnatiladi. Hali hech qanday app yo'q — bu taskning natijasi: `yarn install` va `yarn lint` toza ishlaydi, CI fayli mavjud.
 
 **Files:**
 
-- Create: `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.base.json`, `eslint.config.mjs`, `.prettierrc`, `.npmrc`, `.husky/pre-commit`, `.github/workflows/ci.yml`
+- Create: `.yarnrc.yml`, `.yarn/releases/yarn-4.17.1.cjs`, `turbo.json`, `tsconfig.base.json`, `eslint.config.mjs`, `.prettierrc`, `.prettierignore`, `.husky/pre-commit`, `.github/workflows/ci.yml`
 - Modify: `package.json`, `.gitignore`
 - Delete: `src/index.ts`, `tsconfig.json`
 
 **Interfaces:**
 
 - Consumes: —
-- Produces: root skriptlar `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` — hammasi `turbo run <task>` ga o'raladi. Har workspace o'z `package.json` ida shu nomdagi skriptni e'lon qiladi.
+- Produces: root skriptlar `yarn lint`, `yarn typecheck`, `yarn test`, `yarn build` — hammasi `turbo run <task>` ga o'raladi. Har workspace o'z `package.json` ida shu nomdagi skriptni e'lon qiladi.
 
 - [ ] **Step 1: Eski skeletni tozalash**
 
@@ -122,24 +122,37 @@ coverage/
 apps/api/public/images/
 playwright-report/
 test-results/
+
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+.pnp.*
 ```
 
-- [ ] **Step 2: Workspace va root package.json**
+- [ ] **Step 2: Yarn 4 faollashtirish, workspace va root package.json**
 
-`pnpm-workspace.yaml`:
+Corepack orqali Yarn 4 faollashtiriladi va versiya repoga committed holda saqlanadi (internetsiz `yarn install` ishlashi uchun `yarnPath` bilan ko'rsatilgan release fayl kerak):
+
+```bash
+corepack enable
+corepack use yarn@4.17.1
+```
+
+Bu buyruq `.yarn/releases/yarn-4.17.1.cjs` ni yaratadi — u git'ga committed qilinadi (yuqoridagi `.gitignore` da `!.yarn/releases` shu fayl uchun ochiq qoldirilgan).
+
+`.yarnrc.yml`:
 
 ```yaml
-packages:
-  - 'apps/*'
-  - 'packages/*'
+nodeLinker: node-modules
+
+yarnPath: .yarn/releases/yarn-4.17.1.cjs
 ```
 
-`.npmrc`:
+> **Diqqat:** `nodeLinker: node-modules` ataylab tanlangan — Yarn'ning standart Plug'n'Play rejimi Prisma'ning generatsiya qilingan klientini va `sharp`'ning native binarylarini buzadi (ikkalasi ham keyingi tasklarda ishlatiladi). Buni PnP'ga o'zgartirma.
 
-```
-strict-peer-dependencies=false
-auto-install-peers=true
-```
+Alohida workspace-fayli kerak emas — workspace'lar root `package.json` da e'lon qilinadi.
 
 `package.json` (to'liq almashtir):
 
@@ -147,8 +160,11 @@ auto-install-peers=true
 {
   "name": "rieltor-app",
   "private": true,
-  "packageManager": "pnpm@10.0.0",
-  "engines": { "node": ">=22" },
+  "packageManager": "yarn@4.17.1+sha512.ccbfabf7d7b6b32075088be9386fb9a2e00bb6887ef07fa56effabc890a56d53da1ccc4128d62db245fcbd3961b236d75335bdf7d5320ed6eafb7588b7ad4697",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
@@ -242,17 +258,24 @@ export default tseslint.config(
 }
 ```
 
+`.prettierignore`:
+
+```
+yarn.lock
+.superpowers/
+```
+
 - [ ] **Step 5: O'rnatish va husky**
 
 ```bash
-pnpm install
-pnpm exec husky init
+yarn install
+yarn husky init
 ```
 
 `.husky/pre-commit` ichini almashtir:
 
 ```sh
-pnpm exec lint-staged
+yarn lint-staged
 ```
 
 - [ ] **Step 6: CI workflow**
@@ -284,21 +307,21 @@ jobs:
       PUBLIC_BASE_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - run: corepack enable
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm build
-      - run: pnpm test
+        with: { node-version: 22, cache: yarn }
+      - run: yarn install --immutable
+      - run: yarn format:check
+      - run: yarn lint
+      - run: yarn typecheck
+      - run: yarn build
+      - run: yarn test
 ```
 
 - [ ] **Step 7: Tekshirish**
 
 ```bash
-pnpm install && pnpm lint && pnpm exec prettier --check . && pnpm exec turbo run build
+yarn install && yarn lint && yarn prettier --check . && yarn turbo run build
 ```
 
 Kutilgan: hammasi 0 kod bilan tugaydi (workspace hali bo'sh — turbo "No tasks were executed" deydi, bu normal).
@@ -307,7 +330,7 @@ Kutilgan: hammasi 0 kod bilan tugaydi (workspace hali bo'sh — turbo "No tasks 
 
 ```bash
 git add -A
-git commit -m "chore: pnpm monorepo, Turborepo, ESLint/Prettier, Husky va CI poydevori"
+git commit -m "chore: Yarn 4 monorepo, Turborepo, ESLint/Prettier, Husky va CI poydevori"
 ```
 
 ---
@@ -388,7 +411,7 @@ export default defineConfig({ test: { environment: 'node' } });
 ```
 
 ```bash
-pnpm install
+yarn install
 ```
 
 - [ ] **Step 2: Format testlarini yoz (fail bo'lishi kerak)**
@@ -433,7 +456,7 @@ describe('formatNarxUsd', () => {
 - [ ] **Step 3: Testni ishga tushirib fail ekanini ko'r**
 
 ```bash
-pnpm --filter @rieltor/shared test
+yarn workspace @rieltor/shared test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./format"`.
@@ -461,7 +484,7 @@ export function formatNarxUsd(narxUsd: number): string {
 - [ ] **Step 5: Testni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/shared test
+yarn workspace @rieltor/shared test
 ```
 
 Kutilgan: 6 test PASS.
@@ -495,7 +518,7 @@ describe('rasm yordamchilari', () => {
 - [ ] **Step 7: Testni fail holatida ko'r, so'ng yordamchilarni yoz**
 
 ```bash
-pnpm --filter @rieltor/shared test
+yarn workspace @rieltor/shared test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./images"`.
@@ -595,7 +618,7 @@ describe('ViewsSchema', () => {
 - [ ] **Step 9: Testni fail holatida ko'r, so'ng sxemalarni yoz**
 
 ```bash
-pnpm --filter @rieltor/shared test
+yarn workspace @rieltor/shared test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./schemas"`.
@@ -672,10 +695,10 @@ export * from './schemas';
 ```
 
 ```bash
-pnpm --filter @rieltor/shared test
-pnpm --filter @rieltor/shared build
-pnpm --filter @rieltor/shared typecheck
-pnpm lint
+yarn workspace @rieltor/shared test
+yarn workspace @rieltor/shared build
+yarn workspace @rieltor/shared typecheck
+yarn lint
 ```
 
 Kutilgan: 15 test PASS, `packages/shared/dist/index.d.ts` yaratiladi, lint toza.
@@ -758,7 +781,7 @@ mkdir -p apps/api/src apps/api/test
 ```
 
 ```bash
-pnpm install
+yarn install
 ```
 
 - [ ] **Step 2: TypeScript va Nest konfiguratsiyasi**
@@ -886,7 +909,7 @@ Yuqoridagi apostrofli tavsiflarni ikki tirnoqqa o'zgartir: `it("PORT berilmasa 3
 - [ ] **Step 5: Testni fail holatida ko'r**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./env"`.
@@ -919,7 +942,7 @@ DATABASE_URL=postgresql://rieltor:rieltor@localhost:5432/rieltor
 PUBLIC_BASE_URL=http://localhost:3000
 PORT=3000
 
-# Seed uchun — o'z kontaktingni qo'y, so'ng `pnpm --filter @rieltor/api seed`
+# Seed uchun — o'z kontaktingni qo'y, so'ng `yarn workspace @rieltor/api seed`
 SEED_AGENT_TEL=+998901234567
 SEED_AGENT_TG=username
 ```
@@ -927,7 +950,7 @@ SEED_AGENT_TG=username
 - [ ] **Step 7: Testni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: 5 test PASS.
@@ -967,7 +990,7 @@ describe('Health (e2e)', () => {
 - [ ] **Step 9: Testni fail holatida ko'r**
 
 ```bash
-pnpm --filter @rieltor/api test:e2e
+yarn workspace @rieltor/api test:e2e
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "../src/app.module"`.
@@ -1063,9 +1086,9 @@ void bootstrap();
 - [ ] **Step 11: Testlarni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test:e2e
-pnpm --filter @rieltor/api build
-pnpm --filter @rieltor/api typecheck
+yarn workspace @rieltor/api test:e2e
+yarn workspace @rieltor/api build
+yarn workspace @rieltor/api typecheck
 ```
 
 Kutilgan: e2e PASS, `dist/main.js` yaratiladi, typecheck toza.
@@ -1079,7 +1102,7 @@ Kutilgan: e2e PASS, `dist/main.js` yaratiladi, typecheck toza.
 ```
 
 ```bash
-pnpm lint && pnpm --filter @rieltor/api test
+yarn lint && yarn workspace @rieltor/api test
 git add -A
 git commit -m "feat(api): NestJS skeleti, Zod env validatsiyasi, /api/health va Swagger"
 ```
@@ -1136,8 +1159,8 @@ cp apps/api/.env.example apps/api/.env
 - [ ] **Step 2: Prisma o'rnatish**
 
 ```bash
-pnpm --filter @rieltor/api add @prisma/client
-pnpm --filter @rieltor/api add -D prisma
+yarn workspace @rieltor/api add @prisma/client
+yarn workspace @rieltor/api add -D prisma
 ```
 
 - [ ] **Step 3: Sxemani yoz**
@@ -1222,7 +1245,7 @@ model Rasm {
 ```
 
 ```bash
-pnpm --filter @rieltor/api exec prisma migrate dev --name init
+yarn workspace @rieltor/api exec prisma migrate dev --name init
 ```
 
 Kutilgan: `apps/api/prisma/migrations/<timestamp>_init/migration.sql` yaratiladi, klient generatsiya qilinadi.
@@ -1283,7 +1306,7 @@ it('GET /api/health → 200, db holati bilan', async () => {
 ```
 
 ```bash
-pnpm --filter @rieltor/api test:e2e
+yarn workspace @rieltor/api test:e2e
 ```
 
 Kutilgan: FAIL — javobda `db` maydoni yo'q.
@@ -1322,7 +1345,7 @@ import { PrismaModule } from './prisma/prisma.module';
 - [ ] **Step 8: Testni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: unit + e2e hammasi PASS.
@@ -1330,7 +1353,7 @@ Kutilgan: unit + e2e hammasi PASS.
 - [ ] **Step 9: Commit**
 
 ```bash
-pnpm lint && pnpm typecheck
+yarn lint && yarn typecheck
 git add -A
 git commit -m "feat(api): Postgres, Prisma sxemasi (Agent/Object/Rasm) va DB health tekshiruvi"
 ```
@@ -1356,7 +1379,7 @@ Har manba rasmdan 360/720/1200 kenglikdagi WebP, 1200 kenglikdagi JPG fallback v
 - [ ] **Step 1: sharp o'rnat va vitest include'ni kengaytir**
 
 ```bash
-pnpm --filter @rieltor/api add sharp
+yarn workspace @rieltor/api add sharp
 ```
 
 `apps/api/vitest.config.ts` da `include` ni almashtir:
@@ -1493,7 +1516,7 @@ Apostrofli tavsiflarni ikki tirnoqqa o'zgartir: `it("1200 variantining haqiqiy o
 - [ ] **Step 3: Testni fail holatida ko'r**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./images"`.
@@ -1579,7 +1602,7 @@ export async function rasmniQayta(opts: RasmniQaytaOpts): Promise<RasmNatija> {
 - [ ] **Step 5: Testni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: 7 test PASS.
@@ -1587,7 +1610,7 @@ Kutilgan: 7 test PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-pnpm lint && pnpm typecheck
+yarn lint && yarn typecheck
 git add -A
 git commit -m "feat(api): sharp rasm quvuri — responsive variantlar va OG crop"
 ```
@@ -1606,7 +1629,7 @@ Spec §4.1: idempotent seed. Kontakt env'dan keladi, rasm manbalari `prisma/seed
 **Interfaces:**
 
 - Consumes: `rasmniQayta` (Task 5), Prisma modellari (Task 4)
-- Produces: `pnpm --filter @rieltor/api seed` — DB'da 1 `Agent` va 3 `Object` (`bx-001` novostroyka, `bx-002` ikkilamchi, `bx-003` hovli), har birida 5 `Rasm`
+- Produces: `yarn workspace @rieltor/api seed` — DB'da 1 `Agent` va 3 `Object` (`bx-001` novostroyka, `bx-002` ikkilamchi, `bx-003` hovli), har birida 5 `Rasm`
 
 - [ ] **Step 1: Seed ma'lumoti**
 
@@ -1886,7 +1909,7 @@ main()
 
 ```bash
 mkdir -p apps/api/prisma/seed-images && touch apps/api/prisma/seed-images/.gitkeep
-pnpm --filter @rieltor/api add -D tsx
+yarn workspace @rieltor/api add -D tsx
 ```
 
 `apps/api/package.json` skriptlariga qo'sh:
@@ -1899,13 +1922,13 @@ pnpm --filter @rieltor/api add -D tsx
 
 ```bash
 docker compose up -d postgres
-pnpm --filter @rieltor/api seed
+yarn workspace @rieltor/api seed
 ```
 
 Kutilgan chiqish: uchala obyekt uchun "5 rasm qayta ishlandi", oxirida "Seed tugadi."
 
 ```bash
-pnpm --filter @rieltor/api exec prisma studio
+yarn workspace @rieltor/api exec prisma studio
 ```
 
 yoki tezroq tekshiruv:
@@ -1928,7 +1951,7 @@ Kutilgan: `01-360.webp 01-720.webp 01-1200.webp 01-1200.jpg og.jpg` va `02..05` 
 ```bash
 docker compose exec -T postgres psql -U rieltor -d rieltor -c \
   'UPDATE "Object" SET views = 42 WHERE id = '"'"'bx-001'"'"';'
-pnpm --filter @rieltor/api seed
+yarn workspace @rieltor/api seed
 docker compose exec -T postgres psql -U rieltor -d rieltor -c \
   'SELECT views FROM "Object" WHERE id = '"'"'bx-001'"'"';'
 ```
@@ -1938,7 +1961,7 @@ Kutilgan: `views` hamon `42` — seed uni nolga tushirmadi.
 - [ ] **Step 7: Commit**
 
 ```bash
-pnpm lint && pnpm typecheck
+yarn lint && yarn typecheck
 git add -A
 git commit -m "feat(api): idempotent seed — agent, 3 obyekt va rasm quvuri"
 ```
@@ -2041,7 +2064,7 @@ Apostrofli tavsiflarni ikki tirnoqqa o'zgartir.
 - [ ] **Step 2: Testni fail holatida ko'r**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./mapper"`.
@@ -2112,7 +2135,7 @@ export function royxatgaAylantir(qator: ObjectQatori): ObjectListItem {
 - [ ] **Step 4: Testni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: 7 test PASS.
@@ -2176,7 +2199,7 @@ describe('Objects (e2e)', () => {
 ```
 
 ```bash
-pnpm --filter @rieltor/api test:e2e
+yarn workspace @rieltor/api test:e2e
 ```
 
 Kutilgan: FAIL — 404 (marshrut hali yo'q).
@@ -2274,7 +2297,7 @@ export class ObjectsModule {}
 - [ ] **Step 7: Testlarni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: mapper unit + objects e2e + health e2e — hammasi PASS.
@@ -2282,7 +2305,7 @@ Kutilgan: mapper unit + objects e2e + health e2e — hammasi PASS.
 - [ ] **Step 8: Swagger'ni ko'z bilan tekshir**
 
 ```bash
-pnpm --filter @rieltor/api dev
+yarn workspace @rieltor/api dev
 ```
 
 Brauzerda `http://localhost:3000/api/docs` — `objects` tegi ostida ikki endpoint, `ObjectDetailDto` sxemasi `narxSom: string` bilan ko'rinishi kerak. So'ng serverni to'xtat.
@@ -2290,7 +2313,7 @@ Brauzerda `http://localhost:3000/api/docs` — `objects` tegi ostida ikki endpoi
 - [ ] **Step 9: Commit**
 
 ```bash
-pnpm lint && pnpm typecheck
+yarn lint && yarn typecheck
 git add -A
 git commit -m "feat(api): obyektlar endpointlari, mapper va Swagger sxemalari"
 ```
@@ -2416,7 +2439,7 @@ describe('ViewsService', () => {
 - [ ] **Step 2: Testni fail holatida ko'r**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./views.service"`.
@@ -2490,7 +2513,7 @@ export class ViewsService {
 - [ ] **Step 4: Testni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: 7 test PASS.
@@ -2575,7 +2598,7 @@ describe('Views (e2e)', () => {
 ```
 
 ```bash
-pnpm --filter @rieltor/api test:e2e
+yarn workspace @rieltor/api test:e2e
 ```
 
 Kutilgan: FAIL — marshrut yo'q.
@@ -2653,7 +2676,7 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule);
 - [ ] **Step 8: Testlarni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: barcha unit va e2e PASS.
@@ -2663,7 +2686,7 @@ Kutilgan: barcha unit va e2e PASS.
 - [ ] **Step 9: Commit**
 
 ```bash
-pnpm lint && pnpm typecheck
+yarn lint && yarn typecheck
 git add -A
 git commit -m "feat(api): ko'rishlar hisoblagichi — atomik increment va IP oynasi"
 ```
@@ -2745,7 +2768,7 @@ mkdir -p apps/web/src
 ```
 
 ```bash
-pnpm install
+yarn install
 ```
 
 - [ ] **Step 2: Vite, TypeScript va Vitest konfiguratsiyasi**
@@ -2920,7 +2943,7 @@ Apostrofli tavsifni ikki tirnoqqa o'zgartir: `it("ApiXatosi instansi to'g'ri tip
 - [ ] **Step 5: Testni fail holatida ko'r, so'ng klientni yoz**
 
 ```bash
-pnpm --filter @rieltor/web test
+yarn workspace @rieltor/web test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./client"`.
@@ -2964,7 +2987,7 @@ export function apiPost<T>(path: string, schema: ZodType<T>): Promise<T> {
 ```
 
 ```bash
-pnpm --filter @rieltor/web test
+yarn workspace @rieltor/web test
 ```
 
 Kutilgan: 4 test PASS.
@@ -3073,7 +3096,7 @@ Apostrofli tavsifni ikki tirnoqqa o'zgartir.
 - [ ] **Step 8: Testni fail holatida ko'r, so'ng sahifalarni yoz**
 
 ```bash
-pnpm --filter @rieltor/web test
+yarn workspace @rieltor/web test
 ```
 
 Kutilgan: FAIL — `Failed to resolve import "./home-page"`.
@@ -3221,7 +3244,7 @@ createRoot(root).render(
 - [ ] **Step 10: FSD chegara qoidasini ESLint'ga qo'sh**
 
 ```bash
-pnpm add -D -w eslint-plugin-boundaries
+yarn add -D eslint-plugin-boundaries
 ```
 
 `eslint.config.mjs` ning birinchi qatorlariga import qo'sh:
@@ -3269,9 +3292,9 @@ So'ng fayl oxiridagi `);` dan oldin quyidagi blokni qo'sh:
 - [ ] **Step 11: To'liq tekshiruv**
 
 ```bash
-pnpm --filter @rieltor/web test
-pnpm --filter @rieltor/web build
-pnpm lint && pnpm typecheck
+yarn workspace @rieltor/web test
+yarn workspace @rieltor/web build
+yarn lint && yarn typecheck
 ```
 
 Kutilgan: 5 test PASS, `apps/web/dist/index.html` yaratiladi, lint va typecheck toza.
@@ -3281,8 +3304,8 @@ Kutilgan: 5 test PASS, `apps/web/dist/index.html` yaratiladi, lint va typecheck 
 Ikki terminalda:
 
 ```bash
-pnpm --filter @rieltor/api dev
-pnpm --filter @rieltor/web dev
+yarn workspace @rieltor/api dev
+yarn workspace @rieltor/web dev
 ```
 
 `http://localhost:5173` — uchta obyekt kartasi rasmi, sarlavhasi va so'mdagi narxi bilan ko'rinishi kerak. Kartaga bosilsa 404 sahifasi chiqadi (obyekt marshruti hali yo'q — bu kutilgan). `http://localhost:5173/yoq` ham 404 beradi.
@@ -3376,7 +3399,7 @@ describe('ParamsRow', () => {
 - [ ] **Step 3: Testlarni fail holatida ko'r**
 
 ```bash
-pnpm --filter @rieltor/web test
+yarn workspace @rieltor/web test
 ```
 
 Kutilgan: FAIL — `./price-block` va `./params-row` topilmaydi.
@@ -3575,8 +3598,8 @@ export { AgentCard, formatTel } from './ui/agent-card';
 - [ ] **Step 7: Testlarni ishga tushir va commit**
 
 ```bash
-pnpm --filter @rieltor/web test
-pnpm lint && pnpm typecheck
+yarn workspace @rieltor/web test
+yarn lint && yarn typecheck
 ```
 
 Kutilgan: barcha testlar PASS (5 ta oldingi + 7 ta yangi).
@@ -3688,7 +3711,7 @@ describe('Gallery', () => {
 - [ ] **Step 2: Testni fail holatida ko'r**
 
 ```bash
-pnpm --filter @rieltor/web test
+yarn workspace @rieltor/web test
 ```
 
 Kutilgan: FAIL — `./gallery` topilmaydi.
@@ -3828,7 +3851,7 @@ export { Gallery } from './ui/gallery';
 - [ ] **Step 5: Testlarni qayta ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/web test
+yarn workspace @rieltor/web test
 ```
 
 Kutilgan: 7 ta yangi test PASS.
@@ -3838,7 +3861,7 @@ Kutilgan: 7 ta yangi test PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-pnpm lint && pnpm typecheck
+yarn lint && yarn typecheck
 git add -A
 git commit -m "feat(web): kutubxonasiz svayp galereyasi va responsive rasm komponenti"
 ```
@@ -3908,7 +3931,7 @@ describe('StickyCTA', () => {
 - [ ] **Step 2: Testni fail holatida ko'r, so'ng komponentni yoz**
 
 ```bash
-pnpm --filter @rieltor/web test
+yarn workspace @rieltor/web test
 ```
 
 Kutilgan: FAIL — `./sticky-cta` topilmaydi.
@@ -4164,8 +4187,8 @@ export const router = createBrowserRouter([
 - [ ] **Step 6: Testlarni ishga tushir va brauzerda ko'r**
 
 ```bash
-pnpm --filter @rieltor/web test
-pnpm lint && pnpm typecheck
+yarn workspace @rieltor/web test
+yarn lint && yarn typecheck
 ```
 
 Ikki terminalda serverlarni ko'tarib, `http://localhost:5173/obj/bx-002` ni **360px kenglikdagi** brauzer oynasida (DevTools qurilma rejimi) och. Tekshir:
@@ -4281,7 +4304,7 @@ describe('useViews', () => {
 - [ ] **Step 2: Testni fail holatida ko'r, so'ng hookni yoz**
 
 ```bash
-pnpm --filter @rieltor/web test
+yarn workspace @rieltor/web test
 ```
 
 Kutilgan: FAIL — `./use-views` topilmaydi.
@@ -4417,8 +4440,8 @@ export { ViewCounter } from './ui/view-counter';
 - [ ] **Step 5: Testlar va degradatsiyani qo'lda tekshir**
 
 ```bash
-pnpm --filter @rieltor/web test
-pnpm lint && pnpm typecheck
+yarn workspace @rieltor/web test
+yarn lint && yarn typecheck
 ```
 
 Degradatsiya sinovini qo'lda bajar: API serverni to'xtat, `http://localhost:5173/obj/bx-002` sahifasini ochiq holda **qayta yuklamasdan** turgan holatda emas — aksincha, avval sahifa yuklangan holda API'ni to'xtatib, boshqa obyektga o'tib ko'r. Kutilgan: hisoblagich yo'qoladi, galereya va tugmalar ishlayveradi.
@@ -4571,7 +4594,7 @@ describe('metaTeglar', () => {
 - [ ] **Step 3: Testni fail holatida ko'r, so'ng meta quruvchini yoz**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: FAIL — `./meta` topilmaydi.
@@ -4647,7 +4670,7 @@ export function metaTeglar(obj: ObjectDetail, baseUrl: string): string {
 ```
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: 10 test PASS.
@@ -4920,7 +4943,7 @@ describe('SSR / OG (e2e)', () => {
 - [ ] **Step 7: Testlarni ishga tushir**
 
 ```bash
-pnpm --filter @rieltor/api test
+yarn workspace @rieltor/api test
 ```
 
 Kutilgan: barcha unit va e2e PASS (meta 10 ta, ssr 7 ta, oldingilar o'zgarishsiz).
@@ -4928,9 +4951,9 @@ Kutilgan: barcha unit va e2e PASS (meta 10 ta, ssr 7 ta, oldingilar o'zgarishsiz
 - [ ] **Step 8: Haqiqiy build bilan qo'lda tekshir**
 
 ```bash
-pnpm --filter @rieltor/web build
-pnpm --filter @rieltor/api build
-pnpm --filter @rieltor/api start
+yarn workspace @rieltor/web build
+yarn workspace @rieltor/api build
+yarn workspace @rieltor/api start
 ```
 
 ```bash
@@ -4948,7 +4971,7 @@ Kutilgan: `200`.
 - [ ] **Step 9: Commit**
 
 ```bash
-pnpm lint && pnpm typecheck
+yarn lint && yarn typecheck
 git add -A
 git commit -m "feat(api): OG head-inject, LCP preload va statik front serve"
 ```
@@ -4995,26 +5018,27 @@ WORKDIR /app
 
 # ---------- bog'liqliklar ----------
 FROM base AS deps
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc ./
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn/releases/ .yarn/releases/
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
-RUN pnpm install --frozen-lockfile
+RUN yarn install --immutable
 
 # ---------- build ----------
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @rieltor/api exec prisma generate
-RUN pnpm --filter @rieltor/shared build
-RUN pnpm --filter @rieltor/web build
-RUN pnpm --filter @rieltor/api build
+RUN yarn workspace @rieltor/api exec prisma generate
+RUN yarn workspace @rieltor/shared build
+RUN yarn workspace @rieltor/web build
+RUN yarn workspace @rieltor/api build
 
 # ---------- prod bog'liqliklari ----------
 FROM deps AS prod-deps
 COPY . .
-RUN pnpm --filter @rieltor/api exec prisma generate
-RUN pnpm --filter @rieltor/shared build
-RUN pnpm install --prod --frozen-lockfile
+RUN yarn workspace @rieltor/api exec prisma generate
+RUN yarn workspace @rieltor/shared build
+RUN yarn workspaces focus --production --all
 
 # ---------- ishga tushirish ----------
 FROM base AS runner
@@ -5030,7 +5054,7 @@ COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/web/dist ./apps/web/dist
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json ./
 
 # sozla() shu yo'lni kutadi: apps/api/dist dan ../../web/dist
 WORKDIR /app/apps/api
@@ -5078,8 +5102,8 @@ CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts && node di
 `tsx` prod bog'liqligi bo'lishi uchun uni `dependencies` ga ko'chir:
 
 ```bash
-pnpm --filter @rieltor/api remove tsx
-pnpm --filter @rieltor/api add tsx
+yarn workspace @rieltor/api remove tsx
+yarn workspace @rieltor/api add tsx
 ```
 
 Imijni qayta qurib, `docker run` ni takrorla va tekshir:
@@ -5138,13 +5162,13 @@ Oxirgi task: mobil viewport'da E2E, Railway + Neon'ga deploy, Lighthouse va Tele
 **Interfaces:**
 
 - Consumes: prod imiji (Task 15), `docker compose` stack
-- Produces: `pnpm e2e` — 360px viewport'da galereya svaypi va CTA havolalarini tekshiradi
+- Produces: `yarn e2e` — 360px viewport'da galereya svaypi va CTA havolalarini tekshiradi
 
 - [ ] **Step 1: Playwright o'rnat**
 
 ```bash
-pnpm add -D -w @playwright/test
-pnpm exec playwright install --with-deps chromium
+yarn add -D @playwright/test
+yarn playwright install --with-deps chromium
 ```
 
 `playwright.config.ts` (ildizda):
@@ -5262,7 +5286,7 @@ test.describe('Obyekt sahifasi (360px)', () => {
 
 ```bash
 SEED_AGENT_TEL=+998901234567 SEED_AGENT_TG=username docker compose up -d --build
-pnpm e2e
+yarn e2e
 ```
 
 Kutilgan: 8 test PASS. Tushgan testni tuzatmasdan keyingi qadamga o'tma.
@@ -5281,11 +5305,11 @@ e2e:
   needs: check
   steps:
     - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v4
+    - run: corepack enable
     - uses: actions/setup-node@v4
-      with: { node-version: 22, cache: pnpm }
-    - run: pnpm install --frozen-lockfile
-    - run: pnpm exec playwright install --with-deps chromium
+      with: { node-version: 22, cache: yarn }
+    - run: yarn install --immutable
+    - run: yarn playwright install --with-deps chromium
     - name: Stack'ni ko'tarish
       env:
         SEED_AGENT_TEL: '+998901234567'
@@ -5299,7 +5323,7 @@ e2e:
         done
         docker compose logs
         exit 1
-    - run: pnpm e2e
+    - run: yarn e2e
     - if: failure()
       uses: actions/upload-artifact@v4
       with: { name: playwright-report, path: playwright-report/ }

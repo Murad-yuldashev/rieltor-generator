@@ -10,7 +10,7 @@
 
 Rieltor uchun bitta ko'chmas mulk obyektining mobil sahifasini ko'rsatadigan demo. Sahifa havolasi Telegram'ga tashlanganda rasm + sarlavha + narx bilan preview chiqishi kerak — mahsulotning asosiy sotuv argumenti shu.
 
-Demo **poydevor sifatida** quriladi: v0.1 §1 dagi to'liq stack (pnpm monorepo, NestJS, Prisma, Postgres, Docker, CI, testlar) qayta yozishga hojat qolmasligi uchun boshdanoq o'rnatiladi.
+Demo **poydevor sifatida** quriladi: v0.1 §1 dagi to'liq stack (Yarn 4 monorepo, NestJS, Prisma, Postgres, Docker, CI, testlar) qayta yozishga hojat qolmasligi uchun boshdanoq o'rnatiladi.
 
 Qamrovdan tashqarida (v0.1 §8 dagi yozma taqiq o'zgarmaydi): login, kiritish formasi, admin-panel, CRM, narx-radar, to'lovlar, xarita, ko'p til, rieltor-domenlari, chuqur SEO.
 
@@ -54,11 +54,13 @@ rieltor-app/
 ├─ docs/
 ├─ docker-compose.yml      postgres + api + web (lokal dev)
 ├─ turbo.json
-├─ pnpm-workspace.yaml
+├─ .yarnrc.yml
 └─ .github/workflows/ci.yml
 ```
 
-**Package manager:** pnpm. **Orkestrator:** Turborepo. **Node:** 22 LTS.
+Alohida workspace-fayli yo'q — workspace'lar root `package.json` dagi `"workspaces"` massivida e'lon qilinadi.
+
+**Package manager:** Yarn 4 (workspaces). **Orkestrator:** Turborepo. **Node:** 22 LTS.
 
 ### 3.1 `packages/shared` — tipning yagona manbasi
 
@@ -139,9 +141,9 @@ model Rasm {
 
 `apps/api/prisma/seed.ts`:
 
-1. Bitta `Agent` yaratadi — `SEED_AGENT_TEL` va `SEED_AGENT_TG` env o'zgaruvchilaridan (`.env.example` da placeholder). Kontaktni o'zgartirish uchun env'ni tahrirlab `pnpm seed` qilish kifoya.
+1. Bitta `Agent` yaratadi — `SEED_AGENT_TEL` va `SEED_AGENT_TG` env o'zgaruvchilaridan (`.env.example` da placeholder). Kontaktni o'zgartirish uchun env'ni tahrirlab `yarn workspace @rieltor/api seed` qilish kifoya.
 2. Uchta `Object`: novostroyka, ikkilamchi (2–3 xona), hovli. Parametrlar (narx, tuman, m², qavat) OLX.uz e'lonlaridan olingan real qiymatlar; **tavsif matni o'zimiz yozamiz**.
-3. Har obyekt uchun 5–8 rasm — §7 dagi `sharp` quvuridan o'tkaziladi. Manba rasmlar `apps/api/prisma/seed-images/<id>/` papkasidan olinadi; birinchi bosqichda u yerda placeholder rasmlar turadi. Rasmlarni almashtirish = papkaga yangi fayl qo'yib `pnpm seed` qilish; kod o'zgarmaydi.
+3. Har obyekt uchun 5–8 rasm — §7 dagi `sharp` quvuridan o'tkaziladi. Manba rasmlar `apps/api/prisma/seed-images/<id>/` papkasidan olinadi; birinchi bosqichda u yerda placeholder rasmlar turadi. Rasmlarni almashtirish = papkaga yangi fayl qo'yib `yarn workspace @rieltor/api seed` qilish; kod o'zgarmaydi.
 
 Seed idempotent (`upsert`) — qayta ishga tushirsa `views` nolga tushmaydi.
 
@@ -309,7 +311,7 @@ Bitta Docker konteyner (multi-stage): web build → `dist` API imijiga ko'chiril
 
 - **Hosting:** Railway (Dockerfile'dan)
 - **DB:** Neon serverless Postgres
-- **Migratsiya:** deploy'da `prisma migrate deploy`, so'ng bir martalik `pnpm seed`
+- **Migratsiya:** deploy'da `prisma migrate deploy`, so'ng bir martalik `yarn workspace @rieltor/api seed`
 
 Lokal dev: `docker compose up` → postgres + api + web (Vite dev server `/api` ni API'ga proxy qiladi).
 
@@ -338,7 +340,7 @@ Lokal dev: `docker compose up` → postgres + api + web (Vite dev server `/api` 
 
 ## 15. Bosqichlar
 
-1. Monorepo skeleti + tooling (pnpm, Turborepo, ESLint flat, Prettier, Husky, CI, docker-compose postgres)
+1. Monorepo skeleti + tooling (Yarn 4, Turborepo, ESLint flat, Prettier, Husky, CI, docker-compose postgres)
 2. `packages/shared` Zod sxemalar → Prisma schema → migratsiya → `sharp` rasm quvuri → seed
 3. API: objects + views + throttler + Swagger + testlar
 4. Web: FSD skeleti, Router, TanStack Query, `/` va 404
