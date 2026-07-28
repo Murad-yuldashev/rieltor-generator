@@ -18,27 +18,27 @@ Qamrovdan tashqarida (v0.1 §8 dagi yozma taqiq o'zgarmaydi): login, kiritish fo
 
 ## 2. Tasdiqlangan qarorlar
 
-| Savol | Qaror |
-|---|---|
-| Stack og'irligi | To'liq §1 stack — poydevor sifatida |
+| Savol           | Qaror                                                               |
+| --------------- | ------------------------------------------------------------------- |
+| Stack og'irligi | To'liq §1 stack — poydevor sifatida                                 |
 | Kontent manbasi | OLX.uz e'lonlaridan real parametrlar; tavsif matni o'zimiz yoziladi |
-| Hisoblagich | Sessiyaga 1 marta (sessionStorage) + IP bo'yicha rate-limit |
-| Deploy | Bitta servis: NestJS API + statik front + OG inject; Railway + Neon |
-| Kontakt | Rieltor sifatida loyiha egasining telefon/Telegram'i (env orqali) |
-| Dizayn | Toza va zamonaviy: oq fon, Inter, bitta urg'u rang `#1D4ED8` |
-| Testlar | Kritik yo'llar + CI |
+| Hisoblagich     | Sessiyaga 1 marta (sessionStorage) + IP bo'yicha rate-limit         |
+| Deploy          | Bitta servis: NestJS API + statik front + OG inject; Railway + Neon |
+| Kontakt         | Rieltor sifatida loyiha egasining telefon/Telegram'i (env orqali)   |
+| Dizayn          | Toza va zamonaviy: oq fon, Inter, bitta urg'u rang `#1D4ED8`        |
+| Testlar         | Kritik yo'llar + CI                                                 |
 
 ### 2.1 v0.1 hujjatidagi tuzatilgan qarama-qarshiliklar
 
 §1 stack revizyasi §6/§7 ni yangilamagan edi. Quyidagilar shu hujjatda hal qilingan:
 
-| v0.1 dagi matn | Amaldagi qaror |
-|---|---|
-| §6 "`next/image` ishlatilsin" | `<img srcset/sizes>` + `sharp` quvuri (§7) |
-| §6 "Deploy: Vercel; KV tokenlar" | Railway (bitta konteyner) + Neon Postgres; KV yo'q |
-| §3 sarlavhasi `data/objects.json` | Manba PostgreSQL; JSON model faqat seed shakli |
-| §4 `Gallery` "`priority`" | `fetchpriority="high"` + server-inject `<link rel=preload>` |
-| §6 "KV ishlamasa sahifa ochilaveradi" | Aniqlashtirildi — §6.3 ga qara |
+| v0.1 dagi matn                        | Amaldagi qaror                                              |
+| ------------------------------------- | ----------------------------------------------------------- |
+| §6 "`next/image` ishlatilsin"         | `<img srcset/sizes>` + `sharp` quvuri (§7)                  |
+| §6 "Deploy: Vercel; KV tokenlar"      | Railway (bitta konteyner) + Neon Postgres; KV yo'q          |
+| §3 sarlavhasi `data/objects.json`     | Manba PostgreSQL; JSON model faqat seed shakli              |
+| §4 `Gallery` "`priority`"             | `fetchpriority="high"` + server-inject `<link rel=preload>` |
+| §6 "KV ishlamasa sahifa ochilaveradi" | Aniqlashtirildi — §6.3 ga qara                              |
 
 ---
 
@@ -68,14 +68,14 @@ Eksport qilinadi: `ObjectSchema`, `ObjectListItemSchema`, `AgentSchema`, `RasmSc
 
 ### 3.2 `apps/web` — Feature-Sliced Design
 
-| Qatlam | Slice'lar |
-|---|---|
-| `app/` | providers (QueryClient, RouterProvider), global CSS, entry |
-| `pages/` | `home`, `object`, `not-found` |
-| `widgets/` | `gallery`, `sticky-cta` |
-| `features/` | `view-counter` |
+| Qatlam      | Slice'lar                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| `app/`      | providers (QueryClient, RouterProvider), global CSS, entry                                         |
+| `pages/`    | `home`, `object`, `not-found`                                                                      |
+| `widgets/`  | `gallery`, `sticky-cta`                                                                            |
+| `features/` | `view-counter`                                                                                     |
 | `entities/` | `object` (tip, query, `PriceBlock`, `ParamsRow`, `Description`, `Location`), `agent` (`AgentCard`) |
-| `shared/` | `ui/` (Button, Skeleton), `lib/` (`cn`, formatterlar), `api/` (fetch klient), `config/` |
+| `shared/`   | `ui/` (Button, Skeleton), `lib/` (`cn`, formatterlar), `api/` (fetch klient), `config/`            |
 
 FSD import qoidasi (yuqori qatlam faqat pastdagini import qiladi) ESLint `boundaries` plugin bilan majburlanadi.
 
@@ -138,6 +138,7 @@ model Rasm {
 ### 4.1 Seed
 
 `apps/api/prisma/seed.ts`:
+
 1. Bitta `Agent` yaratadi — `SEED_AGENT_TEL` va `SEED_AGENT_TG` env o'zgaruvchilaridan (`.env.example` da placeholder). Kontaktni o'zgartirish uchun env'ni tahrirlab `pnpm seed` qilish kifoya.
 2. Uchta `Object`: novostroyka, ikkilamchi (2–3 xona), hovli. Parametrlar (narx, tuman, m², qavat) OLX.uz e'lonlaridan olingan real qiymatlar; **tavsif matni o'zimiz yozamiz**.
 3. Har obyekt uchun 5–8 rasm — §7 dagi `sharp` quvuridan o'tkaziladi. Manba rasmlar `apps/api/prisma/seed-images/<id>/` papkasidan olinadi; birinchi bosqichda u yerda placeholder rasmlar turadi. Rasmlarni almashtirish = papkaga yangi fayl qo'yib `pnpm seed` qilish; kod o'zgarmaydi.
@@ -148,26 +149,26 @@ Seed idempotent (`upsert`) — qayta ishga tushirsa `views` nolga tushmaydi.
 
 ## 5. API
 
-| Endpoint | Javob |
-|---|---|
-| `GET /api/objects` | Ro'yxat (id, sarlavha, narx, xona, m², tuman, birinchi rasm) |
-| `GET /api/objects/:id` | To'liq obyekt + rasmlar + agent. Topilmasa 404 |
-| `POST /api/view/:id` | `{ views: N }` — atomik increment |
-| `GET /api/view/:id` | `{ views: N }` |
-| `GET /api/health` | `{ status, db }` |
-| `GET /api/docs` | Swagger UI |
+| Endpoint               | Javob                                                        |
+| ---------------------- | ------------------------------------------------------------ |
+| `GET /api/objects`     | Ro'yxat (id, sarlavha, narx, xona, m², tuman, birinchi rasm) |
+| `GET /api/objects/:id` | To'liq obyekt + rasmlar + agent. Topilmasa 404               |
+| `POST /api/view/:id`   | `{ views: N }` — atomik increment                            |
+| `GET /api/view/:id`    | `{ views: N }`                                               |
+| `GET /api/health`      | `{ status, db }`                                             |
+| `GET /api/docs`        | Swagger UI                                                   |
 
 Validatsiya: `nestjs-zod` (`packages/shared` sxemalaridan). Config: `@nestjs/config` + Zod env validatsiyasi — noto'g'ri env bilan ilova ishga tushmaydi.
 
 ### 5.1 Env o'zgaruvchilari
 
-| Nom | Vazifa |
-|---|---|
-| `DATABASE_URL` | Postgres ulanish satri |
-| `PUBLIC_BASE_URL` | Absolyut `og:image` URL'i uchun (masalan `https://rieltor.up.railway.app`) |
-| `PORT` | Default 3000 |
-| `NODE_ENV` | |
-| `SEED_AGENT_TEL`, `SEED_AGENT_TG` | Faqat seed vaqtida |
+| Nom                               | Vazifa                                                                     |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| `DATABASE_URL`                    | Postgres ulanish satri                                                     |
+| `PUBLIC_BASE_URL`                 | Absolyut `og:image` URL'i uchun (masalan `https://rieltor.up.railway.app`) |
+| `PORT`                            | Default 3000                                                               |
+| `NODE_ENV`                        |                                                                            |
+| `SEED_AGENT_TEL`, `SEED_AGENT_TG` | Faqat seed vaqtida                                                         |
 
 ---
 
@@ -184,6 +185,7 @@ Prisma'da: `prisma.object.update({ where: { id }, data: { views: { increment: 1 
 ### 6.1 Takroriy hisoblashdan himoya
 
 Front `sessionStorage['viewed:<id>']` ni tekshiradi:
+
 - bo'sh → `POST /api/view/:id`, so'ng kalitni belgilaydi
 - to'lgan → `GET /api/view/:id`
 
@@ -202,6 +204,7 @@ v0.1 §6 "KV ishlamasa sahifa ochilaveradi" deydi. Bu to'liq bajarilmaydi: obyek
 ## 7. Rasm quvuri
 
 Seed vaqtida `sharp` har manba rasmdan hosil qiladi:
+
 - `360w`, `720w`, `1200w` — WebP + JPG fallback, sifat ~78, har biri ~150–250 KB
 - Birinchi rasmdan qo'shimcha `og.jpg` — 1200×630 `cover` crop
 
@@ -210,10 +213,14 @@ Natija `apps/api/public/images/<id>/` ga yoziladi va API tomonidan statik serve 
 Front tomonda:
 
 ```html
-<img srcset="…-360.webp 360w, …-720.webp 720w, …-1200.webp 1200w"
-     sizes="(max-width: 480px) 100vw, 480px"
-     width="1200" height="900"
-     loading="lazy" decoding="async">
+<img
+  srcset="…-360.webp 360w, …-720.webp 720w, …-1200.webp 1200w"
+  sizes="(max-width: 480px) 100vw, 480px"
+  width="1200"
+  height="900"
+  loading="lazy"
+  decoding="async"
+/>
 ```
 
 Birinchi rasm: `loading="eager" fetchpriority="high"`, va `<link rel="preload">` server tomondan inject qilinadi (§8). `width`/`height` har doim beriladi — CLS'ni nolda ushlaydi.
@@ -223,11 +230,13 @@ Birinchi rasm: `loading="eager" fetchpriority="high"`, va `<link rel="preload">`
 ## 8. OG / Telegram preview
 
 Prod'da NestJS marshrut tartibi:
+
 1. `/api/*` → kontrollerlar
 2. `/assets/*`, `/images/*`, `/favicon.*` → statik fayllar
 3. qolgan hamma narsa → **head-inject qilingan `index.html`**
 
 `/obj/:id` uchun:
+
 1. Obyekt DB'dan olinadi. Topilmasa → 404 status + umumiy OG bilan bir xil HTML (SPA o'zi 404 sahifasini ko'rsatadi).
 2. Xotirada keshlangan `index.html` ning `<head>` iga inject qilinadi:
    - `<title>` va `og:title` = sarlavha + narx
@@ -275,15 +284,18 @@ v0.1 §4 tartibi o'zgarmaydi:
 ## 11. Testlar va CI
 
 **API**
+
 - `ViewsService` unit: increment to'g'ri son qaytaradi; mavjud bo'lmagan id → `NotFoundException`
 - e2e (supertest): `GET/POST /api/view/:id`; noto'g'ri id → 404; `GET /obj/bx-001` javobida `og:title` narx bilan mavjud; `og:image` absolyut URL
 
 **Web**
+
 - `formatNarx(480000000n) === "480 000 000 so'm"`
 - `ViewCounter` — so'rov xato bersa hech narsa render qilmaydi
 - `Gallery` — nuqta indikatori faol rasmga mos
 
 **E2E (Playwright, 360px viewport)**
+
 - Galereya svaypi faol nuqtani o'zgartiradi
 - `tel:` va `t.me` href'lari seed ma'lumotiga mos
 

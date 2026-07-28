@@ -8,6 +8,7 @@
 ## 1. Stack va cheklovlar
 
 ### Frontend
+
 - **Framework:** React 19 + **TypeScript** — **Vite** bilan build (tez HMR, ESM, yengil)
 - **Arxitektura:** **Feature-Sliced Design (FSD)** — qatlamlar: `app → pages → widgets → features → entities → shared`. Har komponent (§4) o'z sliceida: masalan `Gallery` → `widgets/gallery`, `AgentCard` → `entities/agent`, `ViewCounter` → `features/view-counter`, obyekt tipi → `entities/object`.
 - **Routing:** **React Router v7** (Next.js App Router yo'q) — `/`, `/obj/:id`, 404
@@ -19,31 +20,35 @@
 - **Forma (bonus / keyinroq):** React Hook Form + **Zod**
 
 ### Backend
+
 - **Framework:** **NestJS v11** + TypeScript (**Node.js 22 LTS**)
-- **ORM:** **Prisma** (type-safe client, migratsiya, seed, NestJS bilan qulay integratsiya). *Muqobil:* **Drizzle ORM** (eng yengil/yangi) yoki TypeORM.
+- **ORM:** **Prisma** (type-safe client, migratsiya, seed, NestJS bilan qulay integratsiya). _Muqobil:_ **Drizzle ORM** (eng yengil/yangi) yoki TypeORM.
 - **DB:** **PostgreSQL 16+** — **endi baza BOR** (avvalgi `data/objects.json` lokal fayli o'rniga). §3 dagi obyekt modeli endi **Prisma schema / entity** shakli va seed manbasi bo'ladi (o'sha 3 obyekt seed qilinadi).
 - **Validatsiya:** `class-validator` + `class-transformer` (yoki `nestjs-zod` — Zod bilan yagona sxema)
 - **API hujjat:** **Swagger / OpenAPI** (`@nestjs/swagger`)
 - **Config:** `@nestjs/config` + env validatsiya (Zod/Joi)
 
 ### Hisoblagich (views)
+
 - Endi KV/Redis shart emas — **Postgres'da atomik increment:** `UPDATE ... SET views = views + 1 RETURNING views`
 - API shakli **o'zgarmaydi** (§2): `POST /api/view/:id` → +1, `GET /api/view/:id` → joriy son
 - Degradatsiya (§6 talab): DB ishlamasa `try/catch` — sahifa ochilaveradi, hisoblagich yashirinadi
-- *Ixtiyoriy:* Redis (`ioredis`) — rate-limit / hot-cache / bot spamdan himoya
+- _Ixtiyoriy:_ Redis (`ioredis`) — rate-limit / hot-cache / bot spamdan himoya
 
 ### OG / Telegram preview — KRITIK o'zgarish (§5 ga taalluqli)
+
 - Next.js SSR (`generateMetadata`) **yo'q**. Toza React SPA'da Telegram/ijtimoiy bot **JS ishlatmaydi** → dinamik `og:*` teglar chiqmaydi. Bu §5 va DoD'ni buzadi.
 - **Yechim (asosiy):** NestJS frontend'ni serve qiladi va `/obj/:id` so'rovida `index.html` ning `<head>` iga **server tomonda** `og:title` / `og:description` / `og:image` teglarini Postgres'dan inject qiladi (yengil "head-SSR"). SPA baribir odatdagidek hydrate bo'ladi.
-- *Muqobil:* build-time prerender (atigi 3 obyekt — juda oson) yoki faqat-crawler prerender (Prerender.io / bot User-Agent aniqlash).
+- _Muqobil:_ build-time prerender (atigi 3 obyekt — juda oson) yoki faqat-crawler prerender (Prerender.io / bot User-Agent aniqlash).
 - `og:image` (1200×630 crop) — **`sharp`** yoki **`satori`** bilan generatsiya, yoki upload vaqtida oldindan kesib qo'yiladi.
 
 ### Infratuzilma / qolgan (eng yangi)
+
 - **Monorepo:** **pnpm workspaces + Turborepo** (yoki Nx) — `apps/web` (React), `apps/api` (NestJS), `packages/shared` (umumiy TS type / DTO / Zod sxema — front↔back **yagona manba**)
 - **Package manager:** **pnpm**
 - **Konteyner:** **Docker + docker-compose** (postgres + api + web) — bir buyruqli lokal dev
 - **Hosting:**
-  - Frontend: Vercel / Netlify / Cloudflare Pages *(OG inject kerak bo'lsa web'ni NestJS orqali yoki Node-host'da serve qil — sof statik CDN meta inject qilolmaydi)*
+  - Frontend: Vercel / Netlify / Cloudflare Pages _(OG inject kerak bo'lsa web'ni NestJS orqali yoki Node-host'da serve qil — sof statik CDN meta inject qilolmaydi)_
   - Backend (NestJS): **Railway / Render / Fly.io** (Docker)
   - DB: **Neon** (serverless Postgres) / Supabase / Railway
 - **CI/CD:** **GitHub Actions** — lint · typecheck · test · build
@@ -52,20 +57,23 @@
 - **Rasm-storage (prod):** S3-mos object storage — **Cloudflare R2** / Supabase Storage (demo'da `public/`)
 
 ### Cheklovlar
+
 - UI matnlari **o'zbekcha**. Narx formati: `480 000 000 so'm` va `$40 000` (probel ajratgich)
 - **Mobil-first;** desktopda kontent `max-width ~480px` markazda
 - **Marshrut mapping** (§2 sintaksisi Next.js edi): `/obj/[id]` → `/obj/:id` (React Router), `/api/view/[id]` → `/api/view/:id` (NestJS controller)
 - **Ma'lumot manbasi:** `data/objects.json` **emas**, balki PostgreSQL (§3 model = schema + seed)
 
 ## 2. Routelar
-| Route | Vazifa |
-|---|---|
-| `/obj/[id]` | Obyekt sahifasi (asosiy sahifa) |
-| `/` | Oddiy index: 3 obyektga havola (demo uchun kifoya) |
+
+| Route            | Vazifa                                               |
+| ---------------- | ---------------------------------------------------- |
+| `/obj/[id]`      | Obyekt sahifasi (asosiy sahifa)                      |
+| `/`              | Oddiy index: 3 obyektga havola (demo uchun kifoya)   |
 | `/api/view/[id]` | POST — ko'rishlar +1 (KV increment), GET — joriy son |
-| 404 | Mavjud bo'lmagan `id` uchun sodda sahifa |
+| 404              | Mavjud bo'lmagan `id` uchun sodda sahifa             |
 
 ## 3. Ma'lumot modeli — `data/objects.json`
+
 ```json
 [
   {
@@ -92,10 +100,12 @@
   }
 ]
 ```
+
 - 3 ta obyekt: 1 novostroyka, 1 ikkilamchi (2–3 xona), 1 hovli — OLX/Uybor'dagi real e'lonlardan
 - Rasmlar: `public/images/[id]/01.jpg …` — **oldindan siqilgan** (kenglik ≤1200px, har biri ~150–250 KB), 5–8 dona
 
 ## 4. Sahifa komponentlari (`/obj/[id]`, yuqoridan pastga)
+
 1. **`Gallery`** — touch-svayp, nuqtali indikator; birinchi rasm = LCP → `priority`; qolganlari lazy. Zoom shart emas.
 2. **`PriceBlock`** — narx so'mda katta shriftda, ostida kichikroq `$`.
 3. **`ParamsRow`** — 4 element ikonka bilan: xona · m² · qavat · tuman.
@@ -108,11 +118,13 @@
 8. **`ViewCounter`** — "👁 N": sahifa ochilganda `/api/view/[id]` ga POST, natijani ko'rsatadi.
 
 ## 5. OG / Telegram preview (KRITIK)
+
 - `generateMetadata` har obyekt uchun: `title` = sarlavha + narx; `description` = qisqa tavsif
 - `og:image` = birinchi rasm (1200×630 crop varianti tayyorla), `og:title`, `og:description`
 - Sinov: havolani o'z Telegram'ingga yubor — rasm + sarlavha + narx chiqishi SHART
 
 ## 6. Acceptance (texnik talablar)
+
 - Mobil-first: **360px** kenglikda mukammal; desktopda kontent `max-width ~480px` markazda
 - Lighthouse (mobile): **Performance ≥ 90**, LCP < 2.5s
 - `next/image` ishlatilsin, `sizes` to'g'ri berilsin
@@ -120,6 +132,7 @@
 - Deploy: Vercel; KV tokenlar `.env.local` da va Vercel dashboard'da
 
 ## 7. Definition of Done
+
 - [ ] 3 sahifa jonli URL'da ochiladi (`/obj/bx-001` …)
 - [ ] Galereya real telefonda svayp ishlaydi
 - [ ] `tel:` tugmasi raqam teradi, `t.me` tugmasi chat ochadi
@@ -129,5 +142,6 @@
 - [ ] Noto'g'ri id → sodda 404
 
 ## 8. Scope'dan TASHQARIDA (yozma taqiq)
+
 Login/registratsiya · kiritish formasi (faqat DoD to'liq bo'lib vaqt ortsa — bonus) · admin-panel · CRM · narx-radar · to'lovlar · xarita · ko'p til · har rieltorga alohida domen · chuqur SEO.
 Shulardan birortasini qo'shishdan oldin: to'xta, spec'ka qara, "keyinroq" ro'yxatiga yoz.

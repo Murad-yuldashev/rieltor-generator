@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+.idea/workspace.xml
+
+apps/api/public/images/
+playwright-report/
+test-results/

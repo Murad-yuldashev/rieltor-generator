@@ -84,11 +84,13 @@ rieltor-app/
 Eski `tsc`-only skeletni o'chirib, pnpm workspace + Turborepo + lint/format/CI o'rnatiladi. Hali hech qanday app yo'q — bu taskning natijasi: `pnpm install` va `pnpm lint` toza ishlaydi, CI fayli mavjud.
 
 **Files:**
+
 - Create: `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.base.json`, `eslint.config.mjs`, `.prettierrc`, `.npmrc`, `.husky/pre-commit`, `.github/workflows/ci.yml`
 - Modify: `package.json`, `.gitignore`
 - Delete: `src/index.ts`, `tsconfig.json`
 
 **Interfaces:**
+
 - Consumes: —
 - Produces: root skriptlar `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` — hammasi `turbo run <task>` ga o'raladi. Har workspace o'z `package.json` ida shu nomdagi skriptni e'lon qiladi.
 
@@ -315,10 +317,12 @@ git commit -m "chore: pnpm monorepo, Turborepo, ESLint/Prettier, Husky va CI poy
 Front va back uchun yagona tip manbasi. Bu yerda TDD to'liq qo'llanadi: format funksiyalari sof, testi oson.
 
 **Files:**
+
 - Create: `packages/shared/package.json`, `packages/shared/tsconfig.json`, `packages/shared/vitest.config.ts`
 - Create: `packages/shared/src/index.ts`, `format.ts`, `format.test.ts`, `images.ts`, `images.test.ts`, `schemas.ts`, `schemas.test.ts`
 
 **Interfaces:**
+
 - Consumes: `tsconfig.base.json` (Task 1)
 - Produces — barcha keyingi tasklar shulardan foydalanadi:
   - `formatNarxSom(narxSom: string): string`
@@ -542,7 +546,15 @@ const toliqObyekt = {
   turi: 'IKKILAMCHI',
   views: 7,
   sana: '2026-07-28',
-  rasmlar: [{ base: '/images/bx-001/01', ogUrl: '/images/bx-001/og.jpg', width: 1200, height: 900, tartib: 1 }],
+  rasmlar: [
+    {
+      base: '/images/bx-001/01',
+      ogUrl: '/images/bx-001/og.jpg',
+      width: 1200,
+      height: 900,
+      tartib: 1,
+    },
+  ],
   agent: {
     id: 'ag-1',
     ism: 'Murod',
@@ -682,11 +694,13 @@ git commit -m "feat: @rieltor/shared — Zod sxemalar, narx formatteri va rasm y
 NestJS ilovasi ko'tariladi, env Zod bilan tekshiriladi (noto'g'ri env → ilova ishga tushmaydi), va birinchi e2e test yoziladi. DB hali yo'q — u Task 4 da qo'shiladi.
 
 **Files:**
+
 - Create: `apps/api/package.json`, `tsconfig.json`, `tsconfig.build.json`, `nest-cli.json`, `vitest.config.ts`, `vitest.config.e2e.ts`, `.env.example`
 - Create: `apps/api/src/main.ts`, `src/app.module.ts`, `src/config/env.ts`, `src/config/env.test.ts`, `src/health/health.controller.ts`, `src/health/health.module.ts`
 - Create: `apps/api/test/health.e2e-spec.ts`
 
 **Interfaces:**
+
 - Consumes: `@rieltor/shared` (Task 2)
 - Produces:
   - `envSchema` va `type Env` — `apps/api/src/config/env.ts`
@@ -892,9 +906,7 @@ export const envSchema = z.object({
    * Absolyut og:image URL'i uchun. Telegram nisbiy yo'lni o'qimaydi (spec §8).
    * Oxiridagi slash olib tashlanadi — keyin `${PUBLIC_BASE_URL}/images/...` deb ulanadi.
    */
-  PUBLIC_BASE_URL: z
-    .url()
-    .transform((v) => v.replace(/\/+$/, '')),
+  PUBLIC_BASE_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -1079,10 +1091,12 @@ git commit -m "feat(api): NestJS skeleti, Zod env validatsiyasi, /api/health va 
 Lokal Postgres docker-compose orqali ko'tariladi, spec §4 modeli Prisma sxemasiga yoziladi, migratsiya bajariladi va `/api/health` DB holatini ham qaytaradi.
 
 **Files:**
+
 - Create: `docker-compose.yml`, `apps/api/prisma/schema.prisma`, `apps/api/src/prisma/prisma.service.ts`, `apps/api/src/prisma/prisma.module.ts`
 - Modify: `apps/api/src/health/health.controller.ts`, `health.module.ts`, `apps/api/test/health.e2e-spec.ts`, `apps/api/package.json`
 
 **Interfaces:**
+
 - Consumes: `envSchema.DATABASE_URL` (Task 3)
 - Produces:
   - `PrismaService` — `extends PrismaClient`, global `PrismaModule` orqali inject qilinadi
@@ -1262,10 +1276,10 @@ export class PrismaModule {}
 `apps/api/test/health.e2e-spec.ts` dagi testni almashtir:
 
 ```ts
-  it('GET /api/health → 200, db holati bilan', async () => {
-    const res = await request(app.getHttpServer()).get('/api/health').expect(200);
-    expect(res.body).toEqual({ status: 'ok', db: true });
-  });
+it('GET /api/health → 200, db holati bilan', async () => {
+  const res = await request(app.getHttpServer()).get('/api/health').expect(200);
+  expect(res.body).toEqual({ status: 'ok', db: true });
+});
 ```
 
 ```bash
@@ -1328,10 +1342,12 @@ git commit -m "feat(api): Postgres, Prisma sxemasi (Agent/Object/Rasm) va DB hea
 Har manba rasmdan 360/720/1200 kenglikdagi WebP, 1200 kenglikdagi JPG fallback va (birinchi rasm uchun) 1200×630 OG crop yasaydigan sof funksiya. Nomlash konvensiyasi `@rieltor/shared/images.ts` bilan bir xil bo'lishi **shart** — aks holda front 404 rasm oladi.
 
 **Files:**
+
 - Create: `apps/api/prisma/images.ts`, `apps/api/prisma/images.test.ts`
 - Modify: `apps/api/vitest.config.ts` (test `include` ga `prisma` qo'shiladi), `apps/api/package.json`
 
 **Interfaces:**
+
 - Consumes: `IMAGE_WIDTHS` (`@rieltor/shared`, Task 2)
 - Produces:
   - `interface RasmNatija { base: string; ogUrl: string | null; width: number; height: number }`
@@ -1583,10 +1599,12 @@ git commit -m "feat(api): sharp rasm quvuri — responsive variantlar va OG crop
 Spec §4.1: idempotent seed. Kontakt env'dan keladi, rasm manbalari `prisma/seed-images/<id>/` dan; papka bo'sh bo'lsa placeholder generatsiya qilinadi, shunda repo binar fayl saqlamaydi va ish to'xtamaydi.
 
 **Files:**
+
 - Create: `apps/api/prisma/seed-data.ts`, `apps/api/prisma/placeholders.ts`, `apps/api/prisma/seed.ts`, `apps/api/prisma/seed-images/.gitkeep`
 - Modify: `apps/api/package.json`
 
 **Interfaces:**
+
 - Consumes: `rasmniQayta` (Task 5), Prisma modellari (Task 4)
 - Produces: `pnpm --filter @rieltor/api seed` — DB'da 1 `Agent` va 3 `Object` (`bx-001` novostroyka, `bx-002` ikkilamchi, `bx-003` hovli), har birida 5 `Rasm`
 
@@ -1617,7 +1635,7 @@ export interface SeedObject {
 export const SEED_OBJECTS: SeedObject[] = [
   {
     id: 'bx-001',
-    sarlavha: "3 xonali kvartira, yangi bino, Buxoro City turar-joy majmuasi",
+    sarlavha: '3 xonali kvartira, yangi bino, Buxoro City turar-joy majmuasi',
     narxSom: 780_000_000n,
     narxUsd: 65_000,
     xona: 3,
@@ -1932,11 +1950,13 @@ git commit -m "feat(api): idempotent seed — agent, 3 obyekt va rasm quvuri"
 `GET /api/objects` va `GET /api/objects/:id`. Prisma natijasini `@rieltor/shared` sxemalariga moslaydigan mapper — bu yerda `BigInt → string` va `Date → 'YYYY-MM-DD'` konvertatsiyasi bo'ladi.
 
 **Files:**
+
 - Create: `apps/api/src/objects/mapper.ts`, `mapper.test.ts`, `objects.dto.ts`, `objects.service.ts`, `objects.controller.ts`, `objects.module.ts`
 - Create: `apps/api/test/objects.e2e-spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
 **Interfaces:**
+
 - Consumes: `PrismaService` (Task 4), `ObjectDetailSchema` / `ObjectListItemSchema` (Task 2)
 - Produces:
   - `ObjectsService.royxat(): Promise<ObjectListItem[]>`
@@ -2282,11 +2302,13 @@ git commit -m "feat(api): obyektlar endpointlari, mapper va Swagger sxemalari"
 Spec §6: atomik increment, IP+obyekt bo'yicha 10 daqiqalik oyna, limitdan oshsa **200 va joriy son** (429 emas — foydalanuvchi hech nima sezmasligi kerak).
 
 **Files:**
+
 - Create: `apps/api/src/views/views.service.ts`, `views.service.test.ts`, `views.controller.ts`, `views.module.ts`, `views.dto.ts`
 - Create: `apps/api/test/views.e2e-spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
 **Interfaces:**
+
 - Consumes: `PrismaService` (Task 4), `ViewsSchema` (Task 2)
 - Produces:
   - `ViewsService.korish(id: string, ip: string): Promise<number>` — oyna ichida takror bo'lsa incrementsiz joriy sonni qaytaradi
@@ -2616,8 +2638,8 @@ export class ViewsModule {}
 `apps/api/src/main.ts` da `NestFactory.create` dan keyin qo'sh:
 
 ```ts
-  // Railway/Render ortida haqiqiy mijoz IP'si X-Forwarded-For da keladi.
-  app.set('trust proxy', 1);
+// Railway/Render ortida haqiqiy mijoz IP'si X-Forwarded-For da keladi.
+app.set('trust proxy', 1);
 ```
 
 Bu `NestExpressApplication` tipini talab qiladi — `create` chaqiruvini almashtir:
@@ -2625,7 +2647,7 @@ Bu `NestExpressApplication` tipini talab qiladi — `create` chaqiruvini almasht
 ```ts
 import { NestExpressApplication } from '@nestjs/platform-express';
 // ...
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+const app = await NestFactory.create<NestExpressApplication>(AppModule);
 ```
 
 - [ ] **Step 8: Testlarni qayta ishga tushir**
@@ -2653,6 +2675,7 @@ git commit -m "feat(api): ko'rishlar hisoblagichi — atomik increment va IP oyn
 FSD qatlamlari, dizayn tokenlari, API klienti va ikkita sodda sahifa (`/` va 404). Obyekt sahifasi Task 10–13 da to'ldiriladi.
 
 **Files:**
+
 - Create: `apps/web/package.json`, `vite.config.ts`, `tsconfig.json`, `tsconfig.node.json`, `vitest.config.ts`, `index.html`, `vitest.setup.ts`
 - Create: `apps/web/src/main.tsx`, `src/app/providers.tsx`, `src/app/router.tsx`, `src/app/index.css`
 - Create: `src/shared/config/index.ts`, `src/shared/api/client.ts`, `src/shared/api/client.test.ts`, `src/shared/lib/cn.ts`
@@ -2662,6 +2685,7 @@ FSD qatlamlari, dizayn tokenlari, API klienti va ikkita sodda sahifa (`/` va 404
 - Modify: `eslint.config.mjs` (FSD chegara qoidasi)
 
 **Interfaces:**
+
 - Consumes: `@rieltor/shared` (Task 2), API endpointlari (Task 7, 8)
 - Produces:
   - `apiGet<T>(path: string, schema: ZodType<T>): Promise<T>` — `shared/api/client.ts`
@@ -3277,12 +3301,14 @@ git commit -m "feat(web): Vite/Tailwind/Router skeleti, FSD chegaralari, API kli
 Spec §9 dagi 2–6 punktlar: `PriceBlock`, `ParamsRow`, `Description`, `Location` (`entities/object`) va `AgentCard` (`entities/agent`). Hammasi sof prezentatsion — props qabul qiladi, ma'lumot olmaydi.
 
 **Files:**
+
 - Create: `apps/web/src/entities/object/ui/price-block.tsx`, `params-row.tsx`, `description.tsx`, `location.tsx`
 - Create: `apps/web/src/entities/object/ui/price-block.test.tsx`, `params-row.test.tsx`
 - Create: `apps/web/src/entities/agent/ui/agent-card.tsx`, `agent-card.test.tsx`, `apps/web/src/entities/agent/index.ts`
 - Modify: `apps/web/src/entities/object/index.ts`
 
 **Interfaces:**
+
 - Consumes: `formatNarxSom`, `formatNarxUsd`, tiplar `ObjectDetail`, `Agent` (Task 2)
 - Produces:
   - `<PriceBlock narxSom={string} narxUsd={number} />`
@@ -3336,7 +3362,7 @@ describe('ParamsRow', () => {
     expect(screen.getByText('Buxoro shahri')).toBeInTheDocument();
   });
 
-  it('qavat null bo\'lsa o\'sha elementni chiqarmaydi', () => {
+  it("qavat null bo'lsa o'sha elementni chiqarmaydi", () => {
     const { container } = render(
       <ParamsRow xona={5} maydonM2={180} qavat={null} tuman="Kogon tumani" />,
     );
@@ -3392,13 +3418,21 @@ const IKONKA = {
   xona: 'M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z',
   maydon: 'M4 4h16v16H4V4Zm0 6h16M10 4v16',
   qavat: 'M4 20h16M4 14h16M4 8h16',
-  tuman: 'M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11Zm0-8.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z',
+  tuman:
+    'M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11Zm0-8.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z',
 } as const;
 
 function Element({ d, matn }: { d: string; matn: string }) {
   return (
     <li className="flex flex-col items-center gap-1 text-center">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5 text-slate-400" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        className="h-5 w-5 text-slate-400"
+        aria-hidden="true"
+      >
         <path d={d} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span className="text-sm text-slate-700">{matn}</span>
@@ -3559,10 +3593,12 @@ git commit -m "feat(web): narx, parametrlar, tavsif, joylashuv va rieltor kartas
 Spec §9.1: touch-svayp, nuqtali indikator, birinchi rasm LCP. **Kutubxona qo'shilmaydi** — CSS `scroll-snap` + `IntersectionObserver`.
 
 **Files:**
+
 - Create: `apps/web/src/shared/ui/responsive-image.tsx`
 - Create: `apps/web/src/widgets/gallery/ui/gallery.tsx`, `gallery.test.tsx`, `apps/web/src/widgets/gallery/index.ts`
 
 **Interfaces:**
+
 - Consumes: `imageSrcSet`, `imageFallbackSrc`, `IMAGE_SIZES` (Task 2), tip `Rasm`
 - Produces:
   - `<ResponsiveImage rasm={Rasm} alt={string} birinchi={boolean} className={string?} />`
@@ -3578,7 +3614,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Gallery } from './gallery';
 
 const rasmlar = [
-  { base: '/images/bx-001/01', ogUrl: '/images/bx-001/og.jpg', width: 1200, height: 900, tartib: 1 },
+  {
+    base: '/images/bx-001/01',
+    ogUrl: '/images/bx-001/og.jpg',
+    width: 1200,
+    height: 900,
+    tartib: 1,
+  },
   { base: '/images/bx-001/02', ogUrl: null, width: 1200, height: 900, tartib: 2 },
   { base: '/images/bx-001/03', ogUrl: null, width: 1200, height: 900, tartib: 3 },
 ];
@@ -3612,7 +3654,10 @@ describe('Gallery', () => {
   it('srcset va sizes beradi', () => {
     render(<Gallery rasmlar={rasmlar} alt="Kvartira" />);
     const img = screen.getAllByRole('img')[0];
-    expect(img).toHaveAttribute('srcset', expect.stringContaining('/images/bx-001/01-720.webp 720w'));
+    expect(img).toHaveAttribute(
+      'srcset',
+      expect.stringContaining('/images/bx-001/01-720.webp 720w'),
+    );
     expect(img).toHaveAttribute('sizes', '(max-width: 480px) 100vw, 480px');
   });
 
@@ -3747,7 +3792,11 @@ export function Gallery({ rasmlar, alt }: Props) {
       </div>
 
       {rasmlar.length > 1 && (
-        <div role="tablist" aria-label="Rasmlar" className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
+        <div
+          role="tablist"
+          aria-label="Rasmlar"
+          className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5"
+        >
           {rasmlar.map((rasm, i) => (
             <button
               key={rasm.base}
@@ -3801,11 +3850,13 @@ git commit -m "feat(web): kutubxonasiz svayp galereyasi va responsive rasm kompo
 Spec §9.7: ekran pastiga yopishgan ikki tugma, iOS safe-area hisobga olingan. So'ng `/obj/:id` marshruti barcha komponentlarni birlashtiradi.
 
 **Files:**
+
 - Create: `apps/web/src/widgets/sticky-cta/ui/sticky-cta.tsx`, `sticky-cta.test.tsx`, `apps/web/src/widgets/sticky-cta/index.ts`
 - Create: `apps/web/src/pages/object/ui/object-page.tsx`, `object-page.test.tsx`, `apps/web/src/pages/object/index.ts`
 - Modify: `apps/web/src/app/router.tsx`
 
 **Interfaces:**
+
 - Consumes: `Gallery` (Task 11), `PriceBlock`/`ParamsRow`/`Description`/`Location` (Task 10), `AgentCard` (Task 10), `objectQuery` (Task 9)
 - Produces:
   - `<StickyCTA tel={string} tg={string} />`
@@ -3933,7 +3984,13 @@ const obyekt = {
   views: 3,
   sana: '2026-07-22',
   rasmlar: [
-    { base: '/images/bx-002/01', ogUrl: '/images/bx-002/og.jpg', width: 1200, height: 900, tartib: 1 },
+    {
+      base: '/images/bx-002/01',
+      ogUrl: '/images/bx-002/og.jpg',
+      width: 1200,
+      height: 900,
+      tartib: 1,
+    },
   ],
   agent: {
     id: 'agent-1',
@@ -3979,10 +4036,13 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ObjectPage', () => {
-  it('obyekt maydonlarini ko\'rsatadi', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
-      url.includes('/api/view/') ? javob(200, { views: 3 }) : javob(200, obyekt),
-    ));
+  it("obyekt maydonlarini ko'rsatadi", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('/api/view/') ? javob(200, { views: 3 }) : javob(200, obyekt),
+      ),
+    );
 
     chiqar();
 
@@ -3993,9 +4053,12 @@ describe('ObjectPage', () => {
   });
 
   it('CTA tugmalarini seed kontakti bilan chiqaradi', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
-      url.includes('/api/view/') ? javob(200, { views: 3 }) : javob(200, obyekt),
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('/api/view/') ? javob(200, { views: 3 }) : javob(200, obyekt),
+      ),
+    );
 
     chiqar();
 
@@ -4006,7 +4069,10 @@ describe('ObjectPage', () => {
   });
 
   it('404 da "topilmadi" sahifasini ko\'rsatadi', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => javob(404, { message: 'topilmadi' })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => javob(404, { message: 'topilmadi' })),
+    );
 
     chiqar();
 
@@ -4103,6 +4169,7 @@ pnpm lint && pnpm typecheck
 ```
 
 Ikki terminalda serverlarni ko'tarib, `http://localhost:5173/obj/bx-002` ni **360px kenglikdagi** brauzer oynasida (DevTools qurilma rejimi) och. Tekshir:
+
 - galereya svayp qilinadi, nuqtalar o'zgaradi
 - narx katta, `$` kichik
 - pastda ikki tugma doim ko'rinadi va sahifa oxirini yopmaydi
@@ -4122,11 +4189,13 @@ git commit -m "feat(web): sticky CTA va to'liq obyekt sahifasi"
 Spec §6: sessiyada bir marta POST, keyin GET. Xato bo'lsa komponent **hech narsa render qilmaydi**, sahifaning qolgani ishlayveradi.
 
 **Files:**
+
 - Create: `apps/web/src/features/view-counter/model/use-views.ts`, `use-views.test.ts`
 - Create: `apps/web/src/features/view-counter/ui/view-counter.tsx`, `view-counter.test.tsx`, `apps/web/src/features/view-counter/index.ts`
 - Modify: `apps/web/src/pages/object/ui/object-page.tsx`
 
 **Interfaces:**
+
 - Consumes: `apiGet`, `apiPost` (Task 9), `ViewsSchema` (Task 2)
 - Produces:
   - `useViews(id: string)` — `{ views: number | null }`; xatoda `null`
@@ -4172,7 +4241,10 @@ describe('useViews', () => {
   });
 
   it('POST dan keyin sessionStorage kalitini belgilaydi', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => javob(200, { views: 8 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => javob(200, { views: 8 })),
+    );
 
     const { result } = renderHook(() => useViews('bx-001'), { wrapper: orov() });
 
@@ -4180,7 +4252,7 @@ describe('useViews', () => {
     expect(sessionStorage.getItem('viewed:bx-001')).toBe('1');
   });
 
-  it('kalit mavjud bo\'lsa GET qiladi', async () => {
+  it("kalit mavjud bo'lsa GET qiladi", async () => {
     sessionStorage.setItem('viewed:bx-001', '1');
     const f = vi.fn(async () => javob(200, { views: 8 }));
     vi.stubGlobal('fetch', f);
@@ -4191,8 +4263,11 @@ describe('useViews', () => {
     expect(f).toHaveBeenCalledWith('/api/view/bx-001', expect.objectContaining({ method: 'GET' }));
   });
 
-  it('xatoda views null bo\'ladi', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => javob(500, {})));
+  it("xatoda views null bo'ladi", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => javob(500, {})),
+    );
 
     const { result } = renderHook(() => useViews('bx-001'), { wrapper: orov() });
 
@@ -4287,14 +4362,20 @@ beforeEach(() => sessionStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ViewCounter', () => {
-  it('sonni ko\'z belgisi bilan chiqaradi', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => javob(200, { views: 42 })));
+  it("sonni ko'z belgisi bilan chiqaradi", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => javob(200, { views: 42 })),
+    );
     chiqar();
     expect(await screen.findByText(/42/)).toBeInTheDocument();
   });
 
   it('API xato bersa hech narsa render qilmaydi', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => javob(500, {})));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => javob(500, {})),
+    );
     const { container } = chiqar();
     await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
@@ -4329,6 +4410,7 @@ export { ViewCounter } from './ui/view-counter';
 - [ ] **Step 4: Sahifaga ulash**
 
 `apps/web/src/pages/object/ui/object-page.tsx` da:
+
 - import qo'sh: `import { ViewCounter } from '@/features/view-counter';`
 - `<AgentCard ... />` dan keyin, `<StickyCTA ... />` dan oldin qo'y: `<ViewCounter id={data.id} />`
 
@@ -4355,6 +4437,7 @@ git commit -m "feat(web): ko'rishlar hisoblagichi — sessiyaga bir marta va deg
 Loyihaning eng kritik qismi (spec §8). NestJS `/obj/:id` so'roviga `index.html` ning `<head>` iga OG teglarini va LCP rasm preload'ini inject qiladi.
 
 **Files:**
+
 - Create: `apps/api/src/bootstrap.ts`
 - Create: `apps/api/src/ssr/meta.ts`, `meta.test.ts`, `html-cache.service.ts`, `ssr.controller.ts`, `ssr.module.ts`
 - Create: `apps/api/test/ssr.e2e-spec.ts`
@@ -4362,6 +4445,7 @@ Loyihaning eng kritik qismi (spec §8). NestJS `/obj/:id` so'roviga `index.html`
 - Modify: `apps/api/test/health.e2e-spec.ts`, `objects.e2e-spec.ts`, `views.e2e-spec.ts`
 
 **Interfaces:**
+
 - Consumes: `ObjectsService.bittasi` (Task 7), `PUBLIC_BASE_URL` (Task 3), `imageSrcSet`/`IMAGE_SIZES` (Task 2)
 - Produces:
   - `sozla(app: NestExpressApplication): void` — global prefiks, trust proxy, statik fayllar. `main.ts` va **barcha e2e testlar** shuni ishlatadi.
@@ -4388,7 +4472,7 @@ import { escapeHtml, metaTeglar } from './meta';
 
 const obj = {
   id: 'bx-001',
-  sarlavha: "3 xonali kvartira, yangi bino",
+  sarlavha: '3 xonali kvartira, yangi bino',
   narxSom: '780000000',
   narxUsd: 65000,
   xona: 3,
@@ -4402,7 +4486,13 @@ const obj = {
   views: 0,
   sana: '2026-07-20',
   rasmlar: [
-    { base: '/images/bx-001/01', ogUrl: '/images/bx-001/og.jpg', width: 1200, height: 900, tartib: 1 },
+    {
+      base: '/images/bx-001/01',
+      ogUrl: '/images/bx-001/og.jpg',
+      width: 1200,
+      height: 900,
+      tartib: 1,
+    },
   ],
   agent: {
     id: 'agent-1',
@@ -4427,30 +4517,30 @@ describe('escapeHtml', () => {
 describe('metaTeglar', () => {
   const html = metaTeglar(obj, BASE);
 
-  it('sarlavha va narxni og:title ga qo\'shadi', () => {
+  it("sarlavha va narxni og:title ga qo'shadi", () => {
     expect(html).toContain('property="og:title"');
     expect(html).toContain('3 xonali kvartira, yangi bino');
-    expect(html).toContain("780 000 000 so&#39;m");
+    expect(html).toContain('780 000 000 so&#39;m');
   });
 
   it('og:image ni absolyut URL qiladi', () => {
     expect(html).toContain(`content="${BASE}/images/bx-001/og.jpg"`);
   });
 
-  it('og:image o\'lchamlarini beradi', () => {
+  it("og:image o'lchamlarini beradi", () => {
     expect(html).toContain('property="og:image:width" content="1200"');
     expect(html).toContain('property="og:image:height" content="630"');
   });
 
-  it('twitter kartasini katta rasm rejimiga qo\'yadi', () => {
+  it("twitter kartasini katta rasm rejimiga qo'yadi", () => {
     expect(html).toContain('name="twitter:card" content="summary_large_image"');
   });
 
-  it('og:url ni obyekt manziliga qo\'yadi', () => {
+  it("og:url ni obyekt manziliga qo'yadi", () => {
     expect(html).toContain(`content="${BASE}/obj/bx-001"`);
   });
 
-  it('LCP rasmi uchun preload qo\'shadi', () => {
+  it("LCP rasmi uchun preload qo'shadi", () => {
     expect(html).toContain('rel="preload"');
     expect(html).toContain('as="image"');
     expect(html).toContain('/images/bx-001/01-720.webp 720w');
@@ -4463,7 +4553,7 @@ describe('metaTeglar', () => {
     expect(moslik?.[1]?.length).toBeLessThanOrEqual(201);
   });
 
-  it('rasm bo\'lmasa og:image chiqarmaydi va qulamaydi', () => {
+  it("rasm bo'lmasa og:image chiqarmaydi va qulamaydi", () => {
     const rasmsiz = { ...obj, rasmlar: [] };
     expect(() => metaTeglar(rasmsiz, BASE)).not.toThrow();
     expect(metaTeglar(rasmsiz, BASE)).not.toContain('og:image');
@@ -4643,7 +4733,10 @@ export class SsrController {
 
   @Get('obj/:id')
   @Header('content-type', 'text/html; charset=utf-8')
-  async obyekt(@Param('id') id: string, @Res({ passthrough: true }) res: Response): Promise<string> {
+  async obyekt(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<string> {
     const qobiq = await this.html.qobiq();
     const baseUrl = this.config.get('PUBLIC_BASE_URL', { infer: true });
 
@@ -4725,8 +4818,8 @@ export function sozla(app: NestExpressApplication): void {
 ```ts
 import { sozla } from './bootstrap';
 // ...
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  sozla(app);
+const app = await NestFactory.create<NestExpressApplication>(AppModule);
+sozla(app);
 ```
 
 Uchala mavjud e2e faylda (`health`, `objects`, `views`) `app.setGlobalPrefix(...)` va `app.set('trust proxy', true)` qatorlarini almashtir:
@@ -4734,9 +4827,9 @@ Uchala mavjud e2e faylda (`health`, `objects`, `views`) `app.setGlobalPrefix(...
 ```ts
 import { sozla } from '../src/bootstrap';
 // ...
-    app = moduleRef.createNestApplication<NestExpressApplication>();
-    sozla(app);
-    await app.init();
+app = moduleRef.createNestApplication<NestExpressApplication>();
+sozla(app);
+await app.init();
 ```
 
 `import type { NestExpressApplication } from '@nestjs/platform-express';` ni ham qo'sh va `let app: INestApplication;` ni `let app: NestExpressApplication;` ga o'zgartir.
@@ -4811,7 +4904,7 @@ describe('SSR / OG (e2e)', () => {
     expect(res.text).not.toContain('og:title');
   });
 
-  it('GET / → 200 SPA qobig\'i', async () => {
+  it("GET / → 200 SPA qobig'i", async () => {
     const res = await request(app.getHttpServer()).get('/').expect(200);
     expect(res.text).toContain('<div id="root">');
   });
@@ -4867,10 +4960,12 @@ git commit -m "feat(api): OG head-inject, LCP preload va statik front serve"
 Spec §12: multi-stage build, web `dist` API imijiga ko'chiriladi, bitta jarayon hammasini serve qiladi.
 
 **Files:**
+
 - Create: `Dockerfile`, `.dockerignore`
 - Modify: `docker-compose.yml`, `package.json` (root)
 
 **Interfaces:**
+
 - Consumes: `sozla()` statik serve mantiqi (Task 14), `prisma migrate deploy` (Task 4)
 - Produces: `rieltor-app` imiji — `PORT` da tinglaydi, `/api/health` javob beradi
 
@@ -5002,17 +5097,17 @@ Kutilgan: `200`.
 `docker-compose.yml` ga `postgres` yoniga qo'sh:
 
 ```yaml
-  app:
-    build: .
-    depends_on:
-      postgres: { condition: service_healthy }
-    environment:
-      DATABASE_URL: postgresql://rieltor:rieltor@postgres:5432/rieltor
-      PUBLIC_BASE_URL: http://localhost:3000
-      SEED_AGENT_TEL: ${SEED_AGENT_TEL}
-      SEED_AGENT_TG: ${SEED_AGENT_TG}
-      PORT: 3000
-    ports: ['3000:3000']
+app:
+  build: .
+  depends_on:
+    postgres: { condition: service_healthy }
+  environment:
+    DATABASE_URL: postgresql://rieltor:rieltor@postgres:5432/rieltor
+    PUBLIC_BASE_URL: http://localhost:3000
+    SEED_AGENT_TEL: ${SEED_AGENT_TEL}
+    SEED_AGENT_TG: ${SEED_AGENT_TG}
+    PORT: 3000
+  ports: ['3000:3000']
 ```
 
 ```bash
@@ -5035,11 +5130,13 @@ git commit -m "feat: bitta konteynerli prod imiji — web build API bilan birga 
 Oxirgi task: mobil viewport'da E2E, Railway + Neon'ga deploy, Lighthouse va Telegram preview sinovi.
 
 **Files:**
+
 - Create: `playwright.config.ts`, `e2e/object-page.spec.ts`
 - Create: `docs/deploy.md`
 - Modify: `package.json` (root), `.github/workflows/ci.yml`
 
 **Interfaces:**
+
 - Consumes: prod imiji (Task 15), `docker compose` stack
 - Produces: `pnpm e2e` — 360px viewport'da galereya svaypi va CTA havolalarini tekshiradi
 
@@ -5101,7 +5198,7 @@ test.describe('Obyekt sahifasi (360px)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
-  test('gorizontal skroll yo\'q', async ({ page }) => {
+  test("gorizontal skroll yo'q", async ({ page }) => {
     await page.goto('/obj/bx-002');
     const oshib = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -5109,7 +5206,7 @@ test.describe('Obyekt sahifasi (360px)', () => {
     expect(oshib).toBe(false);
   });
 
-  test('galereya svaypi faol nuqtani o\'zgartiradi', async ({ page }) => {
+  test("galereya svaypi faol nuqtani o'zgartiradi", async ({ page }) => {
     await page.goto('/obj/bx-002');
 
     const nuqtalar = page.getByRole('tab');
@@ -5121,7 +5218,7 @@ test.describe('Obyekt sahifasi (360px)', () => {
     await expect(nuqtalar.first()).toHaveAttribute('aria-selected', 'false');
   });
 
-  test('CTA tugmalari to\'g\'ri havolalarga ega', async ({ page }) => {
+  test("CTA tugmalari to'g'ri havolalarga ega", async ({ page }) => {
     await page.goto('/obj/bx-002');
 
     const qongiroq = page.getByRole('link', { name: /Qo'ng'iroq/ });
@@ -5131,18 +5228,18 @@ test.describe('Obyekt sahifasi (360px)', () => {
     await expect(telegram).toHaveAttribute('href', /^https:\/\/t\.me\/[\w_]+$/);
   });
 
-  test('CTA doim ekranda ko\'rinadi', async ({ page }) => {
+  test("CTA doim ekranda ko'rinadi", async ({ page }) => {
     await page.goto('/obj/bx-002');
     await page.mouse.wheel(0, 2000);
     await expect(page.getByRole('link', { name: /Qo'ng'iroq/ })).toBeInViewport();
   });
 
-  test('hisoblagich ko\'rinadi', async ({ page }) => {
+  test("hisoblagich ko'rinadi", async ({ page }) => {
     await page.goto('/obj/bx-002');
     await expect(page.getByText(/👁\s*\d+/)).toBeVisible();
   });
 
-  test('noto\'g\'ri id → 404 sahifa va 404 status', async ({ page }) => {
+  test("noto'g'ri id → 404 sahifa va 404 status", async ({ page }) => {
     const javob = await page.goto('/obj/yoq-000');
     expect(javob?.status()).toBe(404);
     await expect(page.getByText('Bunday obyekt topilmadi')).toBeVisible();
@@ -5179,33 +5276,33 @@ docker compose down
 `.github/workflows/ci.yml` ga `check` job'idan keyin yangi job:
 
 ```yaml
-  e2e:
-    runs-on: ubuntu-latest
-    needs: check
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - name: Stack'ni ko'tarish
-        env:
-          SEED_AGENT_TEL: '+998901234567'
-          SEED_AGENT_TG: 'test'
-        run: docker compose up -d --build
-      - name: Servis tayyorligini kutish
-        run: |
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:3000/api/health > /dev/null; then exit 0; fi
-            sleep 2
-          done
-          docker compose logs
-          exit 1
-      - run: pnpm e2e
-      - if: failure()
-        uses: actions/upload-artifact@v4
-        with: { name: playwright-report, path: playwright-report/ }
+e2e:
+  runs-on: ubuntu-latest
+  needs: check
+  steps:
+    - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with: { node-version: 22, cache: pnpm }
+    - run: pnpm install --frozen-lockfile
+    - run: pnpm exec playwright install --with-deps chromium
+    - name: Stack'ni ko'tarish
+      env:
+        SEED_AGENT_TEL: '+998901234567'
+        SEED_AGENT_TG: 'test'
+      run: docker compose up -d --build
+    - name: Servis tayyorligini kutish
+      run: |
+        for i in $(seq 1 60); do
+          if curl -sf http://localhost:3000/api/health > /dev/null; then exit 0; fi
+          sleep 2
+        done
+        docker compose logs
+        exit 1
+    - run: pnpm e2e
+    - if: failure()
+      uses: actions/upload-artifact@v4
+      with: { name: playwright-report, path: playwright-report/ }
 ```
 
 ```bash
@@ -5261,6 +5358,7 @@ Chrome DevTools → Lighthouse → Mode: Navigation, Device: **Mobile** → `htt
 Kutilgan: Performance ≥ 90, LCP < 2.5s.
 
 Ko'rsatkich past bo'lsa, shu tartibda tekshir:
+
 1. `og:image`/LCP preload teglari HTMLda bormi (`curl | grep preload`)
 2. Birinchi rasmda `fetchpriority="high"` va `loading="eager"` bormi
 3. Rasm hajmlari — `apps/api/public/images/bx-001/01-1200.webp` 250 KB dan kichikmi
@@ -5297,21 +5395,20 @@ git commit -m "docs: deploy yo'riqnomasi va DoD tekshiruv natijalari"
 
 **Nomlash izchilligi.** Quyidagi nomlar butun kod bo'ylab bir xil bo'lishi shart — bir taskda o'zgartirilsa, boshqasi sinadi:
 
-| Nom | Qayerda aniqlangan | Kim ishlatadi |
-|---|---|---|
-| `formatNarxSom` / `formatNarxUsd` | Task 2 | Task 10 (`PriceBlock`), Task 14 (`metaTeglar`) |
-| `imageSrcSet` / `imageFallbackSrc` / `IMAGE_SIZES` | Task 2 | Task 5 (quvur nomlashi), Task 9, 11, 14 |
-| `Rasm.base` (`"/images/bx-001/01"`) | Task 2, 4 | Task 5, 7, 11, 14 |
-| `narxSom: string` | Task 2 | Task 7 (mapper), Task 10, 14 |
-| `rasmniQayta` | Task 5 | Task 6 (seed) |
-| `detailgaAylantir` | Task 7 | Task 14 (SSR) |
-| `ObjectsService.bittasi` | Task 7 | Task 14 (SSR) |
-| `sozla(app)` | Task 14 | `main.ts` va barcha e2e testlar |
-| `<!--OG-META-->` marker | Task 9 (`index.html`) | Task 14 (`HtmlCacheService`) |
-| `ApiXatosi` | Task 9 | Task 12 (404 aniqlash) |
-| `ParamsRow` (`ObjectParamsRow` emas) | Task 10 | Task 12 (`ObjectPage`) |
+| Nom                                                | Qayerda aniqlangan    | Kim ishlatadi                                  |
+| -------------------------------------------------- | --------------------- | ---------------------------------------------- |
+| `formatNarxSom` / `formatNarxUsd`                  | Task 2                | Task 10 (`PriceBlock`), Task 14 (`metaTeglar`) |
+| `imageSrcSet` / `imageFallbackSrc` / `IMAGE_SIZES` | Task 2                | Task 5 (quvur nomlashi), Task 9, 11, 14        |
+| `Rasm.base` (`"/images/bx-001/01"`)                | Task 2, 4             | Task 5, 7, 11, 14                              |
+| `narxSom: string`                                  | Task 2                | Task 7 (mapper), Task 10, 14                   |
+| `rasmniQayta`                                      | Task 5                | Task 6 (seed)                                  |
+| `detailgaAylantir`                                 | Task 7                | Task 14 (SSR)                                  |
+| `ObjectsService.bittasi`                           | Task 7                | Task 14 (SSR)                                  |
+| `sozla(app)`                                       | Task 14               | `main.ts` va barcha e2e testlar                |
+| `<!--OG-META-->` marker                            | Task 9 (`index.html`) | Task 14 (`HtmlCacheService`)                   |
+| `ApiXatosi`                                        | Task 9                | Task 12 (404 aniqlash)                         |
+| `ParamsRow` (`ObjectParamsRow` emas)               | Task 10               | Task 12 (`ObjectPage`)                         |
 
 **Apostrof qoidasi.** O'zbekcha matnda `'` ko'p. Ichida apostrof bo'lgan har qanday JS/TS satri ikki tirnoq bilan yoziladi. Reja ichida ba'zi snippetlarda bu qoida buzilgan joylar aniq belgilangan — o'sha izohlarga amal qil.
 
 **Reja o'zgarishi.** Agar biror task davomida rejadagi yechim ishlamasa: to'xta, sababini yoz, spec (`docs/superpowers/specs/2026-07-28-rieltor-generator-design.md`) bilan solishtir va faqat shundan keyin muqobil yechimni tanla. Spec §1 dagi "qamrovdan tashqarida" ro'yxatiga hech narsa qo'shilmaydi.
-
