@@ -6,6 +6,7 @@ import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
 import { ObjectsModule } from './objects/objects.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SsrModule } from './ssr/ssr.module';
 import { ViewsModule } from './views/views.module';
 
 @Module({
@@ -19,6 +20,7 @@ import { ViewsModule } from './views/views.module';
     HealthModule,
     ObjectsModule,
     ViewsModule,
+    SsrModule,
   ],
   providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],
 })

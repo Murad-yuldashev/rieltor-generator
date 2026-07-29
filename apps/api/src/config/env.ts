@@ -9,6 +9,8 @@ export const envSchema = z.object({
    * Oxiridagi slash olib tashlanadi — keyin `${PUBLIC_BASE_URL}/images/...` deb ulanadi.
    */
   PUBLIC_BASE_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
+  /** Vite build natijasi. Test va Docker'da boshqa yo'l berilishi mumkin. */
+  WEB_DIST: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

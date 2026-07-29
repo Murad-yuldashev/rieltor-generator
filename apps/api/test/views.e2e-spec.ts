@@ -1,18 +1,18 @@
 import { Test } from '@nestjs/testing';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ViewsSchema } from '@rieltor/shared';
 import { AppModule } from '../src/app.module';
+import { sozla } from '../src/bootstrap';
 
 describe('Views (e2e)', () => {
   let app: NestExpressApplication;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    app.set('trust proxy', true);
-    app.setGlobalPrefix('api', { exclude: [] });
+    app = moduleRef.createNestApplication<NestExpressApplication>();
+    sozla(app);
     await app.init();
   });
 
