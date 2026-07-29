@@ -751,7 +751,7 @@ mkdir -p apps/api/src apps/api/test
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
-    "lint": "eslint src test prisma"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -784,13 +784,19 @@ Ildizdagi `.yarnrc.yml` ga qo'sh (mavjud `nodeLinker` va `yarnPath` qatorlari sa
 
 ```yaml
 enableScripts: true
-
-dependenciesMeta:
-  '@scarf/scarf':
-    built: false
 ```
 
-> **Nega kerak:** Yarn 4.17 da `enableScripts` ning **standart qiymati `false`** — bu foydalanuvchi sozlamasi emas, Yarn'ning o'z sukuti (`yarn config --why` → `Source: <default>`). Skriptlar bloklangan holda `@prisma/client` generatsiya qilinmaydi va `sharp` ning native binary'si yuklanmaydi, ya'ni Task 4, 5 va 6 umuman ishlamaydi. `@scarf/scarf` esa faqat telemetriya yuboradigan postinstall — u alohida o'chirib qo'yiladi.
+Ildizdagi `package.json` ga esa alohida maydon sifatida qo'sh:
+
+```json
+"dependenciesMeta": {
+  "@scarf/scarf": { "built": false }
+}
+```
+
+> **Nega kerak:** Yarn 4.17 da `enableScripts` ning **standart qiymati `false`** — bu foydalanuvchi sozlamasi emas, Yarn'ning o'z sukuti (`yarn config --why` → `Source: <default>`). Skriptlar bloklangan holda `@prisma/client` generatsiya qilinmaydi va `sharp` ning native binary'si yuklanmaydi, ya'ni Task 4, 5 va 6 umuman ishlamaydi.
+>
+> **Diqqat:** `dependenciesMeta` — bu `package.json` maydoni, `.yarnrc.yml` sozlamasi emas. `.yarnrc.yml` ga qo'yilsa `yarn install` "Unrecognized or legacy configuration settings found" deb rad etadi. `@scarf/scarf` faqat telemetriya yuboradigan postinstall — u shu yo'l bilan o'chirib qo'yiladi.
 
 ```bash
 yarn install
