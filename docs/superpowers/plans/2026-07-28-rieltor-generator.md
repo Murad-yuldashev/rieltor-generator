@@ -1134,7 +1134,9 @@ Lokal Postgres docker-compose orqali ko'tariladi, spec §4 modeli Prisma sxemasi
 **Files:**
 
 - Create: `docker-compose.yml`, `apps/api/prisma/schema.prisma`, `apps/api/src/prisma/prisma.service.ts`, `apps/api/src/prisma/prisma.module.ts`
-- Modify: `apps/api/src/health/health.controller.ts`, `health.module.ts`, `apps/api/test/health.e2e-spec.ts`, `apps/api/package.json`
+- Modify: `apps/api/src/health/health.controller.ts`, `apps/api/src/app.module.ts`, `apps/api/test/health.e2e-spec.ts`, `apps/api/package.json`
+
+> `health.module.ts` **o'zgarmaydi** — `PrismaModule` `@Global()` bo'lgani uchun `PrismaService` unga alohida `imports` yozmasdan inject bo'ladi.
 
 **Interfaces:**
 
