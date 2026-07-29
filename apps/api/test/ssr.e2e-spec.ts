@@ -57,6 +57,12 @@ describe('SSR / OG (e2e)', () => {
     expect(res.text).not.toContain('<!--OG-META-->');
   });
 
+  it('sahifada faqat bitta <title> qoladi', async () => {
+    const res = await request(app.getHttpServer()).get('/obj/bx-001').expect(200);
+    expect(res.text.match(/<title>/g)).toHaveLength(1);
+    expect(res.text).toContain('780 000 000');
+  });
+
   it("mavjud bo'lmagan id → 404, lekin HTML qaytaradi", async () => {
     const res = await request(app.getHttpServer()).get('/obj/yoq-000').expect(404);
     expect(res.text).toContain('<div id="root">');

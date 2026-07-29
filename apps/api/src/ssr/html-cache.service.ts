@@ -36,10 +36,15 @@ export class HtmlCacheService {
     return html;
   }
 
-  /** Markerni tayyor teglar bilan almashtiradi. */
+  /**
+   * Markerni tayyor teglar bilan almashtiradi. Statik <title> ham olib
+   * tashlanadi — aks holda sahifada ikkita <title> qoladi va brauzer/scraper
+   * birinchisini (umumiy nom) ishlatadi, metaTeglar bergan nom emas.
+   */
   injectQil(qobiq: string, teglar: string): string {
-    return qobiq.includes(OG_MARKER)
-      ? qobiq.replace(OG_MARKER, teglar)
-      : qobiq.replace('</head>', `    ${teglar}\n  </head>`);
+    const tozalangan = qobiq.replace(/<title>[^<]*<\/title>\s*/i, '');
+    return tozalangan.includes(OG_MARKER)
+      ? tozalangan.replace(OG_MARKER, teglar)
+      : tozalangan.replace('</head>', `    ${teglar}\n  </head>`);
   }
 }
