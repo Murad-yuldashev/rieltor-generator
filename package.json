@@ -9,6 +9,11 @@
     "apps/*",
     "packages/*"
   ],
+  "dependenciesMeta": {
+    "@scarf/scarf": {
+      "built": false
+    }
+  },
   "scripts": {
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
