@@ -2880,7 +2880,10 @@ import '@testing-library/jest-dom/vitest';
   --radius-card: 1rem;
 
   /* Kontent kengligi — mobil-first, desktopda markazda (spec §10). */
-  --spacing-content: 30rem; /* 480px */
+  /* max-w-* utility'lari `--container-*` namespace'idan keladi, `--spacing-*` dan EMAS.
+     `--spacing-content` deb yozilsa `max-w-content` umuman generatsiya qilinmaydi va
+     desktopdagi 480px cheklovi jimgina ishlamay qoladi. */
+  --container-content: 30rem; /* 480px */
 }
 
 html {
