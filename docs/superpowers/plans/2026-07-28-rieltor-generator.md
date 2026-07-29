@@ -829,9 +829,19 @@ yarn install
 ```json
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": { "rootDir": "src" },
+  "include": ["src"],
   "exclude": ["node_modules", "dist", "test", "**/*.test.ts", "**/*.spec.ts"]
 }
 ```
+
+> **`rootDir` va `include` KRITIK.** Asosiy `tsconfig.json` da `include: ["src", "test", "prisma"]` turadi, shuning uchun TypeScript ildizni `apps/api` deb hisoblab, natijani `dist/src/main.js` ga yozadi. U holda:
+>
+> - `"start": "node dist/main"` `MODULE_NOT_FOUND` beradi
+> - Task 14 dagi `sozla()` da `__dirname` `apps/api/dist/src` bo'lib, `resolve(__dirname, '..')` `apps/api` emas `apps/api/dist` ni beradi → `public/` va `web/dist` yo'llari noto'g'ri
+> - Task 15 dagi Dockerfile `CMD` ishlamaydi
+>
+> Bu yerdagi `rootDir: "src"` + `include: ["src"]` natijani `dist/main.js` ga tushiradi va `__dirname` ni `apps/api/dist` qiladi — qolgan hamma joy shunga tayanadi. `prisma/` build'dan tushib qoladi, bu to'g'ri: u faqat `tsx` bilan ishlatiladi va `src/` undan hech narsa import qilmaydi.
 
 `apps/api/nest-cli.json`:
 
