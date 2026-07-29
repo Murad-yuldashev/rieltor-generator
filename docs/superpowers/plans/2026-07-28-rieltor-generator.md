@@ -701,7 +701,7 @@ yarn workspace @rieltor/shared typecheck
 yarn lint
 ```
 
-Kutilgan: 15 test PASS, `packages/shared/dist/index.d.ts` yaratiladi, lint toza.
+Kutilgan: 14 test PASS, `packages/shared/dist/index.d.ts` yaratiladi, lint toza.
 
 - [ ] **Step 11: Commit**
 
@@ -1625,7 +1625,7 @@ export async function rasmniQayta(opts: RasmniQaytaOpts): Promise<RasmNatija> {
 yarn workspace @rieltor/api test
 ```
 
-Kutilgan: 7 test PASS.
+Kutilgan: `images.test.ts` dagi 6 test PASS.
 
 - [ ] **Step 6: Commit**
 
@@ -5452,6 +5452,8 @@ git commit -m "docs: deploy yo'riqnomasi va DoD tekshiruv natijalari"
 | `<!--OG-META-->` marker                            | Task 9 (`index.html`) | Task 14 (`HtmlCacheService`)                   |
 | `ApiXatosi`                                        | Task 9                | Task 12 (404 aniqlash)                         |
 | `ParamsRow` (`ObjectParamsRow` emas)               | Task 10               | Task 12 (`ObjectPage`)                         |
+
+**Test sonlari taxminiy.** Har qadamdagi "Kutilgan: N test PASS" — mo'ljal, qat'iy talab emas. Haqiqiy son shu taskning test faylidagi `it(...)` bloklari soniga teng bo'lishi kerak. Nomuvofiqlik chiqsa, test faylini sanab ko'r: agar hamma holat qamrab olingan bo'lsa, rejadagi son xato — uni tuzat va davom et, test qo'shib "to'ldirma".
 
 **Apostrof qoidasi.** O'zbekcha matnda `'` ko'p. Ichida apostrof bo'lgan har qanday JS/TS satri ikki tirnoq bilan yoziladi. Reja ichida ba'zi snippetlarda bu qoida buzilgan joylar aniq belgilangan — o'sha izohlarga amal qil.
 
