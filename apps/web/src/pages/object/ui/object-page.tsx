@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 import { AgentCard } from '@/entities/agent';
 import { Description, Location, ParamsRow, PriceBlock, objectQuery } from '@/entities/object';
+import { ViewCounter } from '@/features/view-counter';
 import { ApiXatosi } from '@/shared/api/client';
 import { Gallery } from '@/widgets/gallery';
 import { NotFoundView } from '@/widgets/not-found';
@@ -42,6 +43,7 @@ export function ObjectPage() {
       <Description matn={data.tavsif} />
       <Location moljal={data.moljal} manzil={data.manzil} />
       <AgentCard agent={data.agent} />
+      <ViewCounter id={data.id} />
       <StickyCTA tel={data.agent.tel} tg={data.agent.tg} />
     </main>
   );
