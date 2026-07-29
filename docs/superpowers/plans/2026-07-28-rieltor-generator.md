@@ -4760,11 +4760,21 @@ export class HtmlCacheService {
     return html;
   }
 
-  /** Markerni tayyor teglar bilan almashtiradi. */
+  /**
+   * Markerni tayyor teglar bilan almashtiradi.
+   *
+   * Avval qobiqdagi mavjud <title> o'chiriladi: `metaTeglar` o'z <title> ini
+   * chiqaradi, marker esa index.html da statik <title> dan KEYIN turadi.
+   * Tozalanmasa sahifada ikkita <title> qoladi va HTML standarti bo'yicha
+   * faqat birinchisi hisobga olinadi — ya'ni brauzer tab'ida e'lon nomi
+   * o'rniga umumiy "Rieltor Generator" ko'rinadi. Hech qanday test buni
+   * tutmaydi, chunki og:title alohida teg va u to'g'ri chiqadi.
+   */
   injectQil(qobiq: string, teglar: string): string {
-    return qobiq.includes(OG_MARKER)
-      ? qobiq.replace(OG_MARKER, teglar)
-      : qobiq.replace('</head>', `    ${teglar}\n  </head>`);
+    const tozalangan = qobiq.replace(/<title>[^<]*<\/title>\s*/i, '');
+    return tozalangan.includes(OG_MARKER)
+      ? tozalangan.replace(OG_MARKER, teglar)
+      : tozalangan.replace('</head>', `    ${teglar}\n  </head>`);
   }
 }
 ```
