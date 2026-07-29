@@ -13,7 +13,8 @@
     "prisma": "prisma",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -38,6 +39,7 @@
     "@types/supertest": "^6.0.2",
     "prisma": "6.19.3",
     "supertest": "^7.0.0",
+    "tsx": "^4.23.1",
     "typescript": "^5.7.2",
     "unplugin-swc": "^1.5.1",
     "vitest": "^3.0.0"
