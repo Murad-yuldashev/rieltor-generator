@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 import { AgentCard } from '@/entities/agent';
 import { Description, Location, ParamsRow, PriceBlock, objectQuery } from '@/entities/object';
-import { NotFoundPage } from '@/pages/not-found';
 import { ApiXatosi } from '@/shared/api/client';
 import { Gallery } from '@/widgets/gallery';
+import { NotFoundView } from '@/widgets/not-found';
 import { StickyCTA } from '@/widgets/sticky-cta';
 
 export function ObjectPage() {
@@ -25,7 +25,7 @@ export function ObjectPage() {
 
   if (error) {
     // 404 — sodda "topilmadi" sahifasi (spec §14). Boshqa xatolar ham shu yerga tushadi.
-    if (error instanceof ApiXatosi && error.status === 404) return <NotFoundPage />;
+    if (error instanceof ApiXatosi && error.status === 404) return <NotFoundView />;
     return <p className="p-4 text-slate-500">Obyektni yuklab bo'lmadi.</p>;
   }
 
