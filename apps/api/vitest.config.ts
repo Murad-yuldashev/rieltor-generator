@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.{test,spec}.ts'],
+    include: ['src/**/*.{test,spec}.ts', 'prisma/**/*.{test,spec}.ts'],
     root: './',
   },
   // NestJS dekoratorlari emitDecoratorMetadata talab qiladi — esbuild buni qilmaydi, SWC qiladi.
