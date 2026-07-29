@@ -2543,19 +2543,20 @@ Kutilgan: 7 test PASS.
 `apps/api/test/views.e2e-spec.ts`:
 
 ```ts
-import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ViewsSchema } from '@rieltor/shared';
 import { AppModule } from '../src/app.module';
 
 describe('Views (e2e)', () => {
-  let app: INestApplication;
+  // `app.set(...)` INestApplication da yo'q — Express'ga xos metod.
+  let app: NestExpressApplication;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
+    app = moduleRef.createNestApplication<NestExpressApplication>();
     app.set('trust proxy', true);
     app.setGlobalPrefix('api', { exclude: [] });
     await app.init();
