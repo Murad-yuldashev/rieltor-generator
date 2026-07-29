@@ -1,13 +1,17 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { AppModule } from './app.module';
 import type { Env } from './config/env';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Railway/Render ortida haqiqiy mijoz IP'si X-Forwarded-For da keladi.
+  app.set('trust proxy', 1);
 
   // SSR kontrolleri (Task 14) prefiksdan tashqarida bo'lishi uchun aniq ro'yxat ishlatiladi.
   app.setGlobalPrefix('api', { exclude: [] });
