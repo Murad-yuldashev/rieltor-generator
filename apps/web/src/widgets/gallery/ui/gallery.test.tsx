@@ -71,4 +71,11 @@ describe('Gallery', () => {
     render(<Gallery rasmlar={[rasmlar[0]!]} alt="Kvartira" />);
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
   });
+
+  it("har rasmga o'z o'rnini bildiruvchi alt beradi", () => {
+    render(<Gallery rasmlar={rasmlar} alt="Kvartira" />);
+    const imgs = screen.getAllByRole('img');
+    expect(imgs[0]).toHaveAttribute('alt', 'Kvartira — 1/3');
+    expect(imgs[2]).toHaveAttribute('alt', 'Kvartira — 3/3');
+  });
 });
