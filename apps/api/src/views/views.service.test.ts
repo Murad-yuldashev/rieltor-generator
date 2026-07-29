@@ -86,4 +86,14 @@ describe('ViewsService', () => {
     expect(await service.joriy('bx-001')).toBe(5);
     expect(prisma.object.update).not.toHaveBeenCalled();
   });
+
+  it('ajratgich belgisi bor IP boshqa obyekt bilan aralashmaydi', async () => {
+    const prisma = prismaSoxta(5);
+    const service = new ViewsService(prisma as never);
+
+    await service.korish('bx-001', 'A|B');
+    await service.korish('B|bx-001', 'A');
+
+    expect(prisma.object.update).toHaveBeenCalledTimes(2);
+  });
 });
