@@ -15,6 +15,14 @@ export default tseslint.config(
     files: ['apps/web/src/**/*.{ts,tsx}'],
     plugins: { boundaries },
     settings: {
+      // eslint-plugin-boundaries can't classify ANY dependency (even relative imports)
+      // without a resolver — without this, the rule below silently matches nothing.
+      // TypeScript-aware so the `@/*` alias from apps/web/tsconfig.json resolves too.
+      'import/resolver': {
+        typescript: {
+          project: new URL('./apps/web/tsconfig.json', import.meta.url).pathname,
+        },
+      },
       'boundaries/elements': [
         { type: 'app', pattern: 'apps/web/src/app/*' },
         { type: 'pages', pattern: 'apps/web/src/pages/*' },
@@ -26,17 +34,43 @@ export default tseslint.config(
     },
     rules: {
       // FSD: yuqori qatlam faqat pastdagini import qiladi.
-      'boundaries/element-types': [
+      'boundaries/dependencies': [
         'error',
         {
           default: 'disallow',
-          rules: [
-            { from: 'app', allow: ['pages', 'widgets', 'features', 'entities', 'shared'] },
-            { from: 'pages', allow: ['widgets', 'features', 'entities', 'shared'] },
-            { from: 'widgets', allow: ['features', 'entities', 'shared'] },
-            { from: 'features', allow: ['entities', 'shared'] },
-            { from: 'entities', allow: ['shared'] },
-            { from: 'shared', allow: ['shared'] },
+          policies: [
+            {
+              from: { element: { type: 'app' } },
+              allow: {
+                to: {
+                  element: {
+                    types: { anyOf: ['pages', 'widgets', 'features', 'entities', 'shared'] },
+                  },
+                },
+              },
+            },
+            {
+              from: { element: { type: 'pages' } },
+              allow: {
+                to: { element: { types: { anyOf: ['widgets', 'features', 'entities', 'shared'] } } },
+              },
+            },
+            {
+              from: { element: { type: 'widgets' } },
+              allow: { to: { element: { types: { anyOf: ['features', 'entities', 'shared'] } } } },
+            },
+            {
+              from: { element: { type: 'features' } },
+              allow: { to: { element: { types: { anyOf: ['entities', 'shared'] } } } },
+            },
+            {
+              from: { element: { type: 'entities' } },
+              allow: { to: { element: { type: 'shared' } } },
+            },
+            {
+              from: { element: { type: 'shared' } },
+              allow: { to: { element: { type: 'shared' } } },
+            },
           ],
         },
       ],
