@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "lint": "eslint src"
+    "lint": "eslint src *.config.ts vitest.setup.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.0",

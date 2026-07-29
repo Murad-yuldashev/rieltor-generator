@@ -14,6 +14,9 @@
       "built": false
     }
   },
+  "resolutions": {
+    "vite": "^6.0.0"
+  },
   "scripts": {
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
