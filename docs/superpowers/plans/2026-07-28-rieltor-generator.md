@@ -4834,6 +4834,16 @@ export class SsrModule {}
 
 - [ ] **Step 5: `sozla()` yordamchisini ajrat**
 
+> **Diqqat — bir qismi allaqachon bor.** Task 9 da `main.ts` ga statik rasmlarni serve qilish oldindan qo'shilgan (galereyani 404 rasmlar bilan tekshirib bo'lmagani uchun):
+>
+> ```ts
+> app.useStaticAssets(join(__dirname, '..', 'public', 'images'), { prefix: '/images/' });
+> ```
+>
+> Uni **`sozla()` ichiga ko'chir**, takrorlama. `main.ts` da faqat `sozla(app)` chaqiruvi qolsin.
+>
+> Yo'l hisobi to'g'ri ishlashi uchun `tsconfig.build.json` da `rootDir: "src"` turishi shart (Task 3) — u holda `__dirname` build'da ham, `nest start --watch` da ham `apps/api/dist` bo'ladi va `resolve(__dirname, '..')` `apps/api` ni beradi. Agar bu buzilsa, `public/` ham, `web/dist` ham noto'g'ri joyga ishora qiladi va hech qanday xato chiqmaydi — rasmlar va Telegram preview jimgina ishlamay qoladi.
+
 `apps/api/src/bootstrap.ts`:
 
 ```ts
