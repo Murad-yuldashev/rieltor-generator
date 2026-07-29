@@ -760,7 +760,7 @@ mkdir -p apps/api/src apps/api/test
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.0.0",
     "@rieltor/shared": "workspace:*",
-    "nestjs-zod": "^4.3.0",
+    "nestjs-zod": "^5.5.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "zod": "^4.0.0"
@@ -779,6 +779,18 @@ mkdir -p apps/api/src apps/api/test
   }
 }
 ```
+
+Ildizdagi `.yarnrc.yml` ga qo'sh (mavjud `nodeLinker` va `yarnPath` qatorlari saqlanadi):
+
+```yaml
+enableScripts: true
+
+dependenciesMeta:
+  '@scarf/scarf':
+    built: false
+```
+
+> **Nega kerak:** Yarn 4.17 da `enableScripts` ning **standart qiymati `false`** — bu foydalanuvchi sozlamasi emas, Yarn'ning o'z sukuti (`yarn config --why` → `Source: <default>`). Skriptlar bloklangan holda `@prisma/client` generatsiya qilinmaydi va `sharp` ning native binary'si yuklanmaydi, ya'ni Task 4, 5 va 6 umuman ishlamaydi. `@scarf/scarf` esa faqat telemetriya yuboradigan postinstall — u alohida o'chirib qo'yiladi.
 
 ```bash
 yarn install
