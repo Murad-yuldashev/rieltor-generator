@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+@theme {
+  /* Yagona urg'u rang — komponentlarda hech qachon hex yozilmaydi (spec §10). */
+  --color-accent: #1d4ed8;
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
+
+  /* Kontent kengligi — mobil-first, desktopda markazda (spec §10). */
+  /* max-w-* utility'lari `--container-*` namespace'idan keladi, `--spacing-*` dan EMAS.
+     `--spacing-content` deb yozilsa `max-w-content` umuman generatsiya qilinmaydi va
+     desktopdagi 480px cheklovi jimgina ishlamay qoladi. */
+  --container-content: 30rem; /* 480px */
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: white;
+  color: var(--color-slate-900);
+}
+
+/* Sticky CTA balandligi — sahifa oxiri tugmalar ostida qolib ketmasligi uchun. */
+:root {
+  --cta-balandlik: 4.5rem;
+}
