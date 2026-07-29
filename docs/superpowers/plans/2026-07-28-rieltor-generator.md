@@ -3844,7 +3844,11 @@ export function Gallery({ rasmlar, alt }: Props) {
           <div key={rasm.base} data-index={i} className="w-full shrink-0 snap-start">
             <ResponsiveImage
               rasm={rasm}
-              alt={i === 0 ? alt : ''}
+              // Har rasmga o'z o'rnini bildiruvchi alt. Bo'sh alt bo'lsa <img>
+              // role="presentation" ga aylanadi (test getAllByRole('img') bilan
+              // sanaydi), bir xil alt bo'lsa esa ekran o'quvchi bitta jumlani
+              // besh marta o'qiydi. Bu rasmlar bezak emas — uyning xonalari.
+              alt={`${alt} — ${i + 1}/${rasmlar.length}`}
               birinchi={i === 0}
               className="aspect-[4/3] w-full"
             />
