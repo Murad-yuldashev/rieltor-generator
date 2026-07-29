@@ -4,6 +4,7 @@ import { APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { HealthModule } from './health/health.module';
       // Noto'g'ri env bilan ilova umuman ko'tarilmaydi — sekin nosozlikdan yaxshiroq.
       validate: (raw) => envSchema.parse(raw),
     }),
+    PrismaModule,
     HealthModule,
   ],
   providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],

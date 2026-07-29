@@ -18,8 +18,8 @@ describe('Health (e2e)', () => {
     await app.close();
   });
 
-  it('GET /api/health → 200 ok', async () => {
+  it('GET /api/health → 200, db holati bilan', async () => {
     const res = await request(app.getHttpServer()).get('/api/health').expect(200);
-    expect(res.body.status).toBe('ok');
+    expect(res.body).toEqual({ status: 'ok', db: true });
   });
 });

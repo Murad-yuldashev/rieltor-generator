@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ObjectTuri {
+  NOVOSTROYKA
+  IKKILAMCHI
+  HOVLI
+}
+
+model Agent {
+  id       String   @id @default(cuid())
+  ism      String
+  agentlik String
+  suratUrl String
+  tel      String
+  tg       String
+  objects  Object[]
+}
+
+model Object {
+  id       String     @id
+  sarlavha String
+  /// Int 2.1 mlrd so'mda to'lib qoladi — hovli undan qimmat bo'lishi mumkin.
+  narxSom  BigInt
+  narxUsd  Int
+  xona     Int
+  maydonM2 Float
+  /// Hovlida qavat bo'lmaydi.
+  qavat    String?
+  tuman    String
+  manzil   String
+  moljal   String
+  tavsif   String
+  turi     ObjectTuri
+  views    Int        @default(0)
+  sana     DateTime   @db.Date
+  agentId  String
+  agent    Agent      @relation(fields: [agentId], references: [id])
+  rasmlar  Rasm[]
+
+  @@index([turi])
+}
+
+model Rasm {
+  id       String  @id @default(cuid())
+  objectId String
+  /// Variantsiz asos yo'l: "/images/bx-001/01" — @rieltor/shared imageSrcSet() bilan ishlatiladi.
+  base     String
+  /// 1200×630 crop; faqat birinchi rasmda to'ldiriladi.
+  ogUrl    String?
+  width    Int
+  height   Int
+  tartib   Int
+  object   Object  @relation(fields: [objectId], references: [id], onDelete: Cascade)
+
+  @@unique([objectId, tartib])
+}
