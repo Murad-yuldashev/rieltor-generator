@@ -2484,7 +2484,11 @@ export class ViewsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async korish(id: string, ip: string): Promise<number> {
-    const kalit = `${ip}|${id}`;
+    // JSON.stringify — oddiy ajratgich emas. `trust proxy` yoqilgani uchun `ip`
+    // X-Forwarded-For dan keladi va Express uni IP shaklida ekanini tekshirmaydi,
+    // ya'ni ichida ajratgich belgisi bo'lishi mumkin. `${ip}|${id}` da
+    // ("A|B","C") va ("A","B|C") bir xil kalit berardi.
+    const kalit = JSON.stringify([ip, id]);
     const hozir = Date.now();
     const songgi = this.songgiKirish.get(kalit);
 
