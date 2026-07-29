@@ -23,6 +23,13 @@ export default tseslint.config(
           project: new URL('./apps/web/tsconfig.json', import.meta.url).pathname,
         },
       },
+      // Without this, eslint-plugin-boundaries falls back to process.cwd() to resolve
+      // element patterns (see Settings.js getNormalizedRootPath). Package-scoped lint
+      // scripts (`cd apps/web && eslint src`, and turbo's per-package cwd) then have a
+      // cwd that no longer matches the `apps/web/src/*` patterns below, so the rule
+      // silently classifies nothing and never fires. Pinning root-path to the repo
+      // root makes element matching cwd-independent.
+      'boundaries/root-path': new URL('.', import.meta.url).pathname,
       'boundaries/elements': [
         { type: 'app', pattern: 'apps/web/src/app/*' },
         { type: 'pages', pattern: 'apps/web/src/pages/*' },
