@@ -14,5 +14,17 @@ services:
       timeout: 5s
       retries: 10
 
+  app:
+    build: .
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://rieltor:rieltor@postgres:5432/rieltor
+      PUBLIC_BASE_URL: http://localhost:3000
+      SEED_AGENT_TEL: ${SEED_AGENT_TEL}
+      SEED_AGENT_TG: ${SEED_AGENT_TG}
+      PORT: 3000
+    ports: ['3000:3000']
+
 volumes:
   pgdata:

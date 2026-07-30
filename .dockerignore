@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.turbo
+coverage
+apps/api/public/images
+playwright-report
+test-results
+*.md
+.yarn/cache
