@@ -1,7 +1,13 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { IMAGE_WIDTHS } from '@rieltor/shared';
+import {
+  IMAGE_MAX_WIDTH,
+  IMAGE_WIDTHS,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_WIDTH,
+  imageVariantSrc,
+} from '@rieltor/shared';
 
 export interface RasmNatija {
   /** Variantsiz asos yo'l, DB'ga shu yoziladi: "/images/bx-001/01" */
@@ -23,8 +29,6 @@ export interface RasmniQaytaOpts {
 }
 
 const SIFAT = 78;
-const OG_KENGLIK = 1200;
-const OG_BALANDLIK = 630;
 
 export async function rasmniQayta(opts: RasmniQaytaOpts): Promise<RasmNatija> {
   const { manba, chiqishRoot, objectId, tartib, ogYasa } = opts;
@@ -43,9 +47,9 @@ export async function rasmniQayta(opts: RasmniQaytaOpts): Promise<RasmNatija> {
     const info = await sharp(manba)
       .resize({ width: w, withoutEnlargement: true })
       .webp({ quality: SIFAT })
-      .toFile(join(papka, `${nom}-${w}.webp`));
+      .toFile(join(papka, imageVariantSrc(nom, w)));
 
-    if (w === 1200) {
+    if (w === IMAGE_MAX_WIDTH) {
       width = info.width;
       height = info.height;
     }
@@ -53,15 +57,15 @@ export async function rasmniQayta(opts: RasmniQaytaOpts): Promise<RasmNatija> {
 
   // WebP'ni qo'llamaydigan eski brauzerlar uchun yagona fallback.
   await sharp(manba)
-    .resize({ width: 1200, withoutEnlargement: true })
+    .resize({ width: IMAGE_MAX_WIDTH, withoutEnlargement: true })
     .jpeg({ quality: SIFAT, mozjpeg: true })
-    .toFile(join(papka, `${nom}-1200.jpg`));
+    .toFile(join(papka, `${nom}-${IMAGE_MAX_WIDTH}.jpg`));
 
   let ogUrl: string | null = null;
   if (ogYasa) {
     // Telegram qat'iy 1200×630 kutadi — bu yerda cho'zish shart, cover crop bilan.
     await sharp(manba)
-      .resize({ width: OG_KENGLIK, height: OG_BALANDLIK, fit: 'cover', position: 'centre' })
+      .resize({ width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, fit: 'cover', position: 'centre' })
       .jpeg({ quality: 82, mozjpeg: true })
       .toFile(join(papka, 'og.jpg'));
     ogUrl = `/images/${objectId}/og.jpg`;

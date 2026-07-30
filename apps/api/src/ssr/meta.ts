@@ -1,4 +1,11 @@
-import { IMAGE_SIZES, formatNarxSom, imageSrcSet, type ObjectDetail } from '@rieltor/shared';
+import {
+  IMAGE_SIZES,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_WIDTH,
+  formatNarxSom,
+  imageSrcSet,
+  type ObjectDetail,
+} from '@rieltor/shared';
 
 const TAVSIF_MAKS = 200;
 
@@ -48,8 +55,8 @@ export function metaTeglar(obj: ObjectDetail, baseUrl: string): string {
     // Telegram nisbiy yo'lni o'qimaydi — absolyut URL shart.
     teglar.push(
       meta('property', 'og:image', `${baseUrl}${birinchi.ogUrl}`),
-      meta('property', 'og:image:width', '1200'),
-      meta('property', 'og:image:height', '630'),
+      meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
+      meta('property', 'og:image:height', String(OG_IMAGE_HEIGHT)),
       meta('name', 'twitter:image', `${baseUrl}${birinchi.ogUrl}`),
     );
   }
