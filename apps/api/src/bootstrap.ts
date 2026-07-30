@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { RequestMethod } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import compression from 'compression';
 
 /**
  * main.ts va barcha e2e testlar shu funksiyani ishlatadi —
@@ -10,6 +11,10 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 export function sozla(app: NestExpressApplication): void {
   // Railway/Render ortida haqiqiy mijoz IP'si X-Forwarded-For da keladi.
   app.set('trust proxy', 1);
+
+  // Statik JS/CSS va SSR HTML'ni gzip/br bilan siqish — bundle 4x kichrayadi.
+  // Boshqa handler'lardan oldin turishi shart, aks holda ular siqilmaydi.
+  app.use(compression());
 
   // SSR marshrutlari 'api' prefiksidan tashqarida bo'lishi shart.
   app.setGlobalPrefix('api', {

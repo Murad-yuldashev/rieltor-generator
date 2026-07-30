@@ -21,7 +21,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // Prod build public serve qilinadi — source map'lar .js.map sifatida
+    // ochiq qolib ketmasligi uchun o'chirilgan.
+    sourcemap: false,
     commonjsOptions: { include: [/packages\/shared/, /node_modules/] },
   },
 });
