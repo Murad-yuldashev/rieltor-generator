@@ -1,7 +1,8 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
+import { IMAGE_MAX_WIDTH, IMAGE_WIDTHS, imageFallbackSrc, imageSrcSet } from '@rieltor/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { rasmniQayta } from './images';
 
@@ -112,5 +113,38 @@ describe('rasmniQayta', () => {
 
     const katta = await readFile(join(chiqishRoot, 'images/bx-001/01-1200.jpg'));
     expect(katta.byteLength).toBeLessThan(250 * 1024);
+  });
+
+  it("@rieltor/shared o'quvchisi bilan round-trip mos keladi (yozuvchi va o'quvchi ayrilib qolmasligi uchun)", async () => {
+    const natija = await rasmniQayta({
+      manba: await manbaRasm(2400, 1800),
+      chiqishRoot,
+      objectId: 'bx-001',
+      tartib: 1,
+      ogYasa: false,
+    });
+
+    // Manba IMAGE_MAX_WIDTH'dan kattaroq — natija.width aynan shu qiymatga teng bo'lishi kerak.
+    expect(natija.width).toBe(IMAGE_MAX_WIDTH);
+
+    // srcset'dagi har bir URL'ni pipeline haqiqatan yozgan faylga xaritalaymiz.
+    const srcset = imageSrcSet(natija.base);
+    const urls = srcset.split(', ').map((qism) => {
+      const [url] = qism.split(' ');
+      if (!url) throw new Error(`srcset qismi bo'sh: "${qism}"`);
+      return url;
+    });
+    expect(urls).toHaveLength(IMAGE_WIDTHS.length);
+
+    for (const url of urls) {
+      const fayl = join(chiqishRoot, url);
+      const info = await stat(fayl);
+      expect(info.isFile()).toBe(true);
+    }
+
+    // Fallback URL ham xuddi shu tarzda haqiqiy faylga borishi kerak.
+    const fallbackUrl = imageFallbackSrc(natija.base);
+    const fallbackInfo = await stat(join(chiqishRoot, fallbackUrl));
+    expect(fallbackInfo.isFile()).toBe(true);
   });
 });
