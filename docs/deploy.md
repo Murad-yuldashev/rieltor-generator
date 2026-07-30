@@ -12,6 +12,29 @@ xizmat qiladi.
 > telefon/Telegram talab qiladi — bu hujjat faqat yo'riqnoma sifatida
 > yozilgan, ijro etilmagan.
 
+## Lokal ishga tushirish
+
+`docker compose up` ni ildizdan ishga tushirishdan oldin `SEED_AGENT_TEL` va
+`SEED_AGENT_TG` **shell muhitida** o'rnatilgan bo'lishi shart — namuna
+qiymatlar `apps/api/.env.example` da bor:
+
+```bash
+SEED_AGENT_TEL=+998901234567 SEED_AGENT_TG=username docker compose up -d --build
+```
+
+Bu ikkitasi o'rnatilmasa, Postgres konteyneri sog'lom (`healthy`) bo'lib
+ko'rinaveradi, lekin `app` konteyneri seed bosqichida xatolik bilan darhol
+chiqib ketadi (`SEED_AGENT_TEL va SEED_AGENT_TG env o'zgaruvchilari kerak`) —
+`docker compose ps` qarasang stack yarim-ishlab turgandek ko'rinadi, `yarn e2e`
+esa barcha 8 testda connection-refused xatosi bilan yiqiladi. Bu holatda
+birinchi tekshiruv **testlar emas**, balki:
+
+```bash
+docker compose logs app
+```
+
+bo'lishi kerak — u yerda seed'ning aniq xato xabari ko'rinadi.
+
 ## 1. Neon Postgres yaratish
 
 1. [neon.tech](https://neon.tech) saytida ro'yxatdan o't (yoki kir) va yangi
