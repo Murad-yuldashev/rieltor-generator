@@ -20,16 +20,21 @@ jobs:
     env:
       DATABASE_URL: postgresql://rieltor:rieltor@localhost:5432/rieltor
       PUBLIC_BASE_URL: http://localhost:3000
+      SEED_AGENT_TEL: '+998901234567'
+      SEED_AGENT_TG: 'test'
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: yarn }
       - run: yarn install --immutable
+      - run: yarn workspace @rieltor/api exec prisma generate
       - run: yarn format:check
       - run: yarn lint
       - run: yarn typecheck
       - run: yarn build
+      - run: yarn workspace @rieltor/api migrate:deploy
+      - run: yarn workspace @rieltor/api seed
       - run: yarn test
 
   e2e:
