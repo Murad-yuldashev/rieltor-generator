@@ -77,4 +77,22 @@ describe('SSR / OG (e2e)', () => {
   it('/api/health hamon ishlaydi', async () => {
     await request(app.getHttpServer()).get('/api/health').expect(200);
   });
+
+  it("mos marshrut yo'q yo'l (/foo) → 404, uslublangan SPA qobig'i", async () => {
+    const res = await request(app.getHttpServer()).get('/foo').expect(404);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.text).toContain('<div id="root">');
+    expect(res.text).not.toContain('og:title');
+  });
+
+  it("chuqur mos kelmagan yo'l (/obj/bx-001/ortiqcha) → 404, SPA qobig'i", async () => {
+    const res = await request(app.getHttpServer()).get('/obj/bx-001/ortiqcha').expect(404);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.text).toContain('<div id="root">');
+  });
+
+  it("/api ostidagi topilmagan yo'l JSON bo'lib qoladi", async () => {
+    const res = await request(app.getHttpServer()).get('/api/yoq-endpoint').expect(404);
+    expect(res.headers['content-type']).toContain('application/json');
+  });
 });
