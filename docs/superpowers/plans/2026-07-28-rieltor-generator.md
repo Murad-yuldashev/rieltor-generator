@@ -5067,7 +5067,13 @@ apps/api/public/images
 playwright-report
 test-results
 *.md
+.yarn/cache
+.env
+apps/api/.env
 ```
+
+> `.yarn/cache` — yuzlab megabayt bo'lishi mumkin va `--immutable` o'rnatishda kerak emas.
+> `.env` — `build` va `prod-deps` bosqichlari `COPY . .` qiladi, ya'ni lokal `.env` oraliq qatlamga tushib qolardi. Yakuniy imijga u ko'chmaydi (runner faqat aniq yo'llarni oladi), lekin qattiqlashtirish arzon.
 
 - [ ] **Step 2: Dockerfile**
 
@@ -5100,7 +5106,11 @@ FROM deps AS prod-deps
 COPY . .
 RUN yarn workspace @rieltor/api exec prisma generate
 RUN yarn workspace @rieltor/shared build
-RUN yarn workspaces focus --production --all
+# `--all` EMAS, aynan @rieltor/api. Aks holda apps/web ning runtime bog'liqliklari
+# (react, react-dom, react-router, @tanstack) ham server imijiga tushadi — front
+# allaqachon statik fayllarga build qilingan, ya'ni bu o'lik kod (~19 MB va o'sib boradi).
+# @rieltor/shared `workspace:*` orqali baribir tortiladi.
+RUN yarn workspaces focus --production @rieltor/api
 
 # ---------- ishga tushirish ----------
 FROM base AS runner
