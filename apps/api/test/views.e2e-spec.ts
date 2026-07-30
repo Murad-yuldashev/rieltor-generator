@@ -25,7 +25,7 @@ describe('Views (e2e)', () => {
     const keyin = await request(app.getHttpServer())
       .post('/api/view/bx-001')
       .set('X-Forwarded-For', '203.0.113.10')
-      .expect(201);
+      .expect(200);
 
     expect(ViewsSchema.parse(keyin.body).views).toBe(ViewsSchema.parse(oldin.body).views + 1);
   });
@@ -34,11 +34,11 @@ describe('Views (e2e)', () => {
     const birinchi = await request(app.getHttpServer())
       .post('/api/view/bx-002')
       .set('X-Forwarded-For', '203.0.113.20')
-      .expect(201);
+      .expect(200);
     const ikkinchi = await request(app.getHttpServer())
       .post('/api/view/bx-002')
       .set('X-Forwarded-For', '203.0.113.20')
-      .expect(201);
+      .expect(200);
 
     expect(ikkinchi.body.views).toBe(birinchi.body.views);
   });
@@ -47,11 +47,11 @@ describe('Views (e2e)', () => {
     const birinchi = await request(app.getHttpServer())
       .post('/api/view/bx-003')
       .set('X-Forwarded-For', '203.0.113.30')
-      .expect(201);
+      .expect(200);
     const ikkinchi = await request(app.getHttpServer())
       .post('/api/view/bx-003')
       .set('X-Forwarded-For', '203.0.113.31')
-      .expect(201);
+      .expect(200);
 
     expect(ikkinchi.body.views).toBe(birinchi.body.views + 1);
   });

@@ -1,4 +1,4 @@
-import { Controller, Get, Ip, Param, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, Ip, Param, Post } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { ViewsDto } from './views.dto';
 import { ViewsService } from './views.service';
@@ -9,6 +9,7 @@ export class ViewsController {
   constructor(private readonly views: ViewsService) {}
 
   @Post(':id')
+  @HttpCode(200)
   @ApiOkResponse({ type: ViewsDto })
   @ApiNotFoundResponse({ description: 'Obyekt topilmadi' })
   async korish(@Param('id') id: string, @Ip() ip: string) {

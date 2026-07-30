@@ -12,8 +12,16 @@ const PUBLIC_ROOT = join(API_ROOT, 'public');
 const MANBA_ROOT = join(API_ROOT, 'prisma', 'seed-images');
 const AGENT_ID = 'agent-1';
 
-/** seed-images/<id>/ dagi fayllarni tartib bo'yicha o'qiydi; bo'sh bo'lsa placeholder qaytaradi. */
-async function manbalarniOl(objectId: string, kerakli: number): Promise<(string | Buffer)[]> {
+/**
+ * seed-images/<id>/ dagi fayllarni tartib bo'yicha o'qiydi; bo'sh bo'lsa
+ * placeholder qaytaradi. `placeholderSoni` faqat placeholder yo'lida
+ * ishlatiladi — haqiqiy fayllar mavjud bo'lsa, ularning soni (fayllar.length)
+ * qancha bo'lsa, o'shancha rasm ishlatiladi, `placeholderSoni`ga qaralmaydi.
+ */
+async function manbalarniOl(
+  objectId: string,
+  placeholderSoni: number,
+): Promise<(string | Buffer)[]> {
   let fayllar: string[] = [];
   try {
     fayllar = (await readdir(join(MANBA_ROOT, objectId)))
@@ -25,7 +33,9 @@ async function manbalarniOl(objectId: string, kerakli: number): Promise<(string 
 
   if (fayllar.length === 0) {
     console.log(`  ${objectId}: manba rasm topilmadi, placeholder ishlatiladi`);
-    return Promise.all(Array.from({ length: kerakli }, (_, i) => placeholderYasa(objectId, i + 1)));
+    return Promise.all(
+      Array.from({ length: placeholderSoni }, (_, i) => placeholderYasa(objectId, i + 1)),
+    );
   }
 
   return fayllar.map((f) => join(MANBA_ROOT, objectId, f));
@@ -99,7 +109,7 @@ async function main() {
       },
     });
 
-    const manbalar = await manbalarniOl(obj.id, obj.rasmSoni);
+    const manbalar = await manbalarniOl(obj.id, obj.placeholderSoni);
 
     // Rasmlar to'liq qayta yaratiladi — fayl nomlari tartibga bog'liq.
     await prisma.rasm.deleteMany({ where: { objectId: obj.id } });

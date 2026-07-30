@@ -14,7 +14,7 @@ export interface SeedObject {
   tavsif: string;
   turi: ObjectTuri;
   sana: string;
-  rasmSoni: number;
+  placeholderSoni: number;
 }
 
 export const SEED_OBJECTS: SeedObject[] = [
@@ -33,7 +33,7 @@ export const SEED_OBJECTS: SeedObject[] = [
       "Yangi topshirilgan binoda uch xonali keng kvartira. Uy egasi tomonidan to'liq ta'mirlangan, oshxona jihozlari qoldiriladi. Deraza old tomonga qaraydi, quyosh kun bo'yi tushadi. Hovlida yopiq avtoturargoh va bolalar maydonchasi bor.",
     turi: 'NOVOSTROYKA',
     sana: '2026-07-20',
-    rasmSoni: 5,
+    placeholderSoni: 5,
   },
   {
     id: 'bx-002',
@@ -50,7 +50,7 @@ export const SEED_OBJECTS: SeedObject[] = [
       "Panel uyning to'rtinchi qavatida ikki xonali kvartira. Xonalar alohida, oshxona kengaytirilgan. Suv va issiqlik uzilishsiz keladi. Metro bekati va bozorga piyoda besh daqiqa. Hujjatlar tayyor, kadastr mavjud.",
     turi: 'IKKILAMCHI',
     sana: '2026-07-22',
-    rasmSoni: 5,
+    placeholderSoni: 5,
   },
   {
     id: 'bx-003',
@@ -67,6 +67,6 @@ export const SEED_OBJECTS: SeedObject[] = [
       "Olti sotix yerda joylashgan besh xonali hovli uy. Uy g'ishtdan qurilgan, tomi yangilangan. Hovlida mevali daraxtlar, alohida oshxona va garaj bor. Tabiiy gaz, markaziy suv va kanalizatsiya ulangan. Yer uchun tuman hujjati bor.",
     turi: 'HOVLI',
     sana: '2026-07-25',
-    rasmSoni: 5,
+    placeholderSoni: 5,
   },
 ];
