@@ -88,18 +88,25 @@ domeni birinchi deploy tugagunga qadar noma'lum — shuning uchun bir marta
 deploy qilib, keyin domenni bilib, o'zgaruvchini to'g'rilab, qayta deploy
 qilish kerak:
 
-1. **Birinchi deploy.** `PUBLIC_BASE_URL` ni vaqtincha bo'sh yoki taxminiy
-   qoldirib (yoki umuman qo'ymasdan) birinchi marta deploy qil.
+1. **Birinchi deploy.** `PUBLIC_BASE_URL` ni **bo'sh yoki umuman qo'ymasdan
+   qoldirma** — `apps/api/src/config/env.ts`'da bu o'zgaruvchi `z.url()` bilan
+   majburiy deb e'lon qilingan va `AppModule` uni boot vaqtida validatsiya
+   qiladi: bo'sh yoki noto'g'ri qiymat bilan konteyner darhol qulab tushadi
+   (crash-loop) va domenni o'qib oladigan ishlayotgan servis umuman
+   qolmaydi. Shuning uchun birinchi deploy uchun vaqtinchalik, haqiqiy
+   ko'rinishdagi placeholder qiymat qo'y: `https://placeholder.invalid`.
 2. Deploy tugagach, Railway **Settings → Networking** bo'limida generatsiya
    qilingan domenni (`https://<nimadir>.up.railway.app` yoki custom domen)
    o'qi.
 3. `PUBLIC_BASE_URL` o'zgaruvchisini shu haqiqiy domen bilan to'ldir
    (`https://<railway-domen>`, oxirida `/` siz).
-4. **Qayta deploy qil.** Bu qadamni o'tkazib yubormaslik kerak: konteyner
-   seed vaqtida `og:image`ni shu env qiymati asosida yozadi. Agar
-   `PUBLIC_BASE_URL` noto'g'ri (yoki bo'sh/nisbiy) qolib ketsa, `og:image`
-   nisbiy yo'l bo'lib qoladi va Telegram (hamda boshqa ijtimoiy tarmoqlar)
-   rasmni sira ko'rsatmaydi — chunki ular absolyut URL kutadi.
+4. **Qayta deploy qil.** Bu qadamni o'tkazib yubormaslik kerak: `og:image`
+   seed vaqtida emas, **har bir so'rovda** `apps/api/src/ssr/meta.ts` ichida
+   `PUBLIC_BASE_URL` va bazadagi nisbiy `ogUrl`dan qurib chiqariladi. Agar
+   `PUBLIC_BASE_URL` placeholder yoki noto'g'ri qolib ketsa, `og:image`
+   noto'g'ri (yoki placeholder domenga ishora qiluvchi) absolyut URL bo'lib
+   qoladi va Telegram (hamda boshqa ijtimoiy tarmoqlar) rasmni sira
+   ko'rsatmaydi — chunki ular absolyut, ishlaydigan URL kutadi.
 
 ### 2.2. Deploy tugagach tekshirish
 
