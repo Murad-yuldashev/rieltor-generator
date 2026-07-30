@@ -9,3 +9,5 @@ playwright-report
 test-results
 *.md
 .yarn/cache
+.env
+apps/api/.env

@@ -26,7 +26,7 @@ FROM deps AS prod-deps
 COPY . .
 RUN yarn workspace @rieltor/api exec prisma generate
 RUN yarn workspace @rieltor/shared build
-RUN yarn workspaces focus --production --all
+RUN yarn workspaces focus --production @rieltor/api
 
 # ---------- ishga tushirish ----------
 FROM base AS runner
