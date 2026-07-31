@@ -9,7 +9,7 @@ import {
   imageVariantSrc,
 } from '@rieltor/shared';
 
-export interface RasmNatija {
+export interface ProcessedImage {
   /** Variantsiz asos yo'l, DB'ga shu yoziladi: "/images/bx-001/01" */
   base: string;
   ogUrl: string | null;
@@ -18,36 +18,36 @@ export interface RasmNatija {
   height: number;
 }
 
-export interface RasmniQaytaOpts {
-  manba: string | Buffer;
+export interface ProcessImageOptions {
+  source: string | Buffer;
   /** Statik fayllar ildizi, odatda apps/api/public */
-  chiqishRoot: string;
-  objectId: string;
+  outputRoot: string;
+  listingId: string;
   /** 1 dan boshlanadi; fayl nomi ikki xonali bo'ladi: 01, 02, ... */
-  tartib: number;
-  ogYasa: boolean;
+  position: number;
+  makeOg: boolean;
 }
 
-const SIFAT = 78;
+const QUALITY = 78;
 
-export async function rasmniQayta(opts: RasmniQaytaOpts): Promise<RasmNatija> {
-  const { manba, chiqishRoot, objectId, tartib, ogYasa } = opts;
+export async function processImage(opts: ProcessImageOptions): Promise<ProcessedImage> {
+  const { source, outputRoot, listingId, position, makeOg } = opts;
 
-  const papka = join(chiqishRoot, 'images', objectId);
-  await mkdir(papka, { recursive: true });
+  const outputDir = join(outputRoot, 'images', listingId);
+  await mkdir(outputDir, { recursive: true });
 
-  const nom = String(tartib).padStart(2, '0');
-  const base = `/images/${objectId}/${nom}`;
+  const fileName = String(position).padStart(2, '0');
+  const base = `/images/${listingId}/${fileName}`;
 
   let width = 0;
   let height = 0;
 
   for (const w of IMAGE_WIDTHS) {
     // withoutEnlargement — kichik manbani cho'zmaymiz, aks holda sifat buziladi.
-    const info = await sharp(manba)
+    const info = await sharp(source)
       .resize({ width: w, withoutEnlargement: true })
-      .webp({ quality: SIFAT })
-      .toFile(join(papka, imageVariantSrc(nom, w)));
+      .webp({ quality: QUALITY })
+      .toFile(join(outputDir, imageVariantSrc(fileName, w)));
 
     if (w === IMAGE_MAX_WIDTH) {
       width = info.width;
@@ -56,19 +56,19 @@ export async function rasmniQayta(opts: RasmniQaytaOpts): Promise<RasmNatija> {
   }
 
   // WebP'ni qo'llamaydigan eski brauzerlar uchun yagona fallback.
-  await sharp(manba)
+  await sharp(source)
     .resize({ width: IMAGE_MAX_WIDTH, withoutEnlargement: true })
-    .jpeg({ quality: SIFAT, mozjpeg: true })
-    .toFile(join(papka, `${nom}-${IMAGE_MAX_WIDTH}.jpg`));
+    .jpeg({ quality: QUALITY, mozjpeg: true })
+    .toFile(join(outputDir, `${fileName}-${IMAGE_MAX_WIDTH}.jpg`));
 
   let ogUrl: string | null = null;
-  if (ogYasa) {
+  if (makeOg) {
     // Telegram qat'iy 1200×630 kutadi — bu yerda cho'zish shart, cover crop bilan.
-    await sharp(manba)
+    await sharp(source)
       .resize({ width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, fit: 'cover', position: 'centre' })
       .jpeg({ quality: 82, mozjpeg: true })
-      .toFile(join(papka, 'og.jpg'));
-    ogUrl = `/images/${objectId}/og.jpg`;
+      .toFile(join(outputDir, 'og.jpg'));
+    ogUrl = `/images/${listingId}/og.jpg`;
   }
 
   return { base, ogUrl, width, height };

@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { IMAGE_MAX_WIDTH, IMAGE_WIDTHS, imageFallbackSrc, imageSrcSet } from '@rieltor/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { rasmniQayta } from './images';
+import { processImage } from './images';
 
-let chiqishRoot: string;
+let outputRoot: string;
 
 /** Testda binar fayl saqlamaslik uchun manba rasm shu yerda generatsiya qilinadi. */
-async function manbaRasm(width: number, height: number): Promise<Buffer> {
+async function sourceImage(width: number, height: number): Promise<Buffer> {
   return sharp({
     create: { width, height, channels: 3, background: { r: 30, g: 90, b: 200 } },
   })
@@ -18,133 +18,133 @@ async function manbaRasm(width: number, height: number): Promise<Buffer> {
 }
 
 beforeEach(async () => {
-  chiqishRoot = await mkdtemp(join(tmpdir(), 'rieltor-img-'));
+  outputRoot = await mkdtemp(join(tmpdir(), 'rieltor-img-'));
 });
 
 afterEach(async () => {
-  await rm(chiqishRoot, { recursive: true, force: true });
+  await rm(outputRoot, { recursive: true, force: true });
 });
 
 describe('rasmniQayta', () => {
   it('uchta webp va bitta jpg fallback yozadi', async () => {
-    const natija = await rasmniQayta({
-      manba: await manbaRasm(2000, 1500),
-      chiqishRoot,
-      objectId: 'bx-001',
-      tartib: 1,
-      ogYasa: false,
+    const result = await processImage({
+      source: await sourceImage(2000, 1500),
+      outputRoot,
+      listingId: 'bx-001',
+      position: 1,
+      makeOg: false,
     });
 
-    expect(natija.base).toBe('/images/bx-001/01');
+    expect(result.base).toBe('/images/bx-001/01');
 
     for (const w of [360, 720, 1200]) {
-      const meta = await sharp(join(chiqishRoot, `images/bx-001/01-${w}.webp`)).metadata();
+      const meta = await sharp(join(outputRoot, `images/bx-001/01-${w}.webp`)).metadata();
       expect(meta.width).toBe(w);
       expect(meta.format).toBe('webp');
     }
 
-    const fallback = await sharp(join(chiqishRoot, 'images/bx-001/01-1200.jpg')).metadata();
+    const fallback = await sharp(join(outputRoot, 'images/bx-001/01-1200.jpg')).metadata();
     expect(fallback.format).toBe('jpeg');
     expect(fallback.width).toBe(1200);
   });
 
   it("1200 variantining haqiqiy o'lchamini qaytaradi", async () => {
-    const natija = await rasmniQayta({
-      manba: await manbaRasm(2000, 1500),
-      chiqishRoot,
-      objectId: 'bx-001',
-      tartib: 1,
-      ogYasa: false,
+    const result = await processImage({
+      source: await sourceImage(2000, 1500),
+      outputRoot,
+      listingId: 'bx-001',
+      position: 1,
+      makeOg: false,
     });
 
-    expect(natija.width).toBe(1200);
-    expect(natija.height).toBe(900);
+    expect(result.width).toBe(1200);
+    expect(result.height).toBe(900);
   });
 
   it('kichik manbani kattalashtirmaydi', async () => {
-    const natija = await rasmniQayta({
-      manba: await manbaRasm(800, 600),
-      chiqishRoot,
-      objectId: 'bx-002',
-      tartib: 1,
-      ogYasa: false,
+    const result = await processImage({
+      source: await sourceImage(800, 600),
+      outputRoot,
+      listingId: 'bx-002',
+      position: 1,
+      makeOg: false,
     });
 
-    expect(natija.width).toBe(800);
-    expect(natija.height).toBe(600);
+    expect(result.width).toBe(800);
+    expect(result.height).toBe(600);
   });
 
   it("ogYasa=true bo'lganda 1200x630 crop yozadi", async () => {
-    const natija = await rasmniQayta({
-      manba: await manbaRasm(2000, 1500),
-      chiqishRoot,
-      objectId: 'bx-001',
-      tartib: 1,
-      ogYasa: true,
+    const result = await processImage({
+      source: await sourceImage(2000, 1500),
+      outputRoot,
+      listingId: 'bx-001',
+      position: 1,
+      makeOg: true,
     });
 
-    expect(natija.ogUrl).toBe('/images/bx-001/og.jpg');
-    const og = await sharp(join(chiqishRoot, 'images/bx-001/og.jpg')).metadata();
+    expect(result.ogUrl).toBe('/images/bx-001/og.jpg');
+    const og = await sharp(join(outputRoot, 'images/bx-001/og.jpg')).metadata();
     expect(og.width).toBe(1200);
     expect(og.height).toBe(630);
   });
 
   it("ogYasa=false bo'lganda ogUrl null", async () => {
-    const natija = await rasmniQayta({
-      manba: await manbaRasm(2000, 1500),
-      chiqishRoot,
-      objectId: 'bx-001',
-      tartib: 2,
-      ogYasa: false,
+    const result = await processImage({
+      source: await sourceImage(2000, 1500),
+      outputRoot,
+      listingId: 'bx-001',
+      position: 2,
+      makeOg: false,
     });
 
-    expect(natija.ogUrl).toBeNull();
-    expect(natija.base).toBe('/images/bx-001/02');
+    expect(result.ogUrl).toBeNull();
+    expect(result.base).toBe('/images/bx-001/02');
   });
 
   it('har variant 250 KB dan kichik', async () => {
-    await rasmniQayta({
-      manba: await manbaRasm(2400, 1800),
-      chiqishRoot,
-      objectId: 'bx-001',
-      tartib: 1,
-      ogYasa: false,
+    await processImage({
+      source: await sourceImage(2400, 1800),
+      outputRoot,
+      listingId: 'bx-001',
+      position: 1,
+      makeOg: false,
     });
 
-    const katta = await readFile(join(chiqishRoot, 'images/bx-001/01-1200.jpg'));
-    expect(katta.byteLength).toBeLessThan(250 * 1024);
+    const large = await readFile(join(outputRoot, 'images/bx-001/01-1200.jpg'));
+    expect(large.byteLength).toBeLessThan(250 * 1024);
   });
 
   it("@rieltor/shared o'quvchisi bilan round-trip mos keladi (yozuvchi va o'quvchi ayrilib qolmasligi uchun)", async () => {
-    const natija = await rasmniQayta({
-      manba: await manbaRasm(2400, 1800),
-      chiqishRoot,
-      objectId: 'bx-001',
-      tartib: 1,
-      ogYasa: false,
+    const result = await processImage({
+      source: await sourceImage(2400, 1800),
+      outputRoot,
+      listingId: 'bx-001',
+      position: 1,
+      makeOg: false,
     });
 
     // Manba IMAGE_MAX_WIDTH'dan kattaroq — natija.width aynan shu qiymatga teng bo'lishi kerak.
-    expect(natija.width).toBe(IMAGE_MAX_WIDTH);
+    expect(result.width).toBe(IMAGE_MAX_WIDTH);
 
     // srcset'dagi har bir URL'ni pipeline haqiqatan yozgan faylga xaritalaymiz.
-    const srcset = imageSrcSet(natija.base);
-    const urls = srcset.split(', ').map((qism) => {
-      const [url] = qism.split(' ');
-      if (!url) throw new Error(`srcset qismi bo'sh: "${qism}"`);
+    const srcset = imageSrcSet(result.base);
+    const urls = srcset.split(', ').map((part) => {
+      const [url] = part.split(' ');
+      if (!url) throw new Error(`srcset qismi bo'sh: "${part}"`);
       return url;
     });
     expect(urls).toHaveLength(IMAGE_WIDTHS.length);
 
     for (const url of urls) {
-      const fayl = join(chiqishRoot, url);
-      const info = await stat(fayl);
+      const file = join(outputRoot, url);
+      const info = await stat(file);
       expect(info.isFile()).toBe(true);
     }
 
     // Fallback URL ham xuddi shu tarzda haqiqiy faylga borishi kerak.
-    const fallbackUrl = imageFallbackSrc(natija.base);
-    const fallbackInfo = await stat(join(chiqishRoot, fallbackUrl));
+    const fallbackUrl = imageFallbackSrc(result.base);
+    const fallbackInfo = await stat(join(outputRoot, fallbackUrl));
     expect(fallbackInfo.isFile()).toBe(true);
   });
 });
