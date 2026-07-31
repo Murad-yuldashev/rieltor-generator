@@ -11,29 +11,29 @@ test.describe('Obyekt sahifasi (360px)', () => {
 
   test("gorizontal skroll yo'q", async ({ page }) => {
     await page.goto('/obj/bx-002');
-    const oshib = await page.evaluate(
+    const hasOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
-    expect(oshib).toBe(false);
+    expect(hasOverflow).toBe(false);
   });
 
   test("galereya svaypi faol nuqtani o'zgartiradi", async ({ page }) => {
     await page.goto('/obj/bx-002');
 
-    const nuqtalar = page.getByRole('tab');
-    await expect(nuqtalar.first()).toHaveAttribute('aria-selected', 'true');
+    const dots = page.getByRole('tab');
+    await expect(dots.first()).toHaveAttribute('aria-selected', 'true');
 
     // Ikkinchi nuqtaga bosish lentani suradi (svayp bilan bir xil natija).
-    await nuqtalar.nth(1).click();
-    await expect(nuqtalar.nth(1)).toHaveAttribute('aria-selected', 'true');
-    await expect(nuqtalar.first()).toHaveAttribute('aria-selected', 'false');
+    await dots.nth(1).click();
+    await expect(dots.nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect(dots.first()).toHaveAttribute('aria-selected', 'false');
   });
 
   test("CTA tugmalari to'g'ri havolalarga ega", async ({ page }) => {
     await page.goto('/obj/bx-002');
 
-    const qongiroq = page.getByRole('link', { name: /Qo'ng'iroq/ });
-    await expect(qongiroq).toHaveAttribute('href', /^tel:\+998\d+$/);
+    const callLink = page.getByRole('link', { name: /Qo'ng'iroq/ });
+    await expect(callLink).toHaveAttribute('href', /^tel:\+998\d+$/);
 
     const telegram = page.getByRole('link', { name: /Telegram/ });
     await expect(telegram).toHaveAttribute('href', /^https:\/\/t\.me\/[\w_]+$/);
@@ -51,14 +51,14 @@ test.describe('Obyekt sahifasi (360px)', () => {
   });
 
   test("noto'g'ri id → 404 sahifa va 404 status", async ({ page }) => {
-    const javob = await page.goto('/obj/yoq-000');
-    expect(javob?.status()).toBe(404);
+    const response = await page.goto('/obj/yoq-000');
+    expect(response?.status()).toBe(404);
     await expect(page.getByText('Bunday obyekt topilmadi')).toBeVisible();
   });
 
   test('OG teglari HTML ichida mavjud', async ({ request }) => {
-    const javob = await request.get('/obj/bx-002');
-    const html = await javob.text();
+    const response = await request.get('/obj/bx-002');
+    const html = await response.text();
 
     expect(html).toContain('property="og:title"');
     expect(html).toContain('property="og:image"');
