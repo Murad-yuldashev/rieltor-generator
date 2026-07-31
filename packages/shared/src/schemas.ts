@@ -2,55 +2,55 @@ import * as z from 'zod';
 
 export const AgentSchema = z.object({
   id: z.string(),
-  ism: z.string(),
-  agentlik: z.string(),
-  suratUrl: z.string(),
-  tel: z.string(),
-  tg: z.string(),
+  name: z.string(),
+  agency: z.string(),
+  photoUrl: z.string(),
+  phone: z.string(),
+  telegram: z.string(),
 });
 
-export const RasmSchema = z.object({
+export const ImageSchema = z.object({
   /** Variantsiz asos yo'l: "/images/bx-001/01" — imageSrcSet() bilan ishlatiladi. */
   base: z.string(),
   /** 1200×630 crop; faqat birinchi rasmda to'ldiriladi. */
   ogUrl: z.string().nullable(),
   width: z.number().int(),
   height: z.number().int(),
-  tartib: z.number().int(),
+  position: z.number().int(),
 });
 
-export const ObjectTuriSchema = z.enum(['NOVOSTROYKA', 'IKKILAMCHI', 'HOVLI']);
+export const ListingTypeSchema = z.enum(['NEW_BUILD', 'SECONDARY', 'HOUSE']);
 
-export const ObjectListItemSchema = z.object({
+export const ListingSummarySchema = z.object({
   id: z.string(),
-  sarlavha: z.string(),
+  title: z.string(),
   /** BigInt number'ga sig'masligi mumkin — har doim string. */
-  narxSom: z.string(),
-  narxUsd: z.number().int(),
-  xona: z.number().int(),
-  maydonM2: z.number(),
-  tuman: z.string(),
-  rasm: RasmSchema.nullable(),
+  priceSom: z.string(),
+  priceUsd: z.number().int(),
+  rooms: z.number().int(),
+  areaM2: z.number(),
+  district: z.string(),
+  image: ImageSchema.nullable(),
 });
 
-export const ObjectDetailSchema = ObjectListItemSchema.omit({ rasm: true }).extend({
+export const ListingDetailSchema = ListingSummarySchema.omit({ image: true }).extend({
   /** Hovlida qavat bo'lmaydi. */
-  qavat: z.string().nullable(),
-  manzil: z.string(),
-  moljal: z.string(),
-  tavsif: z.string(),
-  turi: ObjectTuriSchema,
+  floor: z.string().nullable(),
+  address: z.string(),
+  landmark: z.string(),
+  description: z.string(),
+  type: ListingTypeSchema,
   views: z.number().int(),
-  sana: z.string(),
-  rasmlar: z.array(RasmSchema),
+  listedAt: z.string(),
+  images: z.array(ImageSchema),
   agent: AgentSchema,
 });
 
 export const ViewsSchema = z.object({ views: z.number().int() });
 
 export type Agent = z.infer<typeof AgentSchema>;
-export type Rasm = z.infer<typeof RasmSchema>;
-export type ObjectTuri = z.infer<typeof ObjectTuriSchema>;
-export type ObjectListItem = z.infer<typeof ObjectListItemSchema>;
-export type ObjectDetail = z.infer<typeof ObjectDetailSchema>;
+export type Image = z.infer<typeof ImageSchema>;
+export type ListingType = z.infer<typeof ListingTypeSchema>;
+export type ListingSummary = z.infer<typeof ListingSummarySchema>;
+export type ListingDetail = z.infer<typeof ListingDetailSchema>;
 export type Views = z.infer<typeof ViewsSchema>;
