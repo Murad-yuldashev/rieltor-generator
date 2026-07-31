@@ -28,5 +28,5 @@ body {
 
 /* Sticky CTA balandligi — sahifa oxiri tugmalar ostida qolib ketmasligi uchun. */
 :root {
-  --cta-balandlik: 4.5rem;
+  --cta-height: 4.5rem;
 }

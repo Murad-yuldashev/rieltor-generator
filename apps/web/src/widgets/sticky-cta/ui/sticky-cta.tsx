@@ -1,10 +1,10 @@
 interface Props {
-  tel: string;
-  tg: string;
+  phone: string;
+  telegram: string;
 }
 
-export function StickyCTA({ tel, tg }: Props) {
-  const username = tg.replace(/^@/, '');
+export function StickyCTA({ phone, telegram }: Props) {
+  const username = telegram.replace(/^@/, '');
 
   return (
     <div
@@ -14,7 +14,7 @@ export function StickyCTA({ tel, tg }: Props) {
     >
       <div className="flex gap-2">
         <a
-          href={`tel:${tel}`}
+          href={`tel:${phone}`}
           className="flex h-12 flex-1 items-center justify-center rounded-xl bg-accent font-medium text-white"
         >
           📞 Qo'ng'iroq

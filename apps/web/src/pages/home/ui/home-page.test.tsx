@@ -4,20 +4,20 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HomePage } from './home-page';
 
-const royxat = [
+const listings = [
   {
     id: 'bx-001',
-    sarlavha: '3 xonali kvartira',
-    narxSom: '780000000',
-    narxUsd: 65000,
-    xona: 3,
-    maydonM2: 84,
-    tuman: 'Buxoro shahri',
-    rasm: { base: '/images/bx-001/01', ogUrl: null, width: 1200, height: 900, tartib: 1 },
+    title: '3 xonali kvartira',
+    priceSom: '780000000',
+    priceUsd: 65000,
+    rooms: 3,
+    areaM2: 84,
+    district: 'Buxoro shahri',
+    image: { base: '/images/bx-001/01', ogUrl: null, width: 1200, height: 900, position: 1 },
   },
 ];
 
-function chiqar() {
+function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
@@ -36,17 +36,17 @@ describe('HomePage', () => {
       'fetch',
       vi.fn(
         async () =>
-          new Response(JSON.stringify(royxat), {
+          new Response(JSON.stringify(listings), {
             status: 200,
             headers: { 'content-type': 'application/json' },
           }),
       ),
     );
 
-    chiqar();
+    renderPage();
 
-    const havola = await screen.findByRole('link', { name: /3 xonali kvartira/ });
-    expect(havola).toHaveAttribute('href', '/obj/bx-001');
+    const link = await screen.findByRole('link', { name: /3 xonali kvartira/ });
+    expect(link).toHaveAttribute('href', '/obj/bx-001');
     expect(screen.getByText("780 000 000 so'm")).toBeInTheDocument();
   });
 });

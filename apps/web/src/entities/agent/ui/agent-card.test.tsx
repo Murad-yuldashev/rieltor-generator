@@ -4,11 +4,11 @@ import { AgentCard } from './agent-card';
 
 const agent = {
   id: 'agent-1',
-  ism: 'Murod',
-  agentlik: 'Buxoro Uy',
-  suratUrl: '/images/agents/agent-1.jpg',
-  tel: '+998901234567',
-  tg: 'murod',
+  name: 'Murod',
+  agency: 'Buxoro Uy',
+  photoUrl: '/images/agents/agent-1.jpg',
+  phone: '+998901234567',
+  telegram: 'murod',
 };
 
 describe('AgentCard', () => {

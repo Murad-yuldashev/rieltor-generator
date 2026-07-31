@@ -3,14 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ViewCounter } from './view-counter';
 
-function javob(status: number, body: unknown) {
+function response(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'content-type': 'application/json' },
   });
 }
 
-function chiqar() {
+function renderComponent() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
@@ -26,18 +26,18 @@ describe('ViewCounter', () => {
   it("sonni ko'z belgisi bilan chiqaradi", async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => javob(200, { views: 42 })),
+      vi.fn(async () => response(200, { views: 42 })),
     );
-    chiqar();
+    renderComponent();
     expect(await screen.findByText(/42/)).toBeInTheDocument();
   });
 
   it('API xato bersa hech narsa render qilmaydi', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => javob(500, {})),
+      vi.fn(async () => response(500, {})),
     );
-    const { container } = chiqar();
+    const { container } = renderComponent();
     await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 });

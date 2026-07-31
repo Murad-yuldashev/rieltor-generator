@@ -1,1 +1,1 @@
-export { AgentCard, formatTel } from './ui/agent-card';
+export { AgentCard, formatPhone } from './ui/agent-card';

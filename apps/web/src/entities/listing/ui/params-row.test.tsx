@@ -4,7 +4,7 @@ import { ParamsRow } from './params-row';
 
 describe('ParamsRow', () => {
   it("to'rtala parametrni ko'rsatadi", () => {
-    render(<ParamsRow xona={2} maydonM2={58} qavat="4/5" tuman="Buxoro shahri" />);
+    render(<ParamsRow rooms={2} areaM2={58} floor="4/5" district="Buxoro shahri" />);
     expect(screen.getByText('2 xona')).toBeInTheDocument();
     expect(screen.getByText('58 m²')).toBeInTheDocument();
     expect(screen.getByText('4/5')).toBeInTheDocument();
@@ -13,7 +13,7 @@ describe('ParamsRow', () => {
 
   it("qavat null bo'lsa o'sha elementni chiqarmaydi", () => {
     const { container } = render(
-      <ParamsRow xona={5} maydonM2={180} qavat={null} tuman="Kogon tumani" />,
+      <ParamsRow rooms={5} areaM2={180} floor={null} district="Kogon tumani" />,
     );
     expect(container.querySelectorAll('li')).toHaveLength(3);
   });

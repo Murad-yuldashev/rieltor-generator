@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 import { AgentCard } from '@/entities/agent';
-import { Description, Location, ParamsRow, PriceBlock, objectQuery } from '@/entities/object';
+import { Description, Location, ParamsRow, PriceBlock, listingQuery } from '@/entities/listing';
 import { ViewCounter } from '@/features/view-counter';
-import { ApiXatosi } from '@/shared/api/client';
+import { ApiError } from '@/shared/api/client';
 import { Gallery } from '@/widgets/gallery';
 import { NotFoundView } from '@/widgets/not-found';
 import { StickyCTA } from '@/widgets/sticky-cta';
 
-export function ObjectPage() {
+export function ListingPage() {
   const { id = '' } = useParams();
-  const { data, isPending, error } = useQuery(objectQuery(id));
+  const { data, isPending, error } = useQuery(listingQuery(id));
 
   if (isPending) {
     return (
@@ -26,7 +26,7 @@ export function ObjectPage() {
 
   if (error) {
     // 404 — sodda "topilmadi" sahifasi (spec §14). Boshqa xatolar ham shu yerga tushadi.
-    if (error instanceof ApiXatosi && error.status === 404) return <NotFoundView />;
+    if (error instanceof ApiError && error.status === 404) return <NotFoundView />;
     return <p className="p-4 text-slate-500">Obyektni yuklab bo'lmadi.</p>;
   }
 
@@ -34,17 +34,22 @@ export function ObjectPage() {
     <main
       className="mx-auto max-w-content"
       // Sticky CTA sahifa oxirini yopib qo'ymasligi uchun.
-      style={{ paddingBottom: 'calc(var(--cta-balandlik) + env(safe-area-inset-bottom))' }}
+      style={{ paddingBottom: 'calc(var(--cta-height) + env(safe-area-inset-bottom))' }}
     >
-      <Gallery rasmlar={data.rasmlar} alt={data.sarlavha} />
-      <PriceBlock narxSom={data.narxSom} narxUsd={data.narxUsd} />
-      <h1 className="px-4 pt-2 text-base font-medium text-slate-800">{data.sarlavha}</h1>
-      <ParamsRow xona={data.xona} maydonM2={data.maydonM2} qavat={data.qavat} tuman={data.tuman} />
-      <Description matn={data.tavsif} />
-      <Location moljal={data.moljal} manzil={data.manzil} />
+      <Gallery images={data.images} alt={data.title} />
+      <PriceBlock priceSom={data.priceSom} priceUsd={data.priceUsd} />
+      <h1 className="px-4 pt-2 text-base font-medium text-slate-800">{data.title}</h1>
+      <ParamsRow
+        rooms={data.rooms}
+        areaM2={data.areaM2}
+        floor={data.floor}
+        district={data.district}
+      />
+      <Description text={data.description} />
+      <Location landmark={data.landmark} address={data.address} />
       <AgentCard agent={data.agent} />
       <ViewCounter id={data.id} />
-      <StickyCTA tel={data.agent.tel} tg={data.agent.tg} />
+      <StickyCTA phone={data.agent.phone} telegram={data.agent.telegram} />
     </main>
   );
 }
