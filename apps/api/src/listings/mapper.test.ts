@@ -38,7 +38,7 @@ const row = {
   ],
 };
 
-describe('detailgaAylantir', () => {
+describe('toListingDetail', () => {
   it('narxSom ni satrga aylantiradi', () => {
     expect(toListingDetail(row).priceSom).toBe('480000000');
   });
@@ -47,7 +47,7 @@ describe('detailgaAylantir', () => {
     expect(toListingDetail(row).listedAt).toBe('2026-07-22');
   });
 
-  it("natija ObjectDetailSchema dan o'tadi", () => {
+  it("natija ListingDetailSchema dan o'tadi", () => {
     expect(() => ListingDetailSchema.parse(toListingDetail(row))).not.toThrow();
   });
 
@@ -56,7 +56,7 @@ describe('detailgaAylantir', () => {
   });
 });
 
-describe('royxatgaAylantir', () => {
+describe('toListingSummary', () => {
   it('faqat birinchi rasmni beradi', () => {
     expect(toListingSummary(row).image?.base).toBe('/images/bx-002/01');
   });

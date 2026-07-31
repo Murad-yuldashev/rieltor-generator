@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatPriceSom, formatPriceUsd } from './format';
 
-describe('formatNarxSom', () => {
+describe('formatPriceSom', () => {
   it('uch xonadan probel bilan ajratadi', () => {
     expect(formatPriceSom('480000000')).toBe("480 000 000 so'm");
   });
@@ -19,7 +19,7 @@ describe('formatNarxSom', () => {
   });
 });
 
-describe('formatNarxUsd', () => {
+describe('formatPriceUsd', () => {
   it('dollar belgisi bilan ajratadi', () => {
     expect(formatPriceUsd(40000)).toBe('$40 000');
   });

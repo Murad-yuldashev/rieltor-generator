@@ -25,7 +25,7 @@ afterEach(async () => {
   await rm(outputRoot, { recursive: true, force: true });
 });
 
-describe('rasmniQayta', () => {
+describe('processImage', () => {
   it('uchta webp va bitta jpg fallback yozadi', async () => {
     const result = await processImage({
       source: await sourceImage(2000, 1500),

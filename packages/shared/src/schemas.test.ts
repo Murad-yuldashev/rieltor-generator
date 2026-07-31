@@ -35,7 +35,7 @@ const fullListing = {
   },
 };
 
-describe('ObjectDetailSchema', () => {
+describe('ListingDetailSchema', () => {
   it("to'liq obyektni qabul qiladi", () => {
     expect(ListingDetailSchema.parse(fullListing).id).toBe('bx-001');
   });

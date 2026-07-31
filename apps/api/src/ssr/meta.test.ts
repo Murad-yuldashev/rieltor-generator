@@ -45,7 +45,7 @@ describe('escapeHtml', () => {
   });
 });
 
-describe('metaTeglar', () => {
+describe('buildMetaTags', () => {
   const html = buildMetaTags(listing, BASE);
 
   it("sarlavha va narxni og:title ga qo'shadi", () => {

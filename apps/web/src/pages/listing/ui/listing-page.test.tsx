@@ -71,7 +71,7 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe('ObjectPage', () => {
+describe('ListingPage', () => {
   it("obyekt maydonlarini ko'rsatadi", async () => {
     vi.stubGlobal(
       'fetch',
