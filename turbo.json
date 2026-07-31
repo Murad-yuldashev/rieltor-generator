@@ -4,7 +4,10 @@
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
     "typecheck": { "dependsOn": ["^build"] },
-    "test": { "dependsOn": ["^build"] },
+    "test": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL", "PUBLIC_BASE_URL", "SEED_AGENT_TEL", "SEED_AGENT_TG"]
+    },
     "lint": {}
   }
 }
