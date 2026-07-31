@@ -4,8 +4,8 @@ test.describe('Obyekt sahifasi (360px)', () => {
   test('sahifa asosiy bloklar bilan ochiladi', async ({ page }) => {
     await page.goto('/obj/bx-002');
 
-    await expect(page.getByText("480 000 000 so'm")).toBeVisible();
-    await expect(page.getByText('$40 000')).toBeVisible();
+    await expect(page.getByText("644 476 910 so'm")).toBeVisible();
+    await expect(page.getByText('$53 900')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 

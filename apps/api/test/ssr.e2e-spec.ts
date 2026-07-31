@@ -37,7 +37,7 @@ describe('SSR / OG (e2e)', () => {
     const res = await request(app.getHttpServer()).get('/obj/bx-001').expect(200);
     expect(res.headers['content-type']).toContain('text/html');
     expect(res.text).toContain('property="og:title"');
-    expect(res.text).toContain('780 000 000 so&#39;m');
+    expect(res.text).toContain('836 983 000 so&#39;m');
   });
 
   it('og:image absolyut URL', async () => {
@@ -60,7 +60,7 @@ describe('SSR / OG (e2e)', () => {
   it('sahifada faqat bitta <title> qoladi', async () => {
     const res = await request(app.getHttpServer()).get('/obj/bx-001').expect(200);
     expect(res.text.match(/<title>/g)).toHaveLength(1);
-    expect(res.text).toContain('780 000 000');
+    expect(res.text).toContain('836 983 000');
   });
 
   it("mavjud bo'lmagan id → 404, lekin HTML qaytaradi", async () => {
