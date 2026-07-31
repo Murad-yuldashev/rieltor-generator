@@ -44,7 +44,7 @@ COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/web/dist ./apps/web/dist
 COPY package.json ./
 
-# sozla() shu yo'lni kutadi: apps/api/dist dan ../../web/dist
+# configureApp() shu yo'lni kutadi: apps/api/dist dan ../../web/dist
 WORKDIR /app/apps/api
 EXPOSE 3000
 

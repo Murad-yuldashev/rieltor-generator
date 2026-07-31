@@ -10,11 +10,11 @@ export const OG_MARKER = '<!--OG-META-->';
 @Injectable()
 export class HtmlCacheService {
   private readonly logger = new Logger(HtmlCacheService.name);
-  private kesh: string | null = null;
+  private cached: string | null = null;
 
   constructor(private readonly config: ConfigService<Env, true>) {}
 
-  get distYoli(): string {
+  get distPath(): string {
     return (
       this.config.get('WEB_DIST', { infer: true }) ??
       resolve(__dirname, '..', '..', '..', 'web', 'dist')
@@ -22,29 +22,31 @@ export class HtmlCacheService {
   }
 
   /** Diskdan bir marta o'qiladi; keyingi so'rovlarda faqat satr almashtirish bo'ladi. */
-  async qobiq(): Promise<string> {
-    if (this.kesh !== null) return this.kesh;
+  async shell(): Promise<string> {
+    if (this.cached !== null) return this.cached;
 
-    const yol = join(this.distYoli, 'index.html');
-    const html = await readFile(yol, 'utf8');
+    const htmlPath = join(this.distPath, 'index.html');
+    const html = await readFile(htmlPath, 'utf8');
 
     if (!html.includes(OG_MARKER)) {
-      this.logger.error(`${yol} ichida ${OG_MARKER} markeri yo'q — OG teglari inject qilinmaydi`);
+      this.logger.error(
+        `${htmlPath} ichida ${OG_MARKER} markeri yo'q — OG teglari inject qilinmaydi`,
+      );
     }
 
-    this.kesh = html;
+    this.cached = html;
     return html;
   }
 
   /**
    * Markerni tayyor teglar bilan almashtiradi. Statik <title> ham olib
    * tashlanadi — aks holda sahifada ikkita <title> qoladi va brauzer/scraper
-   * birinchisini (umumiy nom) ishlatadi, metaTeglar bergan nom emas.
+   * birinchisini (umumiy nom) ishlatadi, buildMetaTags bergan nom emas.
    */
-  injectQil(qobiq: string, teglar: string): string {
-    const tozalangan = qobiq.replace(/<title>[^<]*<\/title>\s*/i, '');
-    return tozalangan.includes(OG_MARKER)
-      ? tozalangan.replace(OG_MARKER, teglar)
-      : tozalangan.replace('</head>', `    ${teglar}\n  </head>`);
+  injectMeta(shell: string, tags: string): string {
+    const cleaned = shell.replace(/<title>[^<]*<\/title>\s*/i, '');
+    return cleaned.includes(OG_MARKER)
+      ? cleaned.replace(OG_MARKER, tags)
+      : cleaned.replace('</head>', `    ${tags}\n  </head>`);
   }
 }

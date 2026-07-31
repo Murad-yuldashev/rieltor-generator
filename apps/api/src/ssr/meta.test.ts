@@ -1,37 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { escapeHtml, metaTeglar } from './meta';
+import { escapeHtml, buildMetaTags } from './meta';
 
-const obj = {
+const listing = {
   id: 'bx-001',
-  sarlavha: '3 xonali kvartira, yangi bino',
-  narxSom: '780000000',
-  narxUsd: 65000,
-  xona: 3,
-  maydonM2: 84,
-  qavat: '6/9',
-  tuman: 'Buxoro shahri',
-  manzil: 'Manzil',
-  moljal: 'Moljal',
-  tavsif: 'Birinchi jumla. Ikkinchi jumla. Uchinchi jumla.',
-  turi: 'NOVOSTROYKA' as const,
+  title: '3 xonali kvartira, yangi bino',
+  priceSom: '780000000',
+  priceUsd: 65000,
+  rooms: 3,
+  areaM2: 84,
+  floor: '6/9',
+  district: 'Buxoro shahri',
+  address: 'Manzil',
+  landmark: 'Moljal',
+  description: 'Birinchi jumla. Ikkinchi jumla. Uchinchi jumla.',
+  type: 'NEW_BUILD' as const,
   views: 0,
-  sana: '2026-07-20',
-  rasmlar: [
+  listedAt: '2026-07-20',
+  images: [
     {
       base: '/images/bx-001/01',
       ogUrl: '/images/bx-001/og.jpg',
       width: 1200,
       height: 900,
-      tartib: 1,
+      position: 1,
     },
   ],
   agent: {
     id: 'agent-1',
-    ism: 'Rieltor',
-    agentlik: 'Agentlik',
-    suratUrl: '/images/agents/agent-1.jpg',
-    tel: '+998901234567',
-    tg: 'username',
+    name: 'Rieltor',
+    agency: 'Agentlik',
+    photoUrl: '/images/agents/agent-1.jpg',
+    phone: '+998901234567',
+    telegram: 'username',
   },
 };
 
@@ -46,7 +46,7 @@ describe('escapeHtml', () => {
 });
 
 describe('metaTeglar', () => {
-  const html = metaTeglar(obj, BASE);
+  const html = buildMetaTags(listing, BASE);
 
   it("sarlavha va narxni og:title ga qo'shadi", () => {
     expect(html).toContain('property="og:title"');
@@ -78,20 +78,20 @@ describe('metaTeglar', () => {
   });
 
   it('tavsifni 200 belgigacha qisqartiradi', () => {
-    const uzun = { ...obj, tavsif: 'a'.repeat(400) };
-    const chiqish = metaTeglar(uzun, BASE);
-    const moslik = /property="og:description" content="([^"]*)"/.exec(chiqish);
-    expect(moslik?.[1]?.length).toBeLessThanOrEqual(201);
+    const longDescription = { ...listing, description: 'a'.repeat(400) };
+    const output = buildMetaTags(longDescription, BASE);
+    const match = /property="og:description" content="([^"]*)"/.exec(output);
+    expect(match?.[1]?.length).toBeLessThanOrEqual(201);
   });
 
   it("rasm bo'lmasa og:image chiqarmaydi va qulamaydi", () => {
-    const rasmsiz = { ...obj, rasmlar: [] };
-    expect(() => metaTeglar(rasmsiz, BASE)).not.toThrow();
-    expect(metaTeglar(rasmsiz, BASE)).not.toContain('og:image');
+    const noImages = { ...listing, images: [] };
+    expect(() => buildMetaTags(noImages, BASE)).not.toThrow();
+    expect(buildMetaTags(noImages, BASE)).not.toContain('og:image');
   });
 
   it('sarlavhadagi apostrof head ni buzmaydi', () => {
-    const apostrofli = { ...obj, sarlavha: `Kvartira "lyuks" & ta'mir` };
-    expect(metaTeglar(apostrofli, BASE)).not.toMatch(/content="[^"]*"[^">]*"/);
+    const withApostrophe = { ...listing, title: `Kvartira "lyuks" & ta'mir` };
+    expect(buildMetaTags(withApostrophe, BASE)).not.toMatch(/content="[^"]*"[^">]*"/);
   });
 });

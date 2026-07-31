@@ -3,42 +3,42 @@ import { ApiExcludeController } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import type { Env } from '../config/env';
-import { ObjectsService } from '../objects/objects.service';
+import { ListingsService } from '../listings/listings.service';
 import { HtmlCacheService } from './html-cache.service';
-import { metaTeglar } from './meta';
+import { buildMetaTags } from './meta';
 
 @ApiExcludeController()
 @Controller()
 export class SsrController {
   constructor(
-    private readonly objects: ObjectsService,
+    private readonly listings: ListingsService,
     private readonly html: HtmlCacheService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
   @Get()
   @Header('content-type', 'text/html; charset=utf-8')
-  async bosh(): Promise<string> {
-    return this.html.qobiq();
+  async home(): Promise<string> {
+    return this.html.shell();
   }
 
   @Get('obj/:id')
   @Header('content-type', 'text/html; charset=utf-8')
-  async obyekt(
+  async listing(
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<string> {
-    const qobiq = await this.html.qobiq();
+    const shell = await this.html.shell();
     const baseUrl = this.config.get('PUBLIC_BASE_URL', { infer: true });
 
     try {
-      const obj = await this.objects.bittasi(id);
-      return this.html.injectQil(qobiq, metaTeglar(obj, baseUrl));
+      const listing = await this.listings.findOne(id);
+      return this.html.injectMeta(shell, buildMetaTags(listing, baseUrl));
     } catch (error) {
       if (!(error instanceof NotFoundException)) throw error;
       // 404 status bilan bir xil SPA qobig'i — front o'zi "topilmadi" sahifasini ko'rsatadi.
       res.status(404);
-      return qobiq;
+      return shell;
     }
   }
 }

@@ -4,7 +4,7 @@ import { HtmlCacheService } from './html-cache.service';
 
 /**
  * NestJS'ning o'zi (mos marshrut topilmaganda "Cannot GET /x" bilan) yoki
- * ilova kodi (masalan ObjectsService) otgan NotFoundException'ni ushlaydi.
+ * ilova kodi (masalan ListingsService) otgan NotFoundException'ni ushlaydi.
  *
  * `/api/*` so'rovlar uchun standart JSON xatolik saqlanadi — API
  * kontraktini buzmaslik uchun (mavjud e2e testlar shunga tayanadi).
@@ -34,7 +34,7 @@ export class NotFoundShellFilter implements ExceptionFilter {
       return;
     }
 
-    const qobiq = await this.html.qobiq();
-    res.status(404).type('html').send(qobiq);
+    const shell = await this.html.shell();
+    res.status(404).type('html').send(shell);
   }
 }

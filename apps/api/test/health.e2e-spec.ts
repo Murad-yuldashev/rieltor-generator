@@ -3,7 +3,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module';
-import { sozla } from '../src/bootstrap';
+import { configureApp } from '../src/bootstrap';
 
 describe('Health (e2e)', () => {
   let app: NestExpressApplication;
@@ -11,7 +11,7 @@ describe('Health (e2e)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication<NestExpressApplication>();
-    sozla(app);
+    configureApp(app);
     await app.init();
   });
 

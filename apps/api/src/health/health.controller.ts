@@ -9,7 +9,7 @@ export class HealthController {
   @Get()
   @ApiOkResponse({ description: 'Servis va DB tirikligi' })
   async check() {
-    const db = await this.prisma.ishlayaptimi();
+    const db = await this.prisma.isHealthy();
     return { status: db ? 'ok' : 'degraded', db };
   }
 }

@@ -8,7 +8,7 @@ import compression from 'compression';
  * main.ts va barcha e2e testlar shu funksiyani ishlatadi —
  * prefiks/exclude ro'yxati ikki joyda ayrilib qolmasligi uchun.
  */
-export function sozla(app: NestExpressApplication): void {
+export function configureApp(app: NestExpressApplication): void {
   // Railway/Render ortida haqiqiy mijoz IP'si X-Forwarded-For da keladi.
   app.set('trust proxy', 1);
 

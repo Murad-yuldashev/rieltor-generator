@@ -12,14 +12,14 @@ export class ViewsController {
   @HttpCode(200)
   @ApiOkResponse({ type: ViewsDto })
   @ApiNotFoundResponse({ description: 'Obyekt topilmadi' })
-  async korish(@Param('id') id: string, @Ip() ip: string) {
-    return { views: await this.views.korish(id, ip) };
+  async recordView(@Param('id') id: string, @Ip() ip: string) {
+    return { views: await this.views.recordView(id, ip) };
   }
 
   @Get(':id')
   @ApiOkResponse({ type: ViewsDto })
   @ApiNotFoundResponse({ description: 'Obyekt topilmadi' })
-  async joriy(@Param('id') id: string) {
-    return { views: await this.views.joriy(id) };
+  async currentCount(@Param('id') id: string) {
+    return { views: await this.views.currentCount(id) };
   }
 }

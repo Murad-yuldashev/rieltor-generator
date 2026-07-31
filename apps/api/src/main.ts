@@ -5,12 +5,12 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { AppModule } from './app.module';
-import { sozla } from './bootstrap';
+import { configureApp } from './bootstrap';
 import type { Env } from './config/env';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  sozla(app);
+  configureApp(app);
 
   const doc = SwaggerModule.createDocument(
     app,

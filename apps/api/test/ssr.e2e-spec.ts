@@ -6,9 +6,9 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module';
-import { sozla } from '../src/bootstrap';
+import { configureApp } from '../src/bootstrap';
 
-const QOBIQ = `<!doctype html>
+const SHELL_HTML = `<!doctype html>
 <html lang="uz"><head><meta charset="UTF-8" /><title>Rieltor Generator</title><!--OG-META--></head>
 <body><div id="root"></div></body></html>`;
 
@@ -18,12 +18,12 @@ describe('SSR / OG (e2e)', () => {
 
   beforeAll(async () => {
     distDir = await mkdtemp(join(tmpdir(), 'rieltor-dist-'));
-    await writeFile(join(distDir, 'index.html'), QOBIQ, 'utf8');
+    await writeFile(join(distDir, 'index.html'), SHELL_HTML, 'utf8');
     process.env.WEB_DIST = distDir;
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication<NestExpressApplication>();
-    sozla(app);
+    configureApp(app);
     await app.init();
   });
 

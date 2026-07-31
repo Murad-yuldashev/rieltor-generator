@@ -4,7 +4,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ViewsSchema } from '@rieltor/shared';
 import { AppModule } from '../src/app.module';
-import { sozla } from '../src/bootstrap';
+import { configureApp } from '../src/bootstrap';
 
 describe('Views (e2e)', () => {
   let app: NestExpressApplication;
@@ -12,7 +12,7 @@ describe('Views (e2e)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication<NestExpressApplication>();
-    sozla(app);
+    configureApp(app);
     await app.init();
   });
 

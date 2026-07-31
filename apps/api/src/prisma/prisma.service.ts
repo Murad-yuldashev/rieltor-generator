@@ -14,7 +14,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   /** Health uchun — ulanish tirikmi. Xato tashlamaydi. */
-  async ishlayaptimi(): Promise<boolean> {
+  async isHealthy(): Promise<boolean> {
     try {
       await this.$queryRaw`SELECT 1`;
       return true;

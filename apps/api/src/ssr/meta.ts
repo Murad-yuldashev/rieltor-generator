@@ -2,19 +2,19 @@ import {
   IMAGE_SIZES,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_WIDTH,
-  formatNarxSom,
+  formatPriceSom,
   imageSrcSet,
-  type ObjectDetail,
+  type ListingDetail,
 } from '@rieltor/shared';
 
-const TAVSIF_MAKS = 200;
+const DESCRIPTION_MAX = 200;
 
 /**
  * O'zbekcha sarlavhalarda apostrof ko'p — escape qilinmasa <head> buziladi
  * yoki atributdan chiqib ketish (injection) mumkin bo'ladi.
  */
-export function escapeHtml(matn: string): string {
-  return matn
+export function escapeHtml(text: string): string {
+  return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -22,51 +22,51 @@ export function escapeHtml(matn: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function meta(nom: 'property' | 'name', kalit: string, qiymat: string): string {
-  return `<meta ${nom}="${kalit}" content="${escapeHtml(qiymat)}" />`;
+function meta(attr: 'property' | 'name', key: string, value: string): string {
+  return `<meta ${attr}="${key}" content="${escapeHtml(value)}" />`;
 }
 
-function qisqartir(matn: string): string {
-  const bir = matn.replace(/\s+/g, ' ').trim();
-  return bir.length <= TAVSIF_MAKS ? bir : `${bir.slice(0, TAVSIF_MAKS - 1)}…`;
+function truncate(text: string): string {
+  const trimmed = text.replace(/\s+/g, ' ').trim();
+  return trimmed.length <= DESCRIPTION_MAX ? trimmed : `${trimmed.slice(0, DESCRIPTION_MAX - 1)}…`;
 }
 
-export function metaTeglar(obj: ObjectDetail, baseUrl: string): string {
-  const sarlavha = `${obj.sarlavha} — ${formatNarxSom(obj.narxSom)}`;
-  const tavsif = qisqartir(obj.tavsif);
-  const sahifaUrl = `${baseUrl}/obj/${obj.id}`;
-  const birinchi = obj.rasmlar[0];
+export function buildMetaTags(listing: ListingDetail, baseUrl: string): string {
+  const title = `${listing.title} — ${formatPriceSom(listing.priceSom)}`;
+  const description = truncate(listing.description);
+  const pageUrl = `${baseUrl}/obj/${listing.id}`;
+  const firstImage = listing.images[0];
 
-  const teglar = [
-    `<title>${escapeHtml(sarlavha)}</title>`,
-    meta('name', 'description', tavsif),
-    `<link rel="canonical" href="${escapeHtml(sahifaUrl)}" />`,
+  const tags = [
+    `<title>${escapeHtml(title)}</title>`,
+    meta('name', 'description', description),
+    `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
     meta('property', 'og:type', 'website'),
     meta('property', 'og:site_name', 'Rieltor'),
-    meta('property', 'og:url', sahifaUrl),
-    meta('property', 'og:title', sarlavha),
-    meta('property', 'og:description', tavsif),
+    meta('property', 'og:url', pageUrl),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
     meta('name', 'twitter:card', 'summary_large_image'),
-    meta('name', 'twitter:title', sarlavha),
-    meta('name', 'twitter:description', tavsif),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
   ];
 
-  if (birinchi?.ogUrl) {
+  if (firstImage?.ogUrl) {
     // Telegram nisbiy yo'lni o'qimaydi — absolyut URL shart.
-    teglar.push(
-      meta('property', 'og:image', `${baseUrl}${birinchi.ogUrl}`),
+    tags.push(
+      meta('property', 'og:image', `${baseUrl}${firstImage.ogUrl}`),
       meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
       meta('property', 'og:image:height', String(OG_IMAGE_HEIGHT)),
-      meta('name', 'twitter:image', `${baseUrl}${birinchi.ogUrl}`),
+      meta('name', 'twitter:image', `${baseUrl}${firstImage.ogUrl}`),
     );
   }
 
-  if (birinchi) {
+  if (firstImage) {
     // LCP rasmini oldindan yuklash — Lighthouse ≥90 uchun eng katta ta'sir (spec §8).
-    teglar.push(
-      `<link rel="preload" as="image" imagesrcset="${escapeHtml(imageSrcSet(birinchi.base))}" imagesizes="${escapeHtml(IMAGE_SIZES)}" />`,
+    tags.push(
+      `<link rel="preload" as="image" imagesrcset="${escapeHtml(imageSrcSet(firstImage.base))}" imagesizes="${escapeHtml(IMAGE_SIZES)}" />`,
     );
   }
 
-  return teglar.join('\n    ');
+  return tags.join('\n    ');
 }

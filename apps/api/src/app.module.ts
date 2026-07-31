@@ -4,7 +4,7 @@ import { APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
-import { ObjectsModule } from './objects/objects.module';
+import { ListingsModule } from './listings/listings.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SsrModule } from './ssr/ssr.module';
 import { ViewsModule } from './views/views.module';
@@ -18,7 +18,7 @@ import { ViewsModule } from './views/views.module';
     }),
     PrismaModule,
     HealthModule,
-    ObjectsModule,
+    ListingsModule,
     ViewsModule,
     SsrModule,
   ],
