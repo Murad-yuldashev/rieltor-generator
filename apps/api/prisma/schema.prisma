@@ -1,5 +1,8 @@
 generator client {
   provider = "prisma-client-js"
+  /// "native" covers local dev and the Docker image; the RHEL engine is the one
+  /// AWS Lambda (and therefore Netlify Functions) loads at runtime.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

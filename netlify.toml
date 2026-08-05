@@ -1,0 +1,98 @@
+[build]
+  command = "bash scripts/netlify-build.sh"
+  publish = "netlify/publish"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  # nft copies the traced files instead of bundling them into one module. NestJS resolves
+  # a pile of optional peer dependencies through require() inside try/catch, and esbuild
+  # fails to resolve those at build time; nft just skips what is not installed.
+  node_bundler = "nft"
+  included_files = [
+    # HtmlCacheService reads the SSR shell from disk (see WEB_DIST in the function).
+    "apps/web/dist/index.html",
+    # Prisma loads its engine by file name at runtime, so tracing never finds it.
+    "node_modules/.prisma/client/schema.prisma",
+    "node_modules/.prisma/client/libquery_engine-rhel-openssl-3.0.x.so.node",
+    # @nestjs/swagger serves /api/docs from these assets, which are not require()d either.
+    "node_modules/swagger-ui-dist/**",
+    # These declare a "module-sync" export condition. Node honours it from require(), the
+    # tracer resolves the "default" one instead, and the file Node actually loads is left
+    # out — the app then dies on boot with MODULE_NOT_FOUND. They are a few KB each, so
+    # shipping them whole is cheaper than tracking which entry point wins.
+    # Re-check with: grep -l '"module-sync"' node_modules/*/package.json
+    "node_modules/async-function/**",
+    "node_modules/async-generator-function/**",
+    "node_modules/generator-function/**",
+
+    # Exclusions. The tracer resolves the __dirname joins in bootstrap.ts and pulls whole
+    # directories in after them, which here means ~33 MB the function never opens: the
+    # seeded images are served by the CDN from the publish directory, and the build host's
+    # own Prisma engine is useless on Lambda. Netlify's zip limit is 50 MB.
+    "!apps/api/public/**",
+    "!node_modules/.prisma/client/libquery_engine-debian-*.so.node",
+    "!node_modules/swagger-ui-dist/**/*.map",
+  ]
+
+# --- Dynamic routes -----------------------------------------------------------------
+# Everything the database or the OG-meta injection touches. Netlify only applies a
+# non-forced rewrite when no file matches the path, so /assets/* and /images/* below
+# keep being served straight from the CDN.
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
+[[redirects]]
+  from = "/obj/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
+# --- SPA shell routes ---------------------------------------------------------------
+# SsrController answers these with the plain shell and a 200. Keep in sync with
+# SPA_ROUTES in apps/api/src/ssr/routes.ts — a path missing here falls through to the
+# catch-all below and would be served with a 404 status.
+
+[[redirects]]
+  from = "/search"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/favorites"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/contact"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/offer"
+  to = "/index.html"
+  status = 200
+
+# NotFoundShellFilter's behaviour: the shell still renders (the SPA draws its own
+# NotFoundPage), but the status tells crawlers the URL is gone.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 404
+
+# --- Cache headers ------------------------------------------------------------------
+# Mirrors the maxAge values configureApp() passes to useStaticAssets().
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
