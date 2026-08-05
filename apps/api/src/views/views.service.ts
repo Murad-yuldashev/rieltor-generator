@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-/** Bitta IP bitta obyektni shu oyna ichida faqat bir marta oshira oladi. */
+/** One IP can increment a given listing only once within this window. */
 const WINDOW_MS = 10 * 60 * 1000;
-/** Xotira cheksiz o'smasligi uchun tozalash chegarasi. */
+/** Cleanup threshold that keeps memory from growing without bound. */
 const MAX_KEYS = 10_000;
 
 @Injectable()
@@ -13,16 +13,16 @@ export class ViewsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async recordView(id: string, ip: string): Promise<number> {
-    // JSON.stringify — oddiy ajratgich emas. `trust proxy` yoqilgani uchun `ip`
-    // X-Forwarded-For dan keladi va Express uni IP shaklida ekanini tekshirmaydi,
-    // ya'ni ichida ajratgich belgisi bo'lishi mumkin. `${ip}|${id}` da
-    // ("A|B","C") va ("A","B|C") bir xil kalit berardi.
+    // JSON.stringify rather than a plain separator. With `trust proxy` enabled `ip`
+    // comes from X-Forwarded-For and Express does not verify it looks like an IP, so
+    // it may contain the separator character. With `${ip}|${id}` the pairs
+    // ("A|B","C") and ("A","B|C") would collide on the same key.
     const key = JSON.stringify([ip, id]);
     const now = Date.now();
     const last = this.lastSeen.get(key);
 
     if (last !== undefined && now - last < WINDOW_MS) {
-      // Limitdan oshdi — lekin foydalanuvchiga xato emas, joriy son qaytariladi.
+      // Over the limit — not an error for the user, just return the current count.
       return this.currentCount(id);
     }
 
@@ -30,7 +30,7 @@ export class ViewsService {
     this.lastSeen.set(key, now);
 
     try {
-      // Atomik: UPDATE ... SET views = views + 1 RETURNING views
+      // Atomic: UPDATE ... SET views = views + 1 RETURNING views
       const row = await this.prisma.listing.update({
         where: { id },
         data: { views: { increment: 1 } },

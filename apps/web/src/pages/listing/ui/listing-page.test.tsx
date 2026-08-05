@@ -72,7 +72,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ListingPage', () => {
-  it("obyekt maydonlarini ko'rsatadi", async () => {
+  it('renders the listing fields', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) =>
@@ -83,12 +83,12 @@ describe('ListingPage', () => {
     renderPage();
 
     expect(await screen.findByText("480 000 000 so'm")).toBeInTheDocument();
-    expect(screen.getByText('2 xona')).toBeInTheDocument();
+    expect(screen.getByText('58 m²')).toBeInTheDocument();
     expect(screen.getByText('Ikki xonali kvartira.')).toBeInTheDocument();
     expect(screen.getByText('Murod')).toBeInTheDocument();
   });
 
-  it('CTA tugmalarini seed kontakti bilan chiqaradi', async () => {
+  it('renders the CTA buttons with the seeded contact', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) =>
@@ -104,7 +104,7 @@ describe('ListingPage', () => {
     );
   });
 
-  it("404 da topilmadi sahifasini ko'rsatadi", async () => {
+  it('renders the not-found page on 404', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => response(404, { message: 'topilmadi' })),

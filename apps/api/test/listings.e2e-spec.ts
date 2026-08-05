@@ -20,9 +20,9 @@ describe('Objects (e2e)', () => {
     await app.close();
   });
 
-  it('GET /api/objects → seed qilingan 3 obyekt', async () => {
+  it('GET /api/objects → seed qilingan 10 obyekt', async () => {
     const res = await request(app.getHttpServer()).get('/api/objects').expect(200);
-    expect(res.body).toHaveLength(3);
+    expect(res.body).toHaveLength(10);
     for (const item of res.body) {
       expect(() => ListingSummarySchema.parse(item)).not.toThrow();
     }

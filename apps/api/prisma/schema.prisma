@@ -26,12 +26,12 @@ model Agent {
 model Listing {
   id          String      @id
   title       String
-  /// Int 2.1 mlrd so'mda to'lib qoladi — hovli undan qimmat bo'lishi mumkin.
+  /// An Int overflows at 2.1 bn so'm, and a house can cost more than that.
   priceSom    BigInt
   priceUsd    Int
   rooms       Int
   areaM2      Float
-  /// Hovlida qavat bo'lmaydi.
+  /// Houses have no floor.
   floor       String?
   district    String
   address     String
@@ -50,9 +50,9 @@ model Listing {
 model Image {
   id        String  @id @default(cuid())
   listingId String
-  /// Variantsiz asos yo'l: "/images/bx-001/01" — @rieltor/shared imageSrcSet() bilan ishlatiladi.
+  /// Base path without a variant: "/images/bx-001/01" — used with imageSrcSet() from @rieltor/shared.
   base      String
-  /// 1200×630 crop; faqat birinchi rasmda to'ldiriladi.
+  /// 1200×630 crop; filled in for the first image only.
   ogUrl     String?
   width     Int
   height    Int

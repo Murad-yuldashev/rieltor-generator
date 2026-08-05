@@ -12,8 +12,13 @@ const listings = [
     priceUsd: 65000,
     rooms: 3,
     areaM2: 84,
+    floor: '3/5',
     district: 'Buxoro shahri',
+    landmark: '12-maktab yaqinida',
+    type: 'SECONDARY',
+    listedAt: '2026-07-22',
     image: { base: '/images/bx-001/01', ogUrl: null, width: 1200, height: 900, position: 1 },
+    imageCount: 4,
   },
 ];
 
@@ -31,7 +36,7 @@ function renderPage() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('HomePage', () => {
-  it("obyektlar ro'yxatini havola sifatida ko'rsatadi", async () => {
+  it('renders the listing list as links', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(

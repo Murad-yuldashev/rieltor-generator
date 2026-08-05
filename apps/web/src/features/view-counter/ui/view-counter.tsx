@@ -1,14 +1,17 @@
+import { Icon } from '@/shared/ui/icon';
 import { useViews } from '../model/use-views';
 
+/** One piece of the meta row under the listing title (next to the date and id). */
 export function ViewCounter({ id }: { id: string }) {
   const { views } = useViews(id);
 
-  // Spec §6.3: hisoblagich ishlamasa jimgina yo'qoladi, sahifa qolgani ishlayveradi.
+  // Spec §6.3: if the counter fails it disappears quietly; the rest of the page works.
   if (views === null) return null;
 
   return (
-    <p className="px-4 pb-1 text-sm text-slate-400" aria-label={`${views} marta ko'rilgan`}>
-      👁 {views}
-    </p>
+    <span className="flex items-center gap-1.5">
+      <Icon name="eye" className="h-[13px] w-[13px]" />
+      {views} marta ko'rildi
+    </span>
   );
 }

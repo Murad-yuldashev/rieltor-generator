@@ -21,7 +21,7 @@ beforeEach(() => sessionStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
 
 describe('useViews', () => {
-  it('birinchi kirishda POST qiladi', async () => {
+  it('POSTs on the first visit', async () => {
     const f = vi.fn(async () => response(200, { views: 8 }));
     vi.stubGlobal('fetch', f);
 
@@ -31,7 +31,7 @@ describe('useViews', () => {
     expect(f).toHaveBeenCalledWith('/api/view/bx-001', expect.objectContaining({ method: 'POST' }));
   });
 
-  it('POST dan keyin sessionStorage kalitini belgilaydi', async () => {
+  it('sets the sessionStorage key after the POST', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => response(200, { views: 8 })),
@@ -43,7 +43,7 @@ describe('useViews', () => {
     expect(sessionStorage.getItem('viewed:bx-001')).toBe('1');
   });
 
-  it("kalit mavjud bo'lsa GET qiladi", async () => {
+  it('GETs when the key is already stored', async () => {
     sessionStorage.setItem('viewed:bx-001', '1');
     const f = vi.fn(async () => response(200, { views: 8 }));
     vi.stubGlobal('fetch', f);
@@ -54,7 +54,7 @@ describe('useViews', () => {
     expect(f).toHaveBeenCalledWith('/api/view/bx-001', expect.objectContaining({ method: 'GET' }));
   });
 
-  it("xatoda views null bo'ladi", async () => {
+  it('views is null on error', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => response(500, {})),

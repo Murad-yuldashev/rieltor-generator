@@ -2,17 +2,37 @@
 @import '@fontsource-variable/inter';
 
 @theme {
-  /* Yagona urg'u rang — komponentlarda hech qachon hex yozilmaydi (spec §10). */
-  --color-accent: #1d4ed8;
+  /* ---- Accent colours. Components never spell out a hex value (spec §10). ---- */
+  --color-accent: #6d28d9;
+  --color-accent-dark: #5b21b6;
+  --color-accent-soft: #f3eefe;
+
+  /* Text hierarchy: primary → secondary → muted. */
+  --color-ink: #111827;
+  --color-ink-2: #4b5563;
+  --color-ink-3: #9ca3af;
+
+  /* Surfaces: grey page background, white cards — that is the mockup's layering. */
+  --color-surface: #f4f4f7;
+  --color-card: #ffffff;
+  --color-line: #e5e7eb;
+
+  /* Badge and action colours. */
+  --color-brand-green: #059669;
+  --color-brand-amber: #d97706;
+  --color-brand-rose: #e11d48;
+  --color-telegram: #2aabee;
 
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 1rem;
+  --radius-card: 18px;
 
-  /* Kontent kengligi — mobil-first, desktopda markazda (spec §10). */
-  /* max-w-* utility'lari `--container-*` namespace'idan keladi, `--spacing-*` dan EMAS.
-     `--spacing-content` deb yozilsa `max-w-content` umuman generatsiya qilinmaydi va
-     desktopdagi 480px cheklovi jimgina ishlamay qoladi. */
+  --shadow-card: 0 1px 2px rgb(17 24 39 / 0.05), 0 6px 20px rgb(17 24 39 / 0.06);
+
+  /* Content width — mobile-first, centred on desktop (spec §10). */
+  /* max-w-* utilities come from the `--container-*` namespace, NOT `--spacing-*`.
+     Naming this `--spacing-content` would stop `max-w-content` being generated at
+     all, and the 480px desktop constraint would silently do nothing. */
   --container-content: 30rem; /* 480px */
 }
 
@@ -22,11 +42,62 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: white;
-  color: var(--color-slate-900);
+  /* The content column is 480px; everything outside it is slightly darker, for a "phone" look. */
+  background-color: #e9e9ee;
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Sticky CTA balandligi — sahifa oxiri tugmalar ostida qolib ketmasligi uchun. */
+/* Stop Android/iOS painting a blue-grey rectangle on tap. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Tailwind v4's preflight gives buttons `cursor: default` (v3 used `pointer`), so
+   the cursor made chips, the segment, hearts and every other button read as
+   unclickable. Restored in one place — the alternative is spelling out
+   `cursor-pointer` on every single button. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 :root {
+  /* Height of the bottom layers, so page content never ends up hidden underneath. */
   --cta-height: 4.5rem;
+  --bottom-nav-height: 4.25rem;
+}
+
+/* A 3px scrollbar. The default one is wide enough to eat into the 480px column
+   and reads as desktop chrome on what is meant to look like a phone screen.
+   Lives in `base` so the `no-scrollbar` utility below still wins where it is used. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-3) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-ink-3);
+    border-radius: 3px;
+  }
+}
+
+/* Hide the scrollbar on the chip row and the gallery strip. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Gallery } from './gallery';
 
@@ -15,7 +16,7 @@ const images = [
 ];
 
 beforeEach(() => {
-  // jsdom'da IntersectionObserver yo'q — komponent unsiz ham qulamasligi kerak.
+  // jsdom has no IntersectionObserver — the component must survive without it.
   vi.stubGlobal(
     'IntersectionObserver',
     class {
@@ -26,22 +27,31 @@ beforeEach(() => {
   );
 });
 
+/** The gallery has a "back" button, which needs a router context to work. */
+function renderGallery(list = images) {
+  return render(
+    <MemoryRouter>
+      <Gallery images={list} alt="Kvartira" type="NEW_BUILD" id="bx-001" />
+    </MemoryRouter>,
+  );
+}
+
 describe('Gallery', () => {
-  it('har rasm uchun bitta img chiqaradi', () => {
-    render(<Gallery images={images} alt="Kvartira" />);
+  it('renders one img per image', () => {
+    renderGallery();
     expect(screen.getAllByRole('img')).toHaveLength(3);
   });
 
-  it('birinchi rasmni ustuvor yuklaydi, qolganlarini lazy', () => {
-    render(<Gallery images={images} alt="Kvartira" />);
+  it('loads the first image eagerly and the rest lazily', () => {
+    renderGallery();
     const imgs = screen.getAllByRole('img');
     expect(imgs[0]).toHaveAttribute('loading', 'eager');
     expect(imgs[0]).toHaveAttribute('fetchpriority', 'high');
     expect(imgs[1]).toHaveAttribute('loading', 'lazy');
   });
 
-  it('srcset va sizes beradi', () => {
-    render(<Gallery images={images} alt="Kvartira" />);
+  it('sets srcset and sizes', () => {
+    renderGallery();
     const img = screen.getAllByRole('img')[0];
     expect(img).toHaveAttribute(
       'srcset',
@@ -50,30 +60,30 @@ describe('Gallery', () => {
     expect(img).toHaveAttribute('sizes', '(max-width: 480px) 100vw, 480px');
   });
 
-  it('CLS oldini olish uchun width/height beradi', () => {
-    render(<Gallery images={images} alt="Kvartira" />);
+  it('sets width/height to prevent CLS', () => {
+    renderGallery();
     const img = screen.getAllByRole('img')[0];
     expect(img).toHaveAttribute('width', '1200');
     expect(img).toHaveAttribute('height', '900');
   });
 
-  it('rasmlar soniga teng nuqta indikatori chiqaradi', () => {
-    render(<Gallery images={images} alt="Kvartira" />);
+  it('renders one dot per image', () => {
+    renderGallery();
     expect(screen.getAllByRole('tab')).toHaveLength(3);
   });
 
-  it('birinchi nuqta boshida faol', () => {
-    render(<Gallery images={images} alt="Kvartira" />);
+  it('the first dot starts out active', () => {
+    renderGallery();
     expect(screen.getAllByRole('tab')[0]).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('bitta rasmda indikator chiqmaydi', () => {
-    render(<Gallery images={[images[0]!]} alt="Kvartira" />);
+  it('renders no dots for a single image', () => {
+    renderGallery([images[0]!]);
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
   });
 
-  it("har rasmga o'z o'rnini bildiruvchi alt beradi", () => {
-    render(<Gallery images={images} alt="Kvartira" />);
+  it('gives every image an alt stating its position', () => {
+    renderGallery();
     const imgs = screen.getAllByRole('img');
     expect(imgs[0]).toHaveAttribute('alt', 'Kvartira — 1/3');
     expect(imgs[2]).toHaveAttribute('alt', 'Kvartira — 3/3');

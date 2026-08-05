@@ -13,6 +13,6 @@ export const listingQuery = (id: string) =>
   queryOptions({
     queryKey: ['listing', id] as const,
     queryFn: () => apiGet(`/api/objects/${id}`, ListingDetailSchema),
-    // Obyekt ma'lumoti demo davomida o'zgarmaydi.
+    // Listing data does not change for the duration of the demo.
     staleTime: 5 * 60 * 1000,
   });

@@ -13,7 +13,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     await this.$disconnect();
   }
 
-  /** Health uchun — ulanish tirikmi. Xato tashlamaydi. */
+  /** For the health check: is the connection alive. Never throws. */
   async isHealthy(): Promise<boolean> {
     try {
       await this.$queryRaw`SELECT 1`;

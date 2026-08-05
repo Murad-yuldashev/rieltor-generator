@@ -25,13 +25,13 @@ describe('ViewsService', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it('birinchi kirishda sonni oshiradi', async () => {
+  it('increments the count on the first visit', async () => {
     const prisma = fakePrisma(5);
     const service = new ViewsService(prisma as never);
     expect(await service.recordView('bx-001', '1.1.1.1')).toBe(6);
   });
 
-  it('oyna ichida takror kirishda oshirmaydi', async () => {
+  it('does not increment on a repeat visit inside the window', async () => {
     const prisma = fakePrisma(5);
     const service = new ViewsService(prisma as never);
 
@@ -42,7 +42,7 @@ describe('ViewsService', () => {
     expect(prisma.listing.update).toHaveBeenCalledTimes(1);
   });
 
-  it('boshqa IP alohida hisoblanadi', async () => {
+  it('a different IP is counted separately', async () => {
     const prisma = fakePrisma(5);
     const service = new ViewsService(prisma as never);
 
@@ -50,7 +50,7 @@ describe('ViewsService', () => {
     expect(await service.recordView('bx-001', '2.2.2.2')).toBe(7);
   });
 
-  it('boshqa obyekt alohida hisoblanadi', async () => {
+  it('a different listing is counted separately', async () => {
     const prisma = fakePrisma(5);
     const service = new ViewsService(prisma as never);
 
@@ -60,7 +60,7 @@ describe('ViewsService', () => {
     expect(prisma.listing.update).toHaveBeenCalledTimes(2);
   });
 
-  it('oyna tugagach yana oshiradi', async () => {
+  it('increments again once the window has passed', async () => {
     const prisma = fakePrisma(5);
     const service = new ViewsService(prisma as never);
 
@@ -71,7 +71,7 @@ describe('ViewsService', () => {
     expect(prisma.listing.update).toHaveBeenCalledTimes(2);
   });
 
-  it("mavjud bo'lmagan obyektda NotFoundException", async () => {
+  it('throws NotFoundException for a missing listing', async () => {
     const prisma = fakePrisma(5);
     prisma.state.exists = false;
     const service = new ViewsService(prisma as never);
@@ -81,7 +81,7 @@ describe('ViewsService', () => {
     );
   });
 
-  it('joriy() sonni oshirmasdan qaytaradi', async () => {
+  it('current() returns the count without incrementing', async () => {
     const prisma = fakePrisma(5);
     const service = new ViewsService(prisma as never);
 
@@ -89,7 +89,7 @@ describe('ViewsService', () => {
     expect(prisma.listing.update).not.toHaveBeenCalled();
   });
 
-  it('ajratgich belgisi bor IP boshqa obyekt bilan aralashmaydi', async () => {
+  it('an IP containing the separator does not collide with another listing', async () => {
     const prisma = fakePrisma(5);
     const service = new ViewsService(prisma as never);
 

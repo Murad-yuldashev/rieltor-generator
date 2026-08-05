@@ -8,7 +8,7 @@ import { processImage } from './images';
 
 let outputRoot: string;
 
-/** Testda binar fayl saqlamaslik uchun manba rasm shu yerda generatsiya qilinadi. */
+/** The source image is generated here so no binary fixture is kept in the repo. */
 async function sourceImage(width: number, height: number): Promise<Buffer> {
   return sharp({
     create: { width, height, channels: 3, background: { r: 30, g: 90, b: 200 } },
@@ -26,7 +26,7 @@ afterEach(async () => {
 });
 
 describe('processImage', () => {
-  it('uchta webp va bitta jpg fallback yozadi', async () => {
+  it('writes three webp files and one jpg fallback', async () => {
     const result = await processImage({
       source: await sourceImage(2000, 1500),
       outputRoot,
@@ -48,7 +48,7 @@ describe('processImage', () => {
     expect(fallback.width).toBe(1200);
   });
 
-  it("1200 variantining haqiqiy o'lchamini qaytaradi", async () => {
+  it('returns the real dimensions of the 1200 variant', async () => {
     const result = await processImage({
       source: await sourceImage(2000, 1500),
       outputRoot,
@@ -61,7 +61,7 @@ describe('processImage', () => {
     expect(result.height).toBe(900);
   });
 
-  it('kichik manbani kattalashtirmaydi', async () => {
+  it('does not upscale a small source', async () => {
     const result = await processImage({
       source: await sourceImage(800, 600),
       outputRoot,
@@ -74,7 +74,7 @@ describe('processImage', () => {
     expect(result.height).toBe(600);
   });
 
-  it("ogYasa=true bo'lganda 1200x630 crop yozadi", async () => {
+  it('writes a 1200x630 crop when the og flag is true', async () => {
     const result = await processImage({
       source: await sourceImage(2000, 1500),
       outputRoot,
@@ -89,7 +89,7 @@ describe('processImage', () => {
     expect(og.height).toBe(630);
   });
 
-  it("ogYasa=false bo'lganda ogUrl null", async () => {
+  it('ogUrl is null when the og flag is false', async () => {
     const result = await processImage({
       source: await sourceImage(2000, 1500),
       outputRoot,
@@ -102,7 +102,7 @@ describe('processImage', () => {
     expect(result.base).toBe('/images/bx-001/02');
   });
 
-  it('har variant 250 KB dan kichik', async () => {
+  it('every variant stays under 250 KB', async () => {
     await processImage({
       source: await sourceImage(2400, 1800),
       outputRoot,
@@ -115,7 +115,7 @@ describe('processImage', () => {
     expect(large.byteLength).toBeLessThan(250 * 1024);
   });
 
-  it("@rieltor/shared o'quvchisi bilan round-trip mos keladi (yozuvchi va o'quvchi ayrilib qolmasligi uchun)", async () => {
+  it('round-trips with the @rieltor/shared reader, so writer and reader cannot drift', async () => {
     const result = await processImage({
       source: await sourceImage(2400, 1800),
       outputRoot,
@@ -124,10 +124,10 @@ describe('processImage', () => {
       makeOg: false,
     });
 
-    // Manba IMAGE_MAX_WIDTH'dan kattaroq — natija.width aynan shu qiymatga teng bo'lishi kerak.
+    // The source is wider than IMAGE_MAX_WIDTH, so result.width must equal exactly that.
     expect(result.width).toBe(IMAGE_MAX_WIDTH);
 
-    // srcset'dagi har bir URL'ni pipeline haqiqatan yozgan faylga xaritalaymiz.
+    // Map every URL in the srcset onto a file the pipeline actually wrote.
     const srcset = imageSrcSet(result.base);
     const urls = srcset.split(', ').map((part) => {
       const [url] = part.split(' ');
@@ -142,7 +142,7 @@ describe('processImage', () => {
       expect(info.isFile()).toBe(true);
     }
 
-    // Fallback URL ham xuddi shu tarzda haqiqiy faylga borishi kerak.
+    // The fallback URL has to resolve to a real file in the same way.
     const fallbackUrl = imageFallbackSrc(result.base);
     const fallbackInfo = await stat(join(outputRoot, fallbackUrl));
     expect(fallbackInfo.isFile()).toBe(true);

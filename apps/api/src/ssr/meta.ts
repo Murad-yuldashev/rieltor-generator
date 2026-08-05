@@ -10,8 +10,8 @@ import {
 const DESCRIPTION_MAX = 200;
 
 /**
- * O'zbekcha sarlavhalarda apostrof ko'p — escape qilinmasa <head> buziladi
- * yoki atributdan chiqib ketish (injection) mumkin bo'ladi.
+ * Uzbek titles are full of apostrophes — without escaping they would break the
+ * <head> or allow breaking out of an attribute (injection).
  */
 export function escapeHtml(text: string): string {
   return text
@@ -52,7 +52,7 @@ export function buildMetaTags(listing: ListingDetail, baseUrl: string): string {
   ];
 
   if (firstImage?.ogUrl) {
-    // Telegram nisbiy yo'lni o'qimaydi — absolyut URL shart.
+    // Telegram does not follow relative paths — an absolute URL is required.
     tags.push(
       meta('property', 'og:image', `${baseUrl}${firstImage.ogUrl}`),
       meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
@@ -62,7 +62,7 @@ export function buildMetaTags(listing: ListingDetail, baseUrl: string): string {
   }
 
   if (firstImage) {
-    // LCP rasmini oldindan yuklash — Lighthouse ≥90 uchun eng katta ta'sir (spec §8).
+    // Preloading the LCP image is the biggest single win for Lighthouse ≥90 (spec §8).
     tags.push(
       `<link rel="preload" as="image" imagesrcset="${escapeHtml(imageSrcSet(firstImage.base))}" imagesizes="${escapeHtml(IMAGE_SIZES)}" />`,
     );

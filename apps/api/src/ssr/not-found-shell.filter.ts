@@ -3,22 +3,20 @@ import type { Request, Response } from 'express';
 import { HtmlCacheService } from './html-cache.service';
 
 /**
- * NestJS'ning o'zi (mos marshrut topilmaganda "Cannot GET /x" bilan) yoki
- * ilova kodi (masalan ListingsService) otgan NotFoundException'ni ushlaydi.
+ * Catches NotFoundException thrown either by NestJS itself (the "Cannot GET /x"
+ * case, when no route matches) or by application code such as ListingsService.
  *
- * `/api/*` so'rovlar uchun standart JSON xatolik saqlanadi — API
- * kontraktini buzmaslik uchun (mavjud e2e testlar shunga tayanadi).
- * Qolgan barcha yo'llar — ya'ni mos marshrut topilmagan har qanday
- * hard-navigation (masalan "GET /foo" yoki "GET /obj/bx-001/ortiqcha") —
- * uchun head-inject qilingan SPA qobig'i 404 status bilan qaytariladi,
- * shunda front o'zining <NotFoundPage /> ni ko'rsatadi (spec §8).
+ * `/api/*` requests keep the standard JSON error so the API contract is not
+ * broken (the existing e2e tests rely on it). Every other path — that is, any
+ * hard navigation with no matching route, such as "GET /foo" or
+ * "GET /obj/bx-001/extra" — gets the head-injected SPA shell with a 404 status,
+ * so the frontend can render its own <NotFoundPage /> (spec §8).
  *
- * setGlobalPrefix'ning `exclude` ro'yxatiga catch-all marshrut qo'shish
- * ishlamaydi: u {path, method} bo'yicha butun ilova bo'ylab tekshiriladi,
- * controller'ga bog'liq emas — shuning uchun '{*yol}' kabi keng qolip
- * barcha GET marshrutlaridan 'api/' prefiksini olib tashlardi (tekshirib
- * ko'rildi: /api/health "Cannot GET /api/health"ga aylanib qoldi).
- * Shu sababli catch-all @Get('*') o'rniga shu filter ishlatiladi.
+ * Adding a catch-all route to setGlobalPrefix's `exclude` list does not work:
+ * the list is matched on {path, method} across the whole app, independent of the
+ * controller, so a broad pattern like '{*path}' would strip the 'api/' prefix
+ * from every GET route (verified: /api/health turned into
+ * "Cannot GET /api/health"). Hence this filter instead of a catch-all @Get('*').
  */
 @Catch(NotFoundException)
 export class NotFoundShellFilter implements ExceptionFilter {

@@ -36,26 +36,26 @@ const fullListing = {
 };
 
 describe('ListingDetailSchema', () => {
-  it("to'liq obyektni qabul qiladi", () => {
+  it('accepts a complete listing', () => {
     expect(ListingDetailSchema.parse(fullListing).id).toBe('bx-001');
   });
 
-  it("hovli uchun qavat null bo'lishiga ruxsat beradi", () => {
+  it('allows a null floor for a house', () => {
     const houseListing = { ...fullListing, type: 'HOUSE', floor: null };
     expect(ListingDetailSchema.parse(houseListing).floor).toBeNull();
   });
 
-  it("narxSom number bo'lsa rad etadi", () => {
+  it('rejects a numeric priceSom', () => {
     expect(() => ListingDetailSchema.parse({ ...fullListing, priceSom: 480000000 })).toThrow();
   });
 
-  it('notanish turi qiymatini rad etadi', () => {
+  it('rejects an unknown type value', () => {
     expect(() => ListingDetailSchema.parse({ ...fullListing, type: 'DACHA' })).toThrow();
   });
 });
 
 describe('ViewsSchema', () => {
-  it('butun son talab qiladi', () => {
+  it('requires an integer', () => {
     expect(ViewsSchema.parse({ views: 12 }).views).toBe(12);
     expect(() => ViewsSchema.parse({ views: 1.5 })).toThrow();
   });

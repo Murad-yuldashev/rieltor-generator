@@ -40,7 +40,7 @@ export default tseslint.config(
       ],
     },
     rules: {
-      // FSD: yuqori qatlam faqat pastdagini import qiladi.
+      // FSD: a layer may only import from the layers below it.
       'boundaries/dependencies': [
         'error',
         {

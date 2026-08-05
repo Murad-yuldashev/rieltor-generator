@@ -23,7 +23,7 @@ beforeEach(() => sessionStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ViewCounter', () => {
-  it("sonni ko'z belgisi bilan chiqaradi", async () => {
+  it('renders the count with an eye icon', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => response(200, { views: 42 })),
@@ -32,7 +32,7 @@ describe('ViewCounter', () => {
     expect(await screen.findByText(/42/)).toBeInTheDocument();
   });
 
-  it('API xato bersa hech narsa render qilmaydi', async () => {
+  it('renders nothing when the API errors', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => response(500, {})),

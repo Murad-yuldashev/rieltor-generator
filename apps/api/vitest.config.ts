@@ -7,6 +7,6 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.ts', 'prisma/**/*.{test,spec}.ts'],
     root: './',
   },
-  // NestJS dekoratorlari emitDecoratorMetadata talab qiladi — esbuild buni qilmaydi, SWC qiladi.
+  // NestJS decorators need emitDecoratorMetadata: esbuild does not emit it, SWC does.
   plugins: [swc.vite({ module: { type: 'es6' } })],
 });

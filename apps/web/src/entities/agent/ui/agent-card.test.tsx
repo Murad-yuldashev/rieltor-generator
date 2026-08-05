@@ -12,14 +12,14 @@ const agent = {
 };
 
 describe('AgentCard', () => {
-  it('ism, agentlik va telefonni matn sifatida chiqaradi', () => {
+  it('renders the name, agency and phone as text', () => {
     render(<AgentCard agent={agent} />);
     expect(screen.getByText('Murod')).toBeInTheDocument();
     expect(screen.getByText('Buxoro Uy')).toBeInTheDocument();
     expect(screen.getByText('+998 90 123 45 67')).toBeInTheDocument();
   });
 
-  it('suratga alt matn beradi', () => {
+  it('gives the photo alt text', () => {
     render(<AgentCard agent={agent} />);
     expect(screen.getByAltText('Murod')).toHaveAttribute('src', '/images/agents/agent-1.jpg');
   });

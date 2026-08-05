@@ -10,9 +10,9 @@ export const AgentSchema = z.object({
 });
 
 export const ImageSchema = z.object({
-  /** Variantsiz asos yo'l: "/images/bx-001/01" — imageSrcSet() bilan ishlatiladi. */
+  /** Base path without a variant: "/images/bx-001/01" — used with imageSrcSet(). */
   base: z.string(),
-  /** 1200×630 crop; faqat birinchi rasmda to'ldiriladi. */
+  /** 1200×630 crop; filled in for the first image only. */
   ogUrl: z.string().nullable(),
   width: z.number().int(),
   height: z.number().int(),
@@ -24,24 +24,31 @@ export const ListingTypeSchema = z.enum(['NEW_BUILD', 'SECONDARY', 'HOUSE']);
 export const ListingSummarySchema = z.object({
   id: z.string(),
   title: z.string(),
-  /** BigInt number'ga sig'masligi mumkin — har doim string. */
+  /** A BigInt may not fit in a number — always a string. */
   priceSom: z.string(),
   priceUsd: z.number().int(),
   rooms: z.number().int(),
   areaM2: z.number(),
+  /** Houses have no floor. */
+  floor: z.string().nullable(),
   district: z.string(),
+  /** The geo line on a card: "Metro «Shahriston» 10 daq." */
+  landmark: z.string(),
+  /** Drives the coloured badge on a card (new build / secondary / house). */
+  type: ListingTypeSchema,
+  listedAt: z.string(),
   image: ImageSchema.nullable(),
+  /** Powers the "1/8" counter on a card — just the count, not the whole array. */
+  imageCount: z.number().int(),
 });
 
-export const ListingDetailSchema = ListingSummarySchema.omit({ image: true }).extend({
-  /** Hovlida qavat bo'lmaydi. */
-  floor: z.string().nullable(),
+export const ListingDetailSchema = ListingSummarySchema.omit({
+  image: true,
+  imageCount: true,
+}).extend({
   address: z.string(),
-  landmark: z.string(),
   description: z.string(),
-  type: ListingTypeSchema,
   views: z.number().int(),
-  listedAt: z.string(),
   images: z.array(ImageSchema),
   agent: AgentSchema,
 });

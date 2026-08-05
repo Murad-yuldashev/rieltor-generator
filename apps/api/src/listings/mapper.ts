@@ -3,7 +3,7 @@ import type { Image as ImageDto, ListingDetail, ListingSummary } from '@rieltor/
 
 export type ListingRow = Listing & { agent: Agent; images: Pick<Image, keyof ImageDto>[] };
 
-/** DB'da @db.Date, JS'da UTC yarim tuni — ISO ning birinchi 10 belgisi kifoya. */
+/** @db.Date in the database, UTC midnight in JS — the first 10 ISO chars suffice. */
 function dateText(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -16,7 +16,7 @@ export function toListingDetail(row: ListingRow): ListingDetail {
   return {
     id: row.id,
     title: row.title,
-    // BigInt JSON'ga serializatsiya qilinmaydi va number'ga sig'masligi mumkin.
+    // BigInt is not JSON-serialisable and may not fit in a number.
     priceSom: row.priceSom.toString(),
     priceUsd: row.priceUsd,
     rooms: row.rooms,
@@ -50,7 +50,14 @@ export function toListingSummary(row: ListingRow): ListingSummary {
     priceUsd: row.priceUsd,
     rooms: row.rooms,
     areaM2: row.areaM2,
+    floor: row.floor,
     district: row.district,
+    landmark: row.landmark,
+    type: row.type,
+    listedAt: dateText(row.listedAt),
     image: firstImage ? imageDto(firstImage) : null,
+    // The list response carries only the first image, but the card's "1/8" counter
+    // needs the total — cheaper than sending the whole array.
+    imageCount: row.images.length,
   };
 }

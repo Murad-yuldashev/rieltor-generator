@@ -128,7 +128,7 @@ yangilash kerak bo'lsa:
 2. Servisni qayta deploy qil (yoki Railway o'zi variable o'zgarganda avtomatik
    qayta ishga tushiradi — loyiha sozlamasiga qarab).
 3. Qayta ishga tushishda konteyner seed'ni qayta bajaradi va yangi kontakt
-   barcha uchta obyektga (bx-001, bx-002, bx-003) yoziladi — qo'shimcha
+   barcha o'nta obyektga (bx-001 … bx-010) yoziladi — qo'shimcha
    kod o'zgarishi shart emas.
 
 ## 4. Rasmlarni almashtirish

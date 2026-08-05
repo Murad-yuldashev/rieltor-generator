@@ -8,7 +8,7 @@ function hasViewed(id: string): boolean {
   try {
     return sessionStorage.getItem(key(id)) === '1';
   } catch {
-    // Private rejimda sessionStorage tashlashi mumkin — hisoblagich baribir ishlasin.
+    // sessionStorage can throw in private mode — the counter should still work.
     return false;
   }
 }
@@ -17,7 +17,7 @@ function markViewed(id: string): void {
   try {
     sessionStorage.setItem(key(id), '1');
   } catch {
-    /* e'tiborsiz */
+    /* ignored */
   }
 }
 
@@ -32,7 +32,7 @@ export function useViews(id: string): { views: number | null } {
       markViewed(id);
       return result;
     },
-    // Degradatsiya (spec §6.3): xatoda qayta urinilmaydi va sahifa bloklanmaydi.
+    // Graceful degradation (spec §6.3): no retry on error, never blocks the page.
     retry: false,
     staleTime: Infinity,
   });

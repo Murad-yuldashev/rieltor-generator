@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { StickyCTA } from './sticky-cta';
 
 describe('StickyCTA', () => {
-  it("qo'ng'iroq havolasi tel: sxemasi bilan", () => {
+  it('the call link uses the tel: scheme', () => {
     render(<StickyCTA phone="+998901234567" telegram="murod" />);
     expect(screen.getByRole('link', { name: /Qo'ng'iroq/ })).toHaveAttribute(
       'href',
@@ -11,7 +11,7 @@ describe('StickyCTA', () => {
     );
   });
 
-  it('Telegram havolasi t.me manzili bilan', () => {
+  it('the Telegram link points at t.me', () => {
     render(<StickyCTA phone="+998901234567" telegram="murod" />);
     expect(screen.getByRole('link', { name: /Telegram/ })).toHaveAttribute(
       'href',
@@ -19,7 +19,7 @@ describe('StickyCTA', () => {
     );
   });
 
-  it('username oldidagi @ belgisini tashlab yuboradi', () => {
+  it('strips a leading @ from the username', () => {
     render(<StickyCTA phone="+998901234567" telegram="@murod" />);
     expect(screen.getByRole('link', { name: /Telegram/ })).toHaveAttribute(
       'href',
@@ -27,7 +27,7 @@ describe('StickyCTA', () => {
     );
   });
 
-  it('Telegram havolasi yangi oynada ochiladi', () => {
+  it('the Telegram link opens in a new tab', () => {
     render(<StickyCTA phone="+998901234567" telegram="murod" />);
     const link = screen.getByRole('link', { name: /Telegram/ });
     expect(link).toHaveAttribute('target', '_blank');

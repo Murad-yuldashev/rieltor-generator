@@ -1,22 +1,22 @@
 /**
- * Rasm fayl nomlash konvensiyasi — YAGONA manba.
- * Seed quvuri (apps/api/prisma/images.ts) shu nomlar bilan fayl yozadi,
- * front <img srcset> uchun, API esa <link rel=preload> uchun shu yerdan o'qiydi.
+ * Image file naming convention — the SINGLE source.
+ * The seed pipeline (apps/api/prisma/images.ts) writes files under these names;
+ * the frontend reads them for <img srcset> and the API for <link rel=preload>.
  * base = "/images/bx-001/01" → "/images/bx-001/01-720.webp"
  */
 export const IMAGE_WIDTHS = [360, 720, 1200] as const;
 
-/** Eng katta variant kengligi — JPG fallback va CLS uchun haqiqiy o'lcham shundan olinadi. */
+/** Width of the largest variant — the JPG fallback and the CLS dimensions come from it. */
 export const IMAGE_MAX_WIDTH: number = Math.max(...IMAGE_WIDTHS);
 
-/** Kontent desktopda 480px bilan cheklangan (spec §10). */
+/** Content is capped at 480px on desktop (spec §10). */
 export const IMAGE_SIZES = '(max-width: 480px) 100vw, 480px';
 
-/** Telegram OG rasm o'lchami — pipeline shu o'lchamda cover-crop qiladi (spec §8). */
+/** Telegram OG image size — the pipeline cover-crops to exactly this (spec §8). */
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 
-/** `${base}-${w}.webp` shabloni — yozuvchi (pipeline) va o'quvchi (bu fayl) shu yerdan oladi. */
+/** The `${base}-${w}.webp` template — both the writer (pipeline) and the reader use it. */
 export function imageVariantSrc(base: string, w: number): string {
   return `${base}-${w}.webp`;
 }

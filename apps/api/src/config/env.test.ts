@@ -7,23 +7,23 @@ const fullEnv = {
 };
 
 describe('envSchema', () => {
-  it("PORT berilmasa 3000 ni qo'yadi", () => {
+  it('defaults PORT to 3000', () => {
     expect(envSchema.parse(fullEnv).PORT).toBe(3000);
   });
 
-  it('PORT ni satrdan songa aylantiradi', () => {
+  it('coerces PORT from a string to a number', () => {
     expect(envSchema.parse({ ...fullEnv, PORT: '8080' }).PORT).toBe(8080);
   });
 
-  it("DATABASE_URL yo'q bo'lsa rad etadi", () => {
+  it('rejects a missing DATABASE_URL', () => {
     expect(() => envSchema.parse({ PUBLIC_BASE_URL: fullEnv.PUBLIC_BASE_URL })).toThrow();
   });
 
-  it("PUBLIC_BASE_URL URL bo'lmasa rad etadi", () => {
+  it('rejects a PUBLIC_BASE_URL that is not a URL', () => {
     expect(() => envSchema.parse({ ...fullEnv, PUBLIC_BASE_URL: 'shunchaki-matn' })).toThrow();
   });
 
-  it('PUBLIC_BASE_URL oxiridagi slashni olib tashlaydi', () => {
+  it('strips a trailing slash from PUBLIC_BASE_URL', () => {
     const parsed = envSchema.parse({ ...fullEnv, PUBLIC_BASE_URL: 'https://misol.uz/' });
     expect(parsed.PUBLIC_BASE_URL).toBe('https://misol.uz');
   });

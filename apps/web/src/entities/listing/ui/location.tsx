@@ -1,15 +1,20 @@
+import { Icon } from '@/shared/ui/icon';
+
 interface Props {
   landmark: string;
   address: string;
 }
 
-/** Xarita YO'Q — spec §9 bo'yicha qamrovdan tashqarida. Faqat matn. */
+/** NO map — out of scope per spec §9. Text only. */
 export function Location({ landmark, address }: Props) {
   return (
-    <section className="border-t border-slate-100 px-4 py-4">
-      <h2 className="mb-1.5 text-sm font-semibold text-slate-900">Joylashuv</h2>
-      <p className="text-[15px] text-slate-700">{address}</p>
-      <p className="mt-0.5 text-sm text-slate-500">{landmark}</p>
-    </section>
+    <>
+      <p className="flex gap-2.5 text-[14.5px] leading-[1.4] font-semibold">
+        <Icon name="pin" className="mt-0.5 h-4 w-4 text-accent" strokeWidth={2.2} />
+        {address}
+      </p>
+      {/* Icon width + gap = 25px, so the landmark line aligns with the address above it. */}
+      <p className="mt-1.5 pl-[25px] text-[13px] font-medium text-ink-3">Mo'ljal: {landmark}</p>
+    </>
   );
 }

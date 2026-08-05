@@ -20,7 +20,7 @@ async function request<T>(path: string, method: 'GET' | 'POST', schema: ZodType<
     throw new ApiError(response.status, `${method} ${path} → ${response.status}`);
   }
 
-  // parse() mos kelmagan javobda tashlaydi — front noto'g'ri shakldagi ma'lumot bilan ishlamaydi.
+  // parse() throws on a mismatched response, so the UI never works with malformed data.
   return schema.parse(await response.json());
 }
 

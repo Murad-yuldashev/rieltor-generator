@@ -38,7 +38,7 @@ const listing = {
 const BASE = 'https://misol.uz';
 
 describe('escapeHtml', () => {
-  it('HTML uchun xavfli belgilarni almashtiradi', () => {
+  it('escapes characters that are unsafe in HTML', () => {
     expect(escapeHtml(`<a href="x">O'g'ri & Co</a>`)).toBe(
       '&lt;a href=&quot;x&quot;&gt;O&#39;g&#39;ri &amp; Co&lt;/a&gt;',
     );
@@ -48,49 +48,49 @@ describe('escapeHtml', () => {
 describe('buildMetaTags', () => {
   const html = buildMetaTags(listing, BASE);
 
-  it("sarlavha va narxni og:title ga qo'shadi", () => {
+  it('puts the title and price into og:title', () => {
     expect(html).toContain('property="og:title"');
     expect(html).toContain('3 xonali kvartira, yangi bino');
     expect(html).toContain('780 000 000 so&#39;m');
   });
 
-  it('og:image ni absolyut URL qiladi', () => {
+  it('makes og:image an absolute URL', () => {
     expect(html).toContain(`content="${BASE}/images/bx-001/og.jpg"`);
   });
 
-  it("og:image o'lchamlarini beradi", () => {
+  it('sets the og:image dimensions', () => {
     expect(html).toContain('property="og:image:width" content="1200"');
     expect(html).toContain('property="og:image:height" content="630"');
   });
 
-  it("twitter kartasini katta rasm rejimiga qo'yadi", () => {
+  it('sets the twitter card to large-image mode', () => {
     expect(html).toContain('name="twitter:card" content="summary_large_image"');
   });
 
-  it("og:url ni obyekt manziliga qo'yadi", () => {
+  it('points og:url at the listing address', () => {
     expect(html).toContain(`content="${BASE}/obj/bx-001"`);
   });
 
-  it("LCP rasmi uchun preload qo'shadi", () => {
+  it('adds a preload for the LCP image', () => {
     expect(html).toContain('rel="preload"');
     expect(html).toContain('as="image"');
     expect(html).toContain('/images/bx-001/01-720.webp 720w');
   });
 
-  it('tavsifni 200 belgigacha qisqartiradi', () => {
+  it('truncates the description to 200 characters', () => {
     const longDescription = { ...listing, description: 'a'.repeat(400) };
     const output = buildMetaTags(longDescription, BASE);
     const match = /property="og:description" content="([^"]*)"/.exec(output);
     expect(match?.[1]?.length).toBeLessThanOrEqual(201);
   });
 
-  it("rasm bo'lmasa og:image chiqarmaydi va qulamaydi", () => {
+  it('omits og:image without crashing when there is no image', () => {
     const noImages = { ...listing, images: [] };
     expect(() => buildMetaTags(noImages, BASE)).not.toThrow();
     expect(buildMetaTags(noImages, BASE)).not.toContain('og:image');
   });
 
-  it('sarlavhadagi apostrof head ni buzmaydi', () => {
+  it('an apostrophe in the title does not break the head', () => {
     const withApostrophe = { ...listing, title: `Kvartira "lyuks" & ta'mir` };
     expect(buildMetaTags(withApostrophe, BASE)).not.toMatch(/content="[^"]*"[^">]*"/);
   });

@@ -13,10 +13,10 @@ const SOURCE_ROOT = join(API_ROOT, 'prisma', 'seed-images');
 const AGENT_ID = 'agent-1';
 
 /**
- * seed-images/<id>/ dagi fayllarni tartib bo'yicha o'qiydi; bo'sh bo'lsa
- * placeholder qaytaradi. `placeholderCount` faqat placeholder yo'lida
- * ishlatiladi — haqiqiy fayllar mavjud bo'lsa, ularning soni (files.length)
- * qancha bo'lsa, o'shancha rasm ishlatiladi, `placeholderCount`ga qaralmaydi.
+ * Reads the files in seed-images/<id>/ in order, falling back to placeholders
+ * when the folder is empty. `placeholderCount` applies only to the placeholder
+ * path — when real files exist, however many there are (files.length) is how
+ * many images get used, and `placeholderCount` is ignored.
  */
 async function readSourceImages(
   listingId: string,
@@ -56,11 +56,11 @@ async function seedAgent() {
 
   return prisma.agent.upsert({
     where: { id: AGENT_ID },
-    update: { phone, telegram },
+    update: { name: 'Rieltor', agency: "Toshkent Ko'chmas Mulk", phone, telegram },
     create: {
       id: AGENT_ID,
       name: 'Rieltor',
-      agency: "Buxoro Ko'chmas Mulk",
+      agency: "Toshkent Ko'chmas Mulk",
       photoUrl: `/images/agents/${AGENT_ID}.jpg`,
       phone,
       telegram,
@@ -74,7 +74,7 @@ async function main() {
   for (const listing of SEED_LISTINGS) {
     console.log(`${listing.id} seed qilinmoqda...`);
 
-    // upsert — qayta ishga tushirilganda views nolga tushmasligi kerak.
+    // upsert so a re-run does not reset the view counter to zero.
     await prisma.listing.upsert({
       where: { id: listing.id },
       update: {

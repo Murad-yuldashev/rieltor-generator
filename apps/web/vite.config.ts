@@ -5,15 +5,14 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': new URL('./src/', import.meta.url).pathname } },
-  // @rieltor/shared - workspace ichida symlink orqali ulangan CJS paket. Vite standart holatda
-  // "linked" paketlarni optimizeDeps'dan chetlab o'tadi va manba sifatida xizmat qiladi — natijada
-  // brauzer xom CommonJS faylni to'g'ridan-to'g'ri ESM sifatida import qilishga urinadi va
-  // "does not provide an export named" xatosini beradi. Shuning uchun uni majburan esbuild orqali
-  // ESM'ga oldindan bog'lashga (pre-bundle) kiritamiz.
+  // @rieltor/shared is a CJS package linked through a workspace symlink. By default Vite
+  // skips "linked" packages during optimizeDeps and serves them as source, so the browser
+  // tries to import a raw CommonJS file as ESM and fails with "does not provide an export
+  // named". Forcing it into pre-bundling makes esbuild convert it to ESM first.
   optimizeDeps: { include: ['@rieltor/shared'] },
   server: {
     port: 5173,
-    // Dev'da API va rasmlar NestJS'dan keladi — prod'da ular bir xil originda bo'ladi.
+    // In dev the API and images come from NestJS; in production they share one origin.
     proxy: {
       '/api': { target: 'http://localhost:3000', changeOrigin: true },
       '/images': { target: 'http://localhost:3000', changeOrigin: true },
@@ -21,8 +20,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    // Prod build public serve qilinadi — source map'lar .js.map sifatida
-    // ochiq qolib ketmasligi uchun o'chirilgan.
+    // The production build is served publicly, so source maps are disabled to avoid
+    // leaving .js.map files exposed.
     sourcemap: false,
     commonjsOptions: { include: [/packages\/shared/, /node_modules/] },
   },

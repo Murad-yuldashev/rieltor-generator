@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../config/env';
 
-/** index.html ichidagi marker — Vite build'da ham saqlanadi. */
+/** Marker inside index.html — preserved through the Vite build. */
 export const OG_MARKER = '<!--OG-META-->';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class HtmlCacheService {
     );
   }
 
-  /** Diskdan bir marta o'qiladi; keyingi so'rovlarda faqat satr almashtirish bo'ladi. */
+  /** Read from disk once; later requests only do string replacement. */
   async shell(): Promise<string> {
     if (this.cached !== null) return this.cached;
 
@@ -39,9 +39,9 @@ export class HtmlCacheService {
   }
 
   /**
-   * Markerni tayyor teglar bilan almashtiradi. Statik <title> ham olib
-   * tashlanadi — aks holda sahifada ikkita <title> qoladi va brauzer/scraper
-   * birinchisini (umumiy nom) ishlatadi, buildMetaTags bergan nom emas.
+   * Replaces the marker with the generated tags. The static <title> is stripped
+   * as well — otherwise the page would carry two <title> elements and a browser
+   * or scraper would use the first (generic) one instead of buildMetaTags' title.
    */
   injectMeta(shell: string, tags: string): string {
     const cleaned = shell.replace(/<title>[^<]*<\/title>\s*/i, '');

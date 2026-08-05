@@ -1,6 +1,6 @@
 import type { Agent } from '@rieltor/shared';
 
-/** +998901234567 → "+998 90 123 45 67". Boshqa formatda kelsa o'zgartirmaydi. */
+/** +998901234567 → "+998 90 123 45 67". Any other shape is returned untouched. */
 export function formatPhone(phone: string): string {
   const m = /^\+998(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(phone);
   return m ? `+998 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : phone;
@@ -8,21 +8,28 @@ export function formatPhone(phone: string): string {
 
 export function AgentCard({ agent }: { agent: Agent }) {
   return (
-    <section className="flex items-center gap-3 border-t border-slate-100 px-4 py-4">
+    <div className="flex items-center gap-3">
       <img
         src={agent.photoUrl}
         alt={agent.name}
-        width={56}
-        height={56}
+        width={52}
+        height={52}
         loading="lazy"
         decoding="async"
-        className="h-14 w-14 shrink-0 rounded-full object-cover"
+        className="h-13 w-13 shrink-0 rounded-full bg-accent-soft object-cover"
       />
       <div className="min-w-0">
-        <p className="font-medium">{agent.name}</p>
-        <p className="text-sm text-slate-500">{agent.agency}</p>
-        <p className="mt-0.5 text-sm text-slate-700">{formatPhone(agent.phone)}</p>
+        <p className="flex flex-wrap items-center gap-1.5 text-[15.5px] font-extrabold">
+          {agent.name}
+          <span className="rounded-full bg-brand-green/10 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-brand-green">
+            ✓ TEKSHIRILGAN
+          </span>
+        </p>
+        <p className="mt-0.5 text-[12.5px] font-semibold text-ink-3">{agent.agency}</p>
+        <a href={`tel:${agent.phone}`} className="mt-0.5 block text-[13.5px] font-bold text-accent">
+          {formatPhone(agent.phone)}
+        </a>
       </div>
-    </section>
+    </div>
   );
 }

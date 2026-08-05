@@ -10,10 +10,10 @@ import {
 } from '@rieltor/shared';
 
 export interface ProcessedImage {
-  /** Variantsiz asos yo'l, DB'ga shu yoziladi: "/images/bx-001/01" */
+  /** Base path without a variant; this is what is stored in the DB: "/images/bx-001/01" */
   base: string;
   ogUrl: string | null;
-  /** Eng katta variantning haqiqiy o'lchami — front <img width/height> uchun (CLS = 0). */
+  /** Real dimensions of the largest variant — feeds <img width/height> (CLS = 0). */
   width: number;
   height: number;
 }
@@ -23,7 +23,7 @@ export interface ProcessImageOptions {
   /** Statik fayllar ildizi, odatda apps/api/public */
   outputRoot: string;
   listingId: string;
-  /** 1 dan boshlanadi; fayl nomi ikki xonali bo'ladi: 01, 02, ... */
+  /** One-based; the file name is zero-padded to two digits: 01, 02, ... */
   position: number;
   makeOg: boolean;
 }
@@ -43,7 +43,7 @@ export async function processImage(opts: ProcessImageOptions): Promise<Processed
   let height = 0;
 
   for (const w of IMAGE_WIDTHS) {
-    // withoutEnlargement — kichik manbani cho'zmaymiz, aks holda sifat buziladi.
+    // withoutEnlargement: never upscale a small source, it would only look worse.
     const info = await sharp(source)
       .resize({ width: w, withoutEnlargement: true })
       .webp({ quality: QUALITY })
@@ -55,7 +55,7 @@ export async function processImage(opts: ProcessImageOptions): Promise<Processed
     }
   }
 
-  // WebP'ni qo'llamaydigan eski brauzerlar uchun yagona fallback.
+  // Single fallback for older browsers without WebP support.
   await sharp(source)
     .resize({ width: IMAGE_MAX_WIDTH, withoutEnlargement: true })
     .jpeg({ quality: QUALITY, mozjpeg: true })
@@ -63,7 +63,7 @@ export async function processImage(opts: ProcessImageOptions): Promise<Processed
 
   let ogUrl: string | null = null;
   if (makeOg) {
-    // Telegram qat'iy 1200×630 kutadi — bu yerda cho'zish shart, cover crop bilan.
+    // Telegram expects exactly 1200×630, so here resizing is mandatory, via cover crop.
     await sharp(source)
       .resize({ width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, fit: 'cover', position: 'centre' })
       .jpeg({ quality: 82, mozjpeg: true })

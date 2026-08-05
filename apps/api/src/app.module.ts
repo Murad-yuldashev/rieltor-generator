@@ -13,7 +13,7 @@ import { ViewsModule } from './views/views.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // Noto'g'ri env bilan ilova umuman ko'tarilmaydi — sekin nosozlikdan yaxshiroq.
+      // A bad env stops the app from booting at all — better than a slow failure.
       validate: (raw) => envSchema.parse(raw),
     }),
     PrismaModule,

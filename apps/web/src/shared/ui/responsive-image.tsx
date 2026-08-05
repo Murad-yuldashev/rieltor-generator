@@ -4,7 +4,7 @@ import { cn } from '@/shared/lib/cn';
 interface Props {
   image: Image;
   alt: string;
-  /** Birinchi rasm = LCP nomzodi: eager + fetchpriority=high (spec §7). */
+  /** The first image is the LCP candidate: eager + fetchpriority=high (spec §7). */
   isFirst?: boolean;
   className?: string;
 }

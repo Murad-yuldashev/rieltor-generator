@@ -5,11 +5,12 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().min(1),
   /**
-   * Absolyut og:image URL'i uchun. Telegram nisbiy yo'lni o'qimaydi (spec §8).
-   * Oxiridagi slash olib tashlanadi — keyin `${PUBLIC_BASE_URL}/images/...` deb ulanadi.
+   * Used to build an absolute og:image URL. Telegram does not follow relative
+   * paths (spec §8). A trailing slash is stripped so `${PUBLIC_BASE_URL}/images/...`
+   * concatenates cleanly.
    */
   PUBLIC_BASE_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
-  /** Vite build natijasi. Test va Docker'da boshqa yo'l berilishi mumkin. */
+  /** Output of the Vite build. Tests and Docker may point this elsewhere. */
   WEB_DIST: z.string().optional(),
 });
 

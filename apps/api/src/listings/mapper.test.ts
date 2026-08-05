@@ -39,33 +39,33 @@ const row = {
 };
 
 describe('toListingDetail', () => {
-  it('narxSom ni satrga aylantiradi', () => {
+  it('converts priceSom to a string', () => {
     expect(toListingDetail(row).priceSom).toBe('480000000');
   });
 
-  it("sana ni YYYY-MM-DD ko'rinishida beradi", () => {
+  it('returns the date as YYYY-MM-DD', () => {
     expect(toListingDetail(row).listedAt).toBe('2026-07-22');
   });
 
-  it("natija ListingDetailSchema dan o'tadi", () => {
+  it('the result passes ListingDetailSchema', () => {
     expect(() => ListingDetailSchema.parse(toListingDetail(row))).not.toThrow();
   });
 
-  it("agentId ni javobga qo'shmaydi", () => {
+  it('omits agentId from the response', () => {
     expect(toListingDetail(row)).not.toHaveProperty('agentId');
   });
 });
 
 describe('toListingSummary', () => {
-  it('faqat birinchi rasmni beradi', () => {
+  it('returns only the first image', () => {
     expect(toListingSummary(row).image?.base).toBe('/images/bx-002/01');
   });
 
-  it("rasm bo'lmasa null qaytaradi", () => {
+  it('returns null when there is no image', () => {
     expect(toListingSummary({ ...row, images: [] }).image).toBeNull();
   });
 
-  it("tavsif kabi og'ir maydonlarni tashlab ketadi", () => {
+  it('drops heavy fields such as the description', () => {
     expect(toListingSummary(row)).not.toHaveProperty('description');
   });
 });
