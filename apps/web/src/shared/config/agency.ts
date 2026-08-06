@@ -9,8 +9,8 @@
 export const AGENCY = {
   name: "O'zbekiston Ko'chmas Mulk",
   about: "O'zbekiston bo'ylab kvartira, hovli va tijorat obyektlari. 2018-yildan beri xizmatdamiz.",
-  phone: '+998958581450',
-  telegram: 'rieltorapp',
+  phone: '+998993362125',
+  telegram: 'Becco1',
 } as const;
 
 /** The "Ko'p so'raladigan savollar" section on the contact page. */
