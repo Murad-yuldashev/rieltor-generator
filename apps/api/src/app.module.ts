@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { envSchema } from './config/env';
+import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -20,6 +21,7 @@ import { ViewsModule } from './views/views.module';
     HealthModule,
     ListingsModule,
     ViewsModule,
+    AuthModule,
     SsrModule,
   ],
   providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],
