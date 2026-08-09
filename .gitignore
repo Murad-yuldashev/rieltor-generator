@@ -21,6 +21,9 @@ test-results/
 netlify/publish/
 .netlify/
 
+# Scratch space for subagent-driven execution (ledger, briefs, review packages).
+.superpowers/
+
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
