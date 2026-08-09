@@ -61,20 +61,25 @@ export function ListingCard({ listing, isFirst = false, favoriteSlot }: Props) {
         <div className="px-[15px] pt-3.5 pb-[15px]">
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="text-xl font-extrabold tracking-tight text-accent-dark">
-              {formatPriceSom(listing.priceSom)}
+              {formatPriceSom(listing.priceSom, listing.deal)}
             </span>
             <span className="text-[13px] font-bold text-ink-3">
-              ≈ {formatPriceUsd(listing.priceUsd)}
+              ≈ {formatPriceUsd(listing.priceUsd, listing.deal)}
             </span>
-            <span className="ml-auto text-xs font-semibold text-ink-3">
-              {formatPricePerM2(listing.priceSom, listing.areaM2)}
-            </span>
+            {/* "mln/m²" only reads as a price per square metre for a sale — a
+                monthly rent divided by the area rounds to nothing. */}
+            {listing.deal === 'SALE' && (
+              <span className="ml-auto text-xs font-semibold text-ink-3">
+                {formatPricePerM2(listing.priceSom, listing.areaM2)}
+              </span>
+            )}
           </div>
 
           <h3 className="mt-1.5 text-[15px] leading-[1.35] font-semibold">{listing.title}</h3>
 
           <div className="mt-2.5 flex flex-wrap gap-1.5">
-            <Param icon="rooms" text={`${listing.rooms} xona`} />
+            {/* Commercial premises have no room count — the chip drops out. */}
+            {listing.rooms !== null && <Param icon="rooms" text={`${listing.rooms} xona`} />}
             <Param icon="area" text={`${listing.areaM2} m²`} />
             {/* Houses have no floor — the chip drops out entirely. */}
             {listing.floor !== null && <Param icon="floor" text={`${listing.floor}-qavat`} />}

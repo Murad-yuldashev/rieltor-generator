@@ -51,7 +51,12 @@ export function ListingPage() {
 
       <main className="flex flex-col gap-3.5 p-4">
         <SectionCard>
-          <PriceBlock priceSom={data.priceSom} priceUsd={data.priceUsd} areaM2={data.areaM2} />
+          <PriceBlock
+            priceSom={data.priceSom}
+            priceUsd={data.priceUsd}
+            areaM2={data.areaM2}
+            deal={data.deal}
+          />
           <h1 className="mt-2.5 text-[17px] leading-[1.35] font-bold">{data.title}</h1>
           <ListingMeta
             listedAt={data.listedAt}

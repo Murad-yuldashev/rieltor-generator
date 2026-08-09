@@ -17,6 +17,7 @@ const listing = {
   landmark: '12-maktab yaqinida',
   description: 'Ikki xonali kvartira.',
   type: 'SECONDARY',
+  deal: 'SALE',
   views: 3,
   listedAt: '2026-07-22',
   images: [

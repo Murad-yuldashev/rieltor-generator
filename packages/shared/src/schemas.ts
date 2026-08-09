@@ -19,23 +19,32 @@ export const ImageSchema = z.object({
   position: z.number().int(),
 });
 
-export const ListingTypeSchema = z.enum(['NEW_BUILD', 'SECONDARY', 'HOUSE']);
+export const ListingTypeSchema = z.enum(['NEW_BUILD', 'SECONDARY', 'HOUSE', 'COMMERCIAL']);
+
+/** Which segment a listing belongs to — orthogonal to its type. */
+export const DealSchema = z.enum(['SALE', 'RENT']);
 
 export const ListingSummarySchema = z.object({
   id: z.string(),
   title: z.string(),
-  /** A BigInt may not fit in a number — always a string. */
+  /**
+   * A BigInt may not fit in a number — always a string.
+   * For a RENT listing this is the price per month.
+   */
   priceSom: z.string(),
   priceUsd: z.number().int(),
-  rooms: z.number().int(),
+  /** Commercial premises are not measured in rooms. */
+  rooms: z.number().int().nullable(),
   areaM2: z.number(),
   /** Houses have no floor. */
   floor: z.string().nullable(),
   district: z.string(),
   /** The geo line on a card: "Metro «Shahriston» 10 daq." */
   landmark: z.string(),
-  /** Drives the coloured badge on a card (new build / secondary / house). */
+  /** Drives the coloured badge on a card (new build / secondary / house / commercial). */
   type: ListingTypeSchema,
+  /** Drives the "Sotib olish / Ijara" segment and the "/oy" price suffix. */
+  deal: DealSchema,
   listedAt: z.string(),
   image: ImageSchema.nullable(),
   /** Powers the "1/8" counter on a card — just the count, not the whole array. */
@@ -58,6 +67,7 @@ export const ViewsSchema = z.object({ views: z.number().int() });
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
+export type Deal = z.infer<typeof DealSchema>;
 export type ListingSummary = z.infer<typeof ListingSummarySchema>;
 export type ListingDetail = z.infer<typeof ListingDetailSchema>;
 export type Views = z.infer<typeof ViewsSchema>;

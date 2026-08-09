@@ -77,9 +77,7 @@ export function HomePage() {
 
       {!isPending && !isError && shown.length === 0 && (
         <p className="px-6 py-12 text-center text-[15px] leading-relaxed text-ink-2">
-          {filters.isUnavailableSegment
-            ? "Bu bo'lim bo'yicha e'lonlar hozircha yo'q."
-            : "Qidiruvga mos obyekt topilmadi. Boshqa so'z bilan urinib ko'ring."}
+          Qidiruvga mos obyekt topilmadi. Boshqa so'z bilan urinib ko'ring.
         </p>
       )}
 

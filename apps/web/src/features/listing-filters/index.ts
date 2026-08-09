@@ -5,7 +5,7 @@ export {
   filterListings,
   hasAdvancedFilters,
 } from './model/criteria';
-export type { Criteria, Deal, Sort, TypeFilter } from './model/criteria';
+export type { Criteria, Sort, TypeFilter } from './model/criteria';
 export { parseNumberInput, parsePriceInput } from './model/parse';
 export { useListingFilters } from './model/use-listing-filters';
 export { FilterPanel } from './ui/filter-panel';

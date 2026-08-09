@@ -27,6 +27,7 @@ export function toListingDetail(row: ListingRow): ListingDetail {
     landmark: row.landmark,
     description: row.description,
     type: row.type,
+    deal: row.deal,
     views: row.views,
     listedAt: dateText(row.listedAt),
     images: [...row.images].sort((a, b) => a.position - b.position).map(imageDto),
@@ -54,6 +55,7 @@ export function toListingSummary(row: ListingRow): ListingSummary {
     district: row.district,
     landmark: row.landmark,
     type: row.type,
+    deal: row.deal,
     listedAt: dateText(row.listedAt),
     image: firstImage ? imageDto(firstImage) : null,
     // The list response carries only the first image, but the card's "1/8" counter
