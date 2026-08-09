@@ -32,6 +32,9 @@ model Agent {
   phone    String
   telegram String
   listings Listing[]
+  /// Reverse side of Realtor.agent. No column is added here — the foreign key
+  /// lives on Realtor; Prisma just requires both ends of a relation to be declared.
+  realtor  Realtor?
 }
 
 model Listing {
@@ -76,4 +79,32 @@ model Image {
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([listingId, position])
+}
+
+/// A realtor who signs in with Telegram and manages their own listings.
+/// The public-facing card on a listing page still comes from Agent — see
+/// syncAgent() in stage 2, which mirrors this profile into an Agent row.
+model Realtor {
+  id            String   @id @default(cuid())
+  /// Telegram user id. Bigger than a 32-bit int, hence BigInt.
+  tgId          BigInt   @unique
+  tgUsername    String?
+  name          String
+  photoUrl      String?
+  /// Required before publishing — enforced by the API, not by the schema, so a
+  /// half-filled profile can still be saved.
+  phone         String?
+  /// Set to true when the realtor shares their contact through the bot (stage 5).
+  phoneVerified Boolean  @default(false)
+  agency        String?
+  /// Slug for /r/:username — [a-z0-9-]{3,30}.
+  username      String   @unique
+  /// Realtor registry number. Optional and never verified.
+  registryNo    String?
+  /// Once true, this realtor's listings go live without moderation.
+  trusted       Boolean  @default(false)
+  /// The mirrored public Agent row; created on first publish (stage 2).
+  agentId       String?  @unique
+  agent         Agent?   @relation(fields: [agentId], references: [id])
+  createdAt     DateTime @default(now())
 }
