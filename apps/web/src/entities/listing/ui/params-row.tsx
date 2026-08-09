@@ -1,7 +1,8 @@
 import { Icon, type IconName } from '@/shared/ui/icon';
 
 interface Props {
-  rooms: number;
+  /** null for commercial premises. */
+  rooms: number | null;
   areaM2: number;
   floor: string | null;
   district: string;
@@ -26,7 +27,8 @@ export function ParamsRow({ rooms, areaM2, floor, district }: Props) {
     // grid-flow-col + auto-cols-fr makes the column count follow the number of tiles,
     // so the row still splits evenly when the floor tile drops out.
     <ul className="grid auto-cols-fr grid-flow-col gap-2">
-      <Tile icon="rooms" value={String(rooms)} label="Xonalar" />
+      {/* Commercial premises have no room count — the tile drops out. */}
+      {rooms !== null && <Tile icon="rooms" value={String(rooms)} label="Xonalar" />}
       <Tile icon="area" value={`${areaM2} m²`} label="Maydon" />
       {/* Houses have no floor — the tile drops out entirely. */}
       {floor !== null && <Tile icon="floor" value={floor} label="Qavat" />}

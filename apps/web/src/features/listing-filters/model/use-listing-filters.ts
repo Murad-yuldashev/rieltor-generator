@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import type { ListingSummary } from '@rieltor/shared';
+import type { Deal, ListingSummary } from '@rieltor/shared';
 import {
   EMPTY_CRITERIA,
   filterListings,
-  isUnavailableSegment,
   type Criteria,
-  type Deal,
   type Sort,
   type TypeFilter,
 } from './criteria';
@@ -35,7 +33,5 @@ export function useListingFilters(listings: ListingSummary[] | undefined) {
     setSearch,
     // Only a couple of dozen listings — memoising would not earn its keep.
     visible: filterListings(listings, criteria),
-    /** No results because the segment has no data, rather than because of the query. */
-    isUnavailableSegment: isUnavailableSegment(criteria),
   };
 }

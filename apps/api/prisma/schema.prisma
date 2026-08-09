@@ -14,6 +14,14 @@ enum ListingType {
   NEW_BUILD
   SECONDARY
   HOUSE
+  COMMERCIAL
+}
+
+/// Which segment a listing belongs to. Orthogonal to ListingType: commercial
+/// premises are advertised both ways, and so are flats.
+enum Deal {
+  SALE
+  RENT
 }
 
 model Agent {
@@ -30,9 +38,11 @@ model Listing {
   id          String      @id
   title       String
   /// An Int overflows at 2.1 bn so'm, and a house can cost more than that.
+  /// For a RENT listing this is the price per month.
   priceSom    BigInt
   priceUsd    Int
-  rooms       Int
+  /// Commercial premises are not measured in rooms — OLX omits the field too.
+  rooms       Int?
   areaM2      Float
   /// Houses have no floor.
   floor       String?
@@ -41,6 +51,8 @@ model Listing {
   landmark    String
   description String
   type        ListingType
+  /// The ten listings that predate this column were all sales.
+  deal        Deal        @default(SALE)
   views       Int         @default(0)
   listedAt    DateTime    @db.Date
   agentId     String
@@ -48,6 +60,7 @@ model Listing {
   images      Image[]
 
   @@index([type])
+  @@index([deal])
 }
 
 model Image {

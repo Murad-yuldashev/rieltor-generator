@@ -1,11 +1,13 @@
-import type { ListingType } from '@prisma/client';
+import type { Deal, ListingType } from '@prisma/client';
 
 export interface SeedListing {
   id: string;
   title: string;
+  /** Per month when `deal` is RENT. */
   priceSom: bigint;
   priceUsd: number;
-  rooms: number;
+  /** null for commercial premises — the source advert has no room count either. */
+  rooms: number | null;
   areaM2: number;
   floor: string | null;
   district: string;
@@ -13,17 +15,21 @@ export interface SeedListing {
   landmark: string;
   description: string;
   type: ListingType;
+  deal: Deal;
   listedAt: string;
   placeholderCount: number;
 }
 
 /**
- * Ten listings taken from Tashkent adverts on OLX.uz (2026-08).
- * Price, area, floor and photos come from the source advert; the copy was
- * translated into Uzbek.
+ * Eighteen listings taken from Tashkent adverts on OLX.uz: bx-001..bx-010 are
+ * sales, bx-011..bx-014 flats to rent, bx-015..bx-018 commercial premises (two
+ * to rent, two for sale). Price, area, floor and photos come from the source
+ * advert; the copy was translated into Uzbek.
  *
- * Prices use the OLX rate of 11,936.6 so'm/$, which is why `priceUsd` has to be
- * a multiple of ten — otherwise the so'm amount would not come out whole.
+ * `priceUsd` has to be a multiple of ten, otherwise the so'm amount would not
+ * come out whole. The sale batch was priced at the OLX rate of 11,936.6 so'm/$,
+ * the later batch at 11,924 so'm/$ — the rate the source adverts were showing
+ * when each was captured.
  */
 export const SEED_LISTINGS: SeedListing[] = [
   {
@@ -40,6 +46,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Yunusobod 10-kvartalidagi Kashtan turar-joy majmuasida uch xonali kvartira sotiladi. Umumiy maydoni 72 m², g'isht binoning 7-qavatida joylashgan (mansarda emas). Kvartira quti holatida topshiriladi — ta'mirni o'z didingizga qarab qilasiz. Balkon bor, undan Teleminora manzarasi ochiladi. Yaqin atrofda maktab, bolalar bog'chasi, Korzinka va masjid joylashgan.",
     type: 'NEW_BUILD',
+    deal: 'SALE',
     listedAt: '2026-07-26',
     placeholderCount: 6,
   },
@@ -57,6 +64,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Mirobod tumanidagi Nukus ko'chasida uch xonali kvartira sotiladi. Umumiy maydoni 95 m², to'qqiz qavatli binoning 5-qavatida joylashgan. Ta'mir o'rta holatda — yashash uchun tayyor. Balkon va alohida oshxona bor, mebelning bir qismi kvartira bilan qoladi. Orientir sifatida Makro savdo markazi xizmat qiladi, atrofda maktab va bekat yaqin.",
     type: 'SECONDARY',
+    deal: 'SALE',
     listedAt: '2026-08-04',
     placeholderCount: 6,
   },
@@ -74,6 +82,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Yashnobod tumani Olmos mahallasida yangi qurilgan burchak hovli uy sotiladi. Yer maydoni 3 sotix, uyning umumiy maydoni 300 m². Beshta xona, alohida oshxona, yerto'la va to'rtta sanuzel mavjud. Uy jihozlari bilan birga sotiladi — ko'chib kirib yashash mumkin. Burchak uchastka bo'lgani uchun ikki tomondan kirish imkoni bor.",
     type: 'HOUSE',
+    deal: 'SALE',
     listedAt: '2026-02-07',
     placeholderCount: 6,
   },
@@ -91,6 +100,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Chilonzor-1 kvartalida uch xonali kvartira sotiladi. Umumiy maydoni 87 m², to'rt qavatli binoning 3-qavatida joylashgan, shiftlari baland. Kvartirada yevro ta'mir qilingan, mebel va maishiy texnika bilan birga topshiriladi. Orientir: Pionerskiy, Oq Saroy restorani, Muqimiy ko'chasi. Chilonzor metro bekati va bozor yaqin.",
     type: 'SECONDARY',
+    deal: 'SALE',
     listedAt: '2026-07-14',
     placeholderCount: 6,
   },
@@ -108,6 +118,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Shayxontohur tumanidagi Nurafshon ko'chasida yangi binoda ikki xonali kvartira sotiladi. Umumiy maydoni 45.23 m², 11 qavatli binoning 11-qavatida, shift balandligi 3.3 m. Kadastr va gaz ulangan. Yangi yevro ta'mir: mebel, idish-tovoq va texnika (2 ta konditsioner, muzlatgich, televizor, pishirish paneli, so'rg'ich, kir yuvish mashinasi, duxovka, kotyol va boyler) qoladi. Issiq pol o'rnatilgan.",
     type: 'NEW_BUILD',
+    deal: 'SALE',
     listedAt: '2026-07-21',
     placeholderCount: 6,
   },
@@ -125,6 +136,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Mirzo Ulug'bek tumanidagi Darhan Residence majmuasida ikki xonali kvartira sotiladi. Umumiy maydoni 50 m², 12 qavatli binoning 2-qavatida joylashgan. Yevro lyuks ta'mir qilingan, mebel va maishiy texnika bilan topshiriladi, kadastri tayyor. Majmuada yopiq hovli va yer osti avtoturargohi bor, kvartiraning ochiq terrassasi mavjud.",
     type: 'NEW_BUILD',
+    deal: 'SALE',
     listedAt: '2026-08-02',
     placeholderCount: 6,
   },
@@ -142,6 +154,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Yakkasaroy masjidi yonidagi Salamatina turar-joy majmuasida kvartira sotiladi. Bog'ibo'ston ko'chasi bilan Yakkasaroy ko'chasi kesishmasida, Kichik Halqa Yo'liga yaqin. Umumiy maydoni 61.43 m², 11 qavatli g'isht binoning 10-qavatida. Ikki xonali kvartira sifatli yevro ta'mirdan so'ng uch xonaga aylantirilgan, yangi mebel, idish-tovoq va maishiy texnika bilan jihozlangan.",
     type: 'SECONDARY',
+    deal: 'SALE',
     listedAt: '2026-06-22',
     placeholderCount: 6,
   },
@@ -159,6 +172,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Olmazor City biznes klass turar-joy majmuasida uch xonali kvartira sotiladi. Umumiy maydoni 80 m², to'qqiz qavatli yangi binoning 9-qavatida. Zamonaviy «kalit topshirish» ta'miri qilingan, butun mebel va texnika qoladi. Ikkita sanuzel, yorug' va qulay planirovka, balkondan chiroyli manzara ochiladi. Majmua hududi qo'riqlanadi, infratuzilma rivojlangan — ko'chib kirib yashash mumkin.",
     type: 'NEW_BUILD',
+    deal: 'SALE',
     listedAt: '2026-07-14',
     placeholderCount: 6,
   },
@@ -176,6 +190,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Quruvchi kompaniyadan to'g'ridan-to'g'ri, vositachisiz premium darajadagi g'isht kottej sotiladi. Umumiy maydoni 290 m², oltita xona, ikki qavat. Barcha qurilish texnologiyalariga rioya qilib, sifatli materiallardan qurilgan, mualliflik ta'miri qilingan. Uy yashashga to'liq tayyor va katta oila uchun mos. Metro bekatiga atigi 350–400 metr.",
     type: 'HOUSE',
+    deal: 'SALE',
     listedAt: '2026-08-04',
     placeholderCount: 6,
   },
@@ -193,7 +208,152 @@ export const SEED_LISTINGS: SeedListing[] = [
     description:
       "Urikzor Residence yangi turar-joy majmuasida ikki xonali yevrokvartira sotiladi. Umumiy maydoni 58 m², 16 qavatli monolit binoning 14-qavatida, kadastri tayyor. Yonginasida majmuaning o'z maktabi va bolalar bog'chasi bor. Hudud 24/7 qo'riqlanadi, kirish faqat uy aholisining avtomobillari uchun. Har bir podyezdda ikkitadan lift, ular elektr o'chganda generatorga ulanadi. Ipoteka rasmiylashtirish mumkin.",
     type: 'NEW_BUILD',
+    deal: 'SALE',
     listedAt: '2025-11-05',
+    placeholderCount: 6,
+  },
+  {
+    id: 'bx-011',
+    title: '3 xonali kvartira, Uzbegim majmuasi, mebel bilan',
+    priceSom: 11_924_000n,
+    priceUsd: 1_000,
+    rooms: 3,
+    areaM2: 110,
+    floor: '4/12',
+    district: 'Yakkasaroy tumani',
+    address: 'Uzbegim turar-joy majmuasi',
+    landmark: "Qo'riqlanadigan yashil hudud ichida",
+    description:
+      "Yakkasaroy tumanidagi Uzbegim turar-joy majmuasida uch xonali kvartira uzoq muddatga ijaraga beriladi. Umumiy maydoni 110 m², monolit binoning 4-qavatida, shift balandligi 3 m. Mualliflik loyihasi bo'yicha ta'mirlangan, ikkita sanuzel, to'liq mebel va maishiy texnika bilan topshiriladi — ko'chib kirib yashash mumkin. Majmua hududi qo'riqlanadi, avtoturargoh va bolalar maydonchasi bor. Vositachilik haqi olinmaydi.",
+    type: 'NEW_BUILD',
+    deal: 'RENT',
+    listedAt: '2023-10-06',
+    placeholderCount: 6,
+  },
+  {
+    id: 'bx-012',
+    title: "3 xonali kvartira, Buyuk Ipak Yo'li metrosi yonida",
+    priceSom: 7_154_400n,
+    priceUsd: 600,
+    rooms: 3,
+    areaM2: 70,
+    floor: '5/5',
+    district: "Mirzo Ulug'bek tumani",
+    address: "Buz bozor, Buyuk Ipak Yo'li metrosi atrofi",
+    landmark: "Buyuk Ipak Yo'li metrosiga piyoda",
+    description:
+      "Mirzo Ulug'bek tumanida, Buyuk Ipak Yo'li metrosi yaqinida uch xonali kvartira ijaraga beriladi. Umumiy maydoni 70 m², g'isht binoning 5-qavatida. Xonalar alohida ajratilgan, 2×6 metrli balkon bor. Kvartira mebel va maishiy texnika bilan topshiriladi, ta'mir o'rta holatda. Agentlik xizmati bir oylik ijara haqining 50 foizini tashkil qiladi.",
+    type: 'SECONDARY',
+    deal: 'RENT',
+    listedAt: '2026-08-09',
+    placeholderCount: 6,
+  },
+  {
+    id: 'bx-013',
+    title: '2 xonali kvartira, Hamza metrosi yonida, Chilonzor',
+    priceSom: 5_962_000n,
+    priceUsd: 500,
+    rooms: 2,
+    areaM2: 48,
+    floor: '4/4',
+    district: 'Chilonzor tumani',
+    address: "Chilonzor tumani, 76-seriya g'isht bino",
+    landmark: 'Hamza metrosi yaqinida',
+    description:
+      "Chilonzor tumanida, Hamza metrosi yonida ikki xonali kvartira ijaraga beriladi. Umumiy maydoni 48 m², 76-seriyali to'rt qavatli g'isht binoning 4-qavatida. Ikkala xona ham keng, ta'mir yaxshi holatda. Kvartira to'liq jihozlangan — kerakli maishiy texnika bor, darhol ko'chib kirish mumkin. Atrofda do'konlar, transport va butun infratuzilma mavjud.",
+    type: 'SECONDARY',
+    deal: 'RENT',
+    listedAt: '2026-08-09',
+    placeholderCount: 6,
+  },
+  {
+    id: 'bx-014',
+    title: '3 xonali premium kvartira, Mirabad Avenue',
+    priceSom: 17_886_000n,
+    priceUsd: 1_500,
+    rooms: 3,
+    areaM2: 120,
+    floor: '6/12',
+    district: 'Mirobod tumani',
+    address: 'Mirabad Avenue turar-joy majmuasi',
+    landmark: 'Shahar markazi, infratuzilma piyoda masofada',
+    description:
+      "Mirobod tumanidagi Mirabad Avenue majmuasida premium darajadagi uch xonali kvartira ijaraga beriladi. Umumiy maydoni 120 m², 12 qavatli binoning 6-qavatida: ikkita yotoqxona, ikkita sanuzel va studiya oshxona. Mualliflik loyihasi bo'yicha yangi ta'mirlangan, «aqlli uy» tizimi o'rnatilgan. Maktab, bog'cha, do'kon va kafelar piyoda masofada joylashgan.",
+    type: 'NEW_BUILD',
+    deal: 'RENT',
+    listedAt: '2024-10-19',
+    placeholderCount: 6,
+  },
+  {
+    id: 'bx-015',
+    title: "Tijorat xonasi, 96 m², C-1, yo'l bo'yida",
+    priceSom: 32_194_800n,
+    priceUsd: 2_700,
+    rooms: null,
+    areaM2: 96,
+    floor: '1/4',
+    district: "Mirzo Ulug'bek tumani",
+    address: 'C-1 mavzesi, Dolce Italia yonida',
+    landmark: "Yo'l bo'yi, birinchi liniya",
+    description:
+      "Mirzo Ulug'bek tumanida, C-1 mavzesida Dolce Italia yonidagi tijorat xonasi ijaraga beriladi. Maydoni 96 m², to'rt qavatli binoning 1-qavatida, yo'l bo'yidagi birinchi liniyada. Yevro ta'mir qilingan va mebel bilan topshiriladi; barcha kommunikatsiyalar, konditsioner, video kuzatuv hamda yong'in signalizatsiyasi ulangan. Salon, kafe, do'kon yoki ofis sifatida foydalanish mumkin, avtoturargoh bor.",
+    type: 'COMMERCIAL',
+    deal: 'RENT',
+    listedAt: '2025-04-26',
+    placeholderCount: 6,
+  },
+  {
+    id: 'bx-016',
+    title: 'Ofis, 58 m², Nest One biznes markazi, 19-qavat',
+    priceSom: 28_617_600n,
+    priceUsd: 2_400,
+    rooms: null,
+    areaM2: 58,
+    floor: '19/20',
+    district: 'Shayxontohur tumani',
+    address: 'Nest One majmuasi, biznes markaz bloki',
+    landmark: 'Konservatoriya tomon manzara ochiladi',
+    description:
+      "Shayxontohur tumanidagi Nest One biznes markazida ofis ijaraga beriladi. Kadastr bo'yicha maydoni 58 m², 20 qavatli binoning 19-qavatida — derazadan konservatoriya tomon manzara ochiladi. Mualliflik loyihasi bo'yicha ta'mirlangan; internet, konditsioner, video kuzatuv va kecha-kunduz qo'riqlash mavjud. Kommunal to'lovlar hamda soliq ijara narxidan alohida hisoblanadi, kamida uch oylik oldindan to'lov talab qilinadi.",
+    type: 'COMMERCIAL',
+    deal: 'RENT',
+    listedAt: '2026-07-07',
+    placeholderCount: 6,
+  },
+  {
+    id: 'bx-017',
+    title: 'Noturar xona, 48 m², C-1, Eko park birinchi liniya',
+    priceSom: 2_861_760_000n,
+    priceUsd: 240_000,
+    rooms: null,
+    areaM2: 48,
+    floor: '1/4',
+    district: "Mirzo Ulug'bek tumani",
+    address: "C-1 mavzesi, Eko park ro'parasi",
+    landmark: 'ChayKofe kafesi yonida, birinchi liniya',
+    description:
+      "Mirzo Ulug'bek tumanida, C-1 mavzesida Eko park ro'parasidagi noturar xona sotiladi. Maydoni 48 m², to'rt qavatli binoning 1-qavatida, shift balandligi 3 m. Birinchi liniyada joylashgan, yevro ta'mir qilingan va barcha kommunikatsiyalar ulangan. Uch-to'rtta avtomobil uchun turargoh bor. Har qanday biznes turi uchun mos — do'kon, kafe, ofis yoki omborxona.",
+    type: 'COMMERCIAL',
+    deal: 'SALE',
+    listedAt: '2026-07-19',
+    placeholderCount: 6,
+  },
+  {
+    id: 'bx-018',
+    title: 'Noturar xona, 41 m², Chilonzor-6, ijarachisi bilan',
+    priceSom: 1_609_740_000n,
+    priceUsd: 135_000,
+    rooms: null,
+    areaM2: 41,
+    floor: '1/4',
+    district: 'Chilonzor tumani',
+    address: "Chilonzor 6-kvartal, Dream Park ro'parasi",
+    landmark: "Korzinka yonida, yo'l bo'yi birinchi liniya",
+    description:
+      "Chilonzor tumanining 6-kvartalida, Dream Park ro'parasidagi noturar xona sotiladi. Maydoni 41 m², to'rt qavatli binoning 1-qavatida, yo'l bo'yidagi birinchi liniyada, shift balandligi 3 m. Xona tayyor ijarachi bilan o'tadi — oyiga 1 200 dollar daromad keltiradi, ya'ni investitsiya sifatida darhol ishlaydi. Kecha-kunduz qo'riqlash, signalizatsiya, video kuzatuv va 4–5 ta turargoh joyi mavjud. Narxda kelishuv mumkin.",
+    type: 'COMMERCIAL',
+    deal: 'SALE',
+    listedAt: '2026-07-30',
     placeholderCount: 6,
   },
 ];

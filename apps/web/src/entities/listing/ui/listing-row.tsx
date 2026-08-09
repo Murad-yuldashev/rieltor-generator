@@ -38,7 +38,7 @@ export function ListingRow({ listing, favoriteSlot }: Props) {
           <div className="flex items-start gap-2">
             <Link to={`/obj/${listing.id}`} className="min-w-0 flex-1">
               <p className="text-[15px] leading-tight font-extrabold text-accent-dark">
-                {formatPriceSom(listing.priceSom)}
+                {formatPriceSom(listing.priceSom, listing.deal)}
               </p>
               <p className="mt-1 line-clamp-2 text-[13px] leading-snug font-semibold">
                 {listing.title}
@@ -47,8 +47,9 @@ export function ListingRow({ listing, favoriteSlot }: Props) {
             {favoriteSlot}
           </div>
           <p className="mt-1.5 truncate text-xs font-semibold text-ink-3">
-            {listing.rooms} xona · {listing.areaM2} m² ·{' '}
-            {listing.district.replace(/\s*tumani$/, '')}
+            {/* Commercial premises have no room count — that part drops out. */}
+            {listing.rooms !== null && `${listing.rooms} xona · `}
+            {listing.areaM2} m² · {listing.district.replace(/\s*tumani$/, '')}
           </p>
         </div>
       </div>

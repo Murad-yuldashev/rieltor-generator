@@ -32,7 +32,9 @@ function truncate(text: string): string {
 }
 
 export function buildMetaTags(listing: ListingDetail, baseUrl: string): string {
-  const title = `${listing.title} — ${formatPriceSom(listing.priceSom)}`;
+  // The Telegram preview is the whole point of the SSR shell — a rent price has
+  // to carry its "/oy" here, or the preview reads as a sale.
+  const title = `${listing.title} — ${formatPriceSom(listing.priceSom, listing.deal)}`;
   const description = truncate(listing.description);
   const pageUrl = `${baseUrl}/obj/${listing.id}`;
   const firstImage = listing.images[0];

@@ -14,6 +14,7 @@ const listing = {
   landmark: 'Moljal',
   description: 'Birinchi jumla. Ikkinchi jumla. Uchinchi jumla.',
   type: 'NEW_BUILD' as const,
+  deal: 'SALE' as const,
   views: 0,
   listedAt: '2026-07-20',
   images: [

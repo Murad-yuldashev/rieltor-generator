@@ -1,15 +1,26 @@
+import type { Deal } from './schemas';
+
 /** Groups a digit string in threes with a plain space: "480000000" → "480 000 000" */
 function groupDigits(digits: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-/** priceSom is always a string — a BigInt value may not fit in a number. */
-export function formatPriceSom(priceSom: string): string {
-  return `${groupDigits(priceSom)} so'm`;
+/**
+ * A rent price is per month and is meaningless without that period, so `deal`
+ * is required rather than defaulted — a new call site cannot forget it and
+ * print a monthly figure as if it were a sale price.
+ */
+function periodSuffix(deal: Deal): string {
+  return deal === 'RENT' ? '/oy' : '';
 }
 
-export function formatPriceUsd(priceUsd: number): string {
-  return `$${groupDigits(String(priceUsd))}`;
+/** priceSom is always a string — a BigInt value may not fit in a number. */
+export function formatPriceSom(priceSom: string, deal: Deal): string {
+  return `${groupDigits(priceSom)} so'm${periodSuffix(deal)}`;
+}
+
+export function formatPriceUsd(priceUsd: number, deal: Deal): string {
+  return `$${groupDigits(String(priceUsd))}${periodSuffix(deal)}`;
 }
 
 /**

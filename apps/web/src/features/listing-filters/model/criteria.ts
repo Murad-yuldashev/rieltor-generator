@@ -1,10 +1,7 @@
-import type { ListingSummary, ListingType } from '@rieltor/shared';
+import type { Deal, ListingSummary, ListingType } from '@rieltor/shared';
 
-/** Only sale listings exist in the database; the rent segment renders an empty state. */
-export type Deal = 'SALE' | 'RENT';
-
-/** "ALL" — every type; "COMMERCIAL" — not in the database yet, renders an empty state. */
-export type TypeFilter = ListingType | 'ALL' | 'COMMERCIAL';
+/** "ALL" — every type; the rest are the listing types themselves. */
+export type TypeFilter = ListingType | 'ALL';
 
 export type Sort = 'NEW' | 'CHEAP' | 'EXPENSIVE';
 
@@ -43,11 +40,6 @@ export const EMPTY_CRITERIA: Criteria = {
   areaMax: null,
 };
 
-/** Segments with no data behind them — the result is always empty. */
-export function isUnavailableSegment({ deal, type }: Criteria) {
-  return deal === 'RENT' || type === 'COMMERCIAL';
-}
-
 /** Is anything from the "Filtrlar" panel active, beyond the search box and chips? */
 export function hasAdvancedFilters(c: Criteria) {
   return (
@@ -67,6 +59,8 @@ function matchesSearch(listing: ListingSummary, query: string) {
 
 function matchesRooms(listing: ListingSummary, rooms: number | null) {
   if (rooms === null) return true;
+  // Commercial premises carry no room count, so a room filter excludes them.
+  if (listing.rooms === null) return false;
   return rooms >= MAX_ROOMS_BUCKET ? listing.rooms >= rooms : listing.rooms === rooms;
 }
 
@@ -91,13 +85,14 @@ export function filterListings(
   listings: ListingSummary[] | undefined,
   c: Criteria,
 ): ListingSummary[] {
-  if (!listings || isUnavailableSegment(c)) return [];
+  if (!listings) return [];
 
   const query = c.search.trim().toLowerCase();
 
   return listings
     .filter(
       (l) =>
+        l.deal === c.deal &&
         (c.type === 'ALL' || l.type === c.type) &&
         (!query || matchesSearch(l, query)) &&
         matchesRooms(l, c.rooms) &&

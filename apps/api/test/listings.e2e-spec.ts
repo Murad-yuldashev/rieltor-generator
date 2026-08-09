@@ -3,6 +3,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ListingDetailSchema, ListingSummarySchema } from '@rieltor/shared';
+import { SEED_LISTINGS } from '../prisma/seed-data';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
 
@@ -20,9 +21,10 @@ describe('Objects (e2e)', () => {
     await app.close();
   });
 
-  it('GET /api/objects → seed qilingan 10 obyekt', async () => {
+  it('GET /api/objects → seed qilingan barcha obyektlar', async () => {
     const res = await request(app.getHttpServer()).get('/api/objects').expect(200);
-    expect(res.body).toHaveLength(10);
+    // Counted from the seed data, so adding a listing does not break the test.
+    expect(res.body).toHaveLength(SEED_LISTINGS.length);
     for (const item of res.body) {
       expect(() => ListingSummarySchema.parse(item)).not.toThrow();
     }

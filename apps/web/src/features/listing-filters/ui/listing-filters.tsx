@@ -1,8 +1,9 @@
 import { Link } from 'react-router';
+import type { Deal } from '@rieltor/shared';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
-import type { Deal, TypeFilter } from '../model/criteria';
+import type { TypeFilter } from '../model/criteria';
 
 interface Props {
   deal: Deal;
@@ -21,7 +22,6 @@ const DEALS: { value: Deal; label: string }[] = [
 const CHIPS: { value: TypeFilter; label: string }[] = [
   { value: 'ALL', label: 'Barchasi' },
   ...LISTING_TYPES.map((t) => ({ value: t as TypeFilter, label: LISTING_TYPE_META[t].chipLabel })),
-  { value: 'COMMERCIAL', label: '🏪 Kommersiya' },
 ];
 
 export function ListingFilters({

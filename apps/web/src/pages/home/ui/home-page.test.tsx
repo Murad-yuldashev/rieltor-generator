@@ -16,6 +16,7 @@ const listings = [
     district: 'Buxoro shahri',
     landmark: '12-maktab yaqinida',
     type: 'SECONDARY',
+    deal: 'SALE',
     listedAt: '2026-07-22',
     image: { base: '/images/bx-001/01', ogUrl: null, width: 1200, height: 900, position: 1 },
     imageCount: 4,

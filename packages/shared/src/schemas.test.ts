@@ -14,6 +14,7 @@ const fullListing = {
   landmark: 'Bukhara City yaqinida',
   description: 'Uch jumlalik tavsif.',
   type: 'SECONDARY',
+  deal: 'SALE',
   views: 7,
   listedAt: '2026-07-28',
   images: [
@@ -49,8 +50,17 @@ describe('ListingDetailSchema', () => {
     expect(() => ListingDetailSchema.parse({ ...fullListing, priceSom: 480000000 })).toThrow();
   });
 
+  it('allows a null rooms count for a commercial premise', () => {
+    const commercial = { ...fullListing, type: 'COMMERCIAL', rooms: null };
+    expect(ListingDetailSchema.parse(commercial).rooms).toBeNull();
+  });
+
   it('rejects an unknown type value', () => {
     expect(() => ListingDetailSchema.parse({ ...fullListing, type: 'DACHA' })).toThrow();
+  });
+
+  it('rejects an unknown deal value', () => {
+    expect(() => ListingDetailSchema.parse({ ...fullListing, deal: 'SWAP' })).toThrow();
   });
 });
 

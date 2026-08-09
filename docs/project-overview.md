@@ -33,7 +33,7 @@ Demo skeleti to'liq bajarildi, ustiga **haqiqiy ilovaga o'xshash qatlam** qo'shi
 
 | Boshida                    | Hozir                                                                           |
 | -------------------------- | ------------------------------------------------------------------------------- |
-| 3 ta obyekt (Buxoro)       | **10 ta obyekt** (Toshkent, OLX.uz'dan olingan real e'lonlar)                   |
+| 3 ta obyekt (Buxoro)       | **18 ta obyekt** (Toshkent, OLX.uz'dan olingan real e'lonlar)                   |
 | Oddiy havolalar ro'yxati   | **Kartalar lentasi** — filtr, saralash, "Ko'proq ko'rsatish"                    |
 | 2 ta sahifa                | **7 ta sahifa** + pastki tab-menyu (Bosh sahifa · Qidiruv · Sevimlilar · Aloqa) |
 | Faqat obyekt ko'rish       | **Sevimlilar**, **qidiruv tarixi**, **kengaytirilgan filtr paneli**             |
@@ -45,8 +45,9 @@ Demo skeleti to'liq bajarildi, ustiga **haqiqiy ilovaga o'xshash qatlam** qo'shi
 ### Foydalanuvchi ko'radigan qism
 
 - **Bosh sahifa (`/`)** — e'lon kartalari; Sotib olish/Ijara segmenti, tur bo'yicha chiplar
-  (Yangi bino · Ikkilamchi · Hovli · Tijorat), matnli qidiruv, saralash (Yangi · Arzon · Qimmat),
-  6 tadan sahifalash.
+  (Yangi qurilish · Ikkilamchi · Hovli · Tijorat), matnli qidiruv, saralash (Yangi · Arzon · Qimmat),
+  6 tadan sahifalash. Har ikkala segment ham to'la: sotuvda 12 ta, ijarada 6 ta e'lon,
+  shundan 4 tasi tijorat obyekti. Ijara narxi hamma joyda `/oy` bilan ko'rsatiladi.
 - **Qidiruv (`/search`)** — so'nggi qidiruvlar chiplari, ommabop tumanlar ro'yxati,
   filtr paneli (xona soni, narx oralig'i, maydon oralig'i) va jonli hisoblagichli
   "Natijalarni ko'rsatish · N ta" tugmasi.
@@ -95,13 +96,9 @@ Qo'shimcha server funksiyalari:
 
 ## 6. Hali yopilmagan joylar
 
-- **"Ijara" va "Tijorat" segmentlari** — UI'da bor, lekin bazada ma'lumot yo'q,
-  bo'sh holat ko'rsatiladi.
 - **Filtrlash va qidiruv brauzer tomonida** — butun ro'yxat bir marta yuklanadi.
-  10 ta e'lon uchun yetarli, yuzlab e'lon bo'lsa server tomoniga ko'chirish kerak.
+  18 ta e'lon uchun yetarli, yuzlab e'lon bo'lsa server tomoniga ko'chirish kerak.
 - **DoD'ning jonli URL talab qiladigan punktlari tekshirilmagan** — Telegram preview,
   Lighthouse ≥ 90, ikki qurilmadan hisoblagich (batafsil: [deploy.md](deploy.md) oxiri).
 - **Oferta matni yuridik ko'rikdan o'tmagan** — prodga chiqishdan oldin yurist tekshirishi
   va kompaniya rekvizitlari qo'shilishi kerak.
-- **Yangi UI qatlami hali commit qilinmagan** — qidiruv, sevimlilar, filtrlar, aloqa va
-  oferta sahifalari ish katalogida turibdi (`git status`).

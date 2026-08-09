@@ -89,6 +89,7 @@ async function main() {
         landmark: listing.landmark,
         description: listing.description,
         type: listing.type,
+        deal: listing.deal,
         listedAt: new Date(listing.listedAt),
       },
       create: {
@@ -104,6 +105,7 @@ async function main() {
         landmark: listing.landmark,
         description: listing.description,
         type: listing.type,
+        deal: listing.deal,
         listedAt: new Date(listing.listedAt),
         agentId: AGENT_ID,
       },
