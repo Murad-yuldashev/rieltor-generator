@@ -488,10 +488,10 @@ const FUTURE_TOLERANCE_SEC = 60;
  * including them as "undefined" would change the signature.
  */
 export function telegramDataCheckString(payload: TelegramAuth): string {
-  const { hash: _hash, ...rest } = payload;
-
-  return Object.entries(rest)
-    .filter(([, value]) => value !== undefined)
+  // Filtered rather than destructured: `const { hash: _hash, ...rest }` leaves an
+  // unused binding, and this repo's no-unused-vars rule only exempts arguments.
+  return Object.entries(payload)
+    .filter(([key, value]) => key !== 'hash' && value !== undefined)
     .map(([key, value]) => `${key}=${value}`)
     .sort()
     .join('\n');
