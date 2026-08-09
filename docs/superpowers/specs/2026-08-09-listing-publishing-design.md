@@ -94,6 +94,8 @@ loyihaning mavjud qoidasi saqlanadi.
 | `packages/shared/src/*`                          | Yangi sxemalar, `absoluteUrl`, `buildShareCaption`, `allowedTransitions`      |
 | `netlify.toml`                                   | `/r/*` rewrite, kabinet SPA marshrutlari, cron funksiyasi jadvali             |
 | `apps/web/src/shared/api/client.ts`              | `POST/PATCH` uchun ixtiyoriy `body` (mavjud imzolar buzilmaydi)               |
+| `apps/web/src/shared/api/client.test.ts`         | Yangi metodlar uchun qo'shimcha holatlar (mavjudlari o'chirilmaydi)           |
+| `docs/project-overview.md`                       | Har bosqich oxirida yangi funksiyalar va endpointlar ro'yxati                 |
 | `apps/web/src/pages/contact/ui/contact-page.tsx` | "Rieltor uchun" havolasi                                                      |
 | `apps/api/.env.example`                          | Yangi ixtiyoriy env o'zgaruvchilari                                           |
 | `apps/api/src/config/env.test.ts`                | Yangi maydonlar uchun qo'shimcha holatlar (mavjudlari o'chirilmaydi)          |
