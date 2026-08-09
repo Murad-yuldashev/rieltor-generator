@@ -98,6 +98,14 @@ describe('AuthService.upsertFromTelegram', () => {
     const service = new AuthService(fakePrisma({ create }));
 
     await service.upsertFromTelegram({ ...payload, username: undefined });
+    expect(create.mock.calls[0]![0]!.data.username).toBe('ali');
+  });
+
+  it('falls back to the fixed stem when the display name has no usable characters', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 'rlt_new' });
+    const service = new AuthService(fakePrisma({ create }));
+
+    await service.upsertFromTelegram({ ...payload, username: undefined, first_name: 'Али' });
     expect(create.mock.calls[0]![0]!.data.username).toBe('rieltor');
   });
 });

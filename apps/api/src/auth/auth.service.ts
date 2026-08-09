@@ -53,7 +53,7 @@ export class AuthService {
         tgUsername: payload.username ?? null,
         name,
         photoUrl,
-        username: await this.pickUsername(payload.username ?? ''),
+        username: await this.pickUsername(payload.username ?? payload.first_name),
       },
       select: { id: true },
     });
