@@ -79,22 +79,31 @@ loyihaning mavjud qoidasi saqlanadi.
 
 ### 2.4 Mavjud fayllarga tegish nuqtalari (to'liq ro'yxat)
 
-| Fayl                               | O'zgarish                                                                     |
-| ---------------------------------- | ----------------------------------------------------------------------------- |
-| `apps/api/prisma/schema.prisma`    | Yangi modellar va NULLable ustunlar                                           |
-| `apps/api/src/app.module.ts`       | Yangi modullar import qilinadi (dev-auth shartli)                             |
-| `apps/api/src/config/env.ts`       | Yangi **ixtiyoriy** env maydonlari                                            |
-| `apps/api/src/bootstrap.ts`        | Global-prefix exclude ro'yxatiga `r/:username` va kabinet marshrutlari        |
-| `apps/api/src/ssr/routes.ts`       | Yangi statik SPA marshrutlari                                                 |
-| `apps/api/src/ssr/meta.ts`         | `og:image` uchun `absoluteUrl()` yordamchisi (§6.3)                           |
-| `apps/api/prisma/images.ts`        | Yadro `src/media/variants.ts` ga ko'chadi, fayl yupqa qobiqqa aylanadi (§6.2) |
-| `apps/api/src/listings/*`          | `findAll()` ga status filtri, `findOne()` ga ko'rinish qoidasi (§5.3)         |
-| `apps/web/src/app/router.tsx`      | Yangi marshrutlar                                                             |
-| `apps/web/src/widgets/site-header` | "Rieltor uchun" havolasi                                                      |
-| `packages/shared/src/*`            | Yangi sxemalar, `absoluteUrl`, `buildShareCaption`, `allowedTransitions`      |
-| `netlify.toml`                     | `/r/*` rewrite, kabinet SPA marshrutlari, cron funksiyasi jadvali             |
+| Fayl                                             | O'zgarish                                                                     |
+| ------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `apps/api/prisma/schema.prisma`                  | Yangi modellar va NULLable ustunlar                                           |
+| `apps/api/src/app.module.ts`                     | Yangi modullar import qilinadi (dev-auth shartli)                             |
+| `apps/api/src/config/env.ts`                     | Yangi **ixtiyoriy** env maydonlari                                            |
+| `apps/api/src/bootstrap.ts`                      | Global-prefix exclude ro'yxatiga `r/:username` va kabinet marshrutlari        |
+| `apps/api/src/ssr/routes.ts`                     | Yangi statik SPA marshrutlari                                                 |
+| `apps/api/src/ssr/meta.ts`                       | `og:image` uchun `absoluteUrl()` yordamchisi (§6.3)                           |
+| `apps/api/prisma/images.ts`                      | Yadro `src/media/variants.ts` ga ko'chadi, fayl yupqa qobiqqa aylanadi (§6.2) |
+| `apps/api/src/listings/*`                        | `findAll()` ga status filtri, `findOne()` ga ko'rinish qoidasi (§5.3)         |
+| `apps/web/src/app/router.tsx`                    | Yangi marshrutlar                                                             |
+| `apps/web/src/widgets/site-header`               | "Rieltor uchun" havolasi                                                      |
+| `packages/shared/src/*`                          | Yangi sxemalar, `absoluteUrl`, `buildShareCaption`, `allowedTransitions`      |
+| `netlify.toml`                                   | `/r/*` rewrite, kabinet SPA marshrutlari, cron funksiyasi jadvali             |
+| `apps/web/src/shared/api/client.ts`              | `POST/PATCH` uchun ixtiyoriy `body` (mavjud imzolar buzilmaydi)               |
+| `apps/web/src/pages/contact/ui/contact-page.tsx` | "Rieltor uchun" havolasi                                                      |
+| `apps/api/.env.example`                          | Yangi ixtiyoriy env o'zgaruvchilari                                           |
+| `apps/api/src/config/env.test.ts`                | Yangi maydonlar uchun qo'shimcha holatlar (mavjudlari o'chirilmaydi)          |
+| `apps/api/test/ssr.e2e-spec.ts`                  | Yangi SPA marshrutlari uchun qo'shimcha holatlar                              |
+| `.github/workflows/ci.yml`                       | e2e stack'ni `docker-compose.e2e.yml` overlay bilan ko'tarish                 |
 
-Boshqa mavjud fayl o'zgartirilmaydi.
+Boshqa mavjud fayl o'zgartirilmaydi. Yangi `docker-compose.e2e.yml` overlay fayli asosiy
+`docker-compose.yml` ni o'zgarishsiz qoldiradi: e2e stack'ga `NODE_ENV=test` va dev-login
+sirini faqat shu overlay qo'shadi (cookie'ning `Secure` bayrog'i `http://localhost` da
+saqlanmasligi uchun ham shu kerak).
 
 ---
 
