@@ -1,15 +1,17 @@
 import type { Deal, ListingSummary, ListingType } from '@rieltor/shared';
+import { distanceKm, type Point } from '@rieltor/shared';
 
 /** "ALL" — every type; the rest are the listing types themselves. */
 export type TypeFilter = ListingType | 'ALL';
 
-export type Sort = 'NEW' | 'CHEAP' | 'EXPENSIVE';
+export type Sort = 'NEW' | 'CHEAP' | 'EXPENSIVE' | 'NEAR';
 
 /** Kept short so the "Saralash: …" pill stays on a single line. */
 export const SORT_LABELS: Record<Sort, string> = {
   NEW: 'Yangi',
   CHEAP: 'Arzon',
   EXPENSIVE: 'Qimmat',
+  NEAR: 'Yaqin',
 };
 
 /** The largest rooms bucket is "5+" — anything above it falls into the same bucket. */
@@ -68,12 +70,23 @@ function inRange(value: number, min: number | null, max: number | null) {
   return (min === null || value >= min) && (max === null || value <= max);
 }
 
-function compare(a: ListingSummary, b: ListingSummary, sort: Sort) {
+function compare(a: ListingSummary, b: ListingSummary, sort: Sort, origin: Point | null) {
   // Prices fit in a Number (the priciest house is ~2.1 bn), but the source of truth
   // is a string, so BigInt comparison avoids any precision question.
   if (sort === 'CHEAP') return BigInt(a.priceSom) < BigInt(b.priceSom) ? -1 : 1;
   if (sort === 'EXPENSIVE') return BigInt(a.priceSom) > BigInt(b.priceSom) ? -1 : 1;
+  if (sort === 'NEAR' && origin) {
+    // A listing without a pin cannot be ranked by distance, so it sinks to the end
+    // rather than pretending to be at the origin.
+    return listingDistance(a, origin) - listingDistance(b, origin);
+  }
   return b.listedAt.localeCompare(a.listedAt);
+}
+
+/** Infinity for an unpinned listing — it sorts last and never wins a comparison. */
+function listingDistance(listing: ListingSummary, origin: Point): number {
+  if (listing.lat === null || listing.lng === null) return Infinity;
+  return distanceKm(origin, { lat: listing.lat, lng: listing.lng });
 }
 
 /**
@@ -84,6 +97,7 @@ function compare(a: ListingSummary, b: ListingSummary, sort: Sort) {
 export function filterListings(
   listings: ListingSummary[] | undefined,
   c: Criteria,
+  origin: Point | null = null,
 ): ListingSummary[] {
   if (!listings) return [];
 
@@ -99,5 +113,5 @@ export function filterListings(
         inRange(Number(l.priceSom), c.priceMin, c.priceMax) &&
         inRange(l.areaM2, c.areaMin, c.areaMax),
     )
-    .sort((a, b) => compare(a, b, c.sort));
+    .sort((a, b) => compare(a, b, c.sort, origin));
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Deal, ListingSummary } from '@rieltor/shared';
+import type { Deal, ListingSummary, Point } from '@rieltor/shared';
 import {
   EMPTY_CRITERIA,
   filterListings,
@@ -14,7 +14,10 @@ import {
  * Price / area / room-count live only in the search page's filter panel, so they
  * stay at their defaults here — the home page has no controls for them.
  */
-export function useListingFilters(listings: ListingSummary[] | undefined) {
+export function useListingFilters(
+  listings: ListingSummary[] | undefined,
+  origin: Point | null = null,
+) {
   const [deal, setDeal] = useState<Deal>(EMPTY_CRITERIA.deal);
   const [type, setType] = useState<TypeFilter>(EMPTY_CRITERIA.type);
   const [sort, setSort] = useState<Sort>(EMPTY_CRITERIA.sort);
@@ -32,6 +35,6 @@ export function useListingFilters(listings: ListingSummary[] | undefined) {
     search,
     setSearch,
     // Only a couple of dozen listings — memoising would not earn its keep.
-    visible: filterListings(listings, criteria),
+    visible: filterListings(listings, criteria, origin),
   };
 }
