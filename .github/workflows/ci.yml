@@ -51,7 +51,7 @@ jobs:
         env:
           SEED_AGENT_TEL: '+998901234567'
           SEED_AGENT_TG: 'test'
-        run: docker compose up -d --build
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build
       - name: Servis tayyorligini kutish
         run: |
           for i in $(seq 1 60); do

@@ -5,6 +5,7 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  NODE_ENV = "production"
 
 [functions]
   # nft copies the traced files instead of bundling them into one module. NestJS resolves
@@ -74,6 +75,16 @@
 
 [[redirects]]
   from = "/offer"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/cabinet"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/cabinet/profile"
   to = "/index.html"
   status = 200
 

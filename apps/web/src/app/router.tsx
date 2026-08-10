@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router';
+import { CabinetPage, ProfilePage } from '@/pages/cabinet';
 import { ContactPage } from '@/pages/contact';
 import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
@@ -24,6 +25,9 @@ export const router = createBrowserRouter([
           { path: '/contact', element: <ContactPage /> },
           // Not in the bottom nav — reached from the link on the contact page.
           { path: '/offer', element: <OfferPage /> },
+          // Not in the bottom nav either — reached from the header link.
+          { path: '/cabinet', element: <CabinetPage /> },
+          { path: '/cabinet/profile', element: <ProfilePage /> },
         ],
       },
       // The listing page sits outside TabLayout: full-bleed gallery and its own sticky CTA.

@@ -27,4 +27,22 @@ describe('envSchema', () => {
     const parsed = envSchema.parse({ ...fullEnv, PUBLIC_BASE_URL: 'https://misol.uz/' });
     expect(parsed.PUBLIC_BASE_URL).toBe('https://misol.uz');
   });
+
+  it('keeps the cabinet variables when they are set', () => {
+    const parsed = envSchema.parse({
+      ...fullEnv,
+      JWT_SECRET: 'e2e-jwt-secret-at-least-16',
+      TELEGRAM_BOT_TOKEN: '123456:token',
+    });
+    expect(parsed.JWT_SECRET).toBe('e2e-jwt-secret-at-least-16');
+    expect(parsed.TELEGRAM_BOT_TOKEN).toBe('123456:token');
+  });
+
+  it('leaves the cabinet variables undefined when they are not set', () => {
+    const parsed = envSchema.parse(fullEnv);
+    expect(parsed.TELEGRAM_BOT_TOKEN).toBeUndefined();
+    expect(parsed.JWT_SECRET).toBeUndefined();
+    expect(parsed.ADMIN_TOKEN).toBeUndefined();
+    expect(parsed.DEV_LOGIN_SECRET).toBeUndefined();
+  });
 });

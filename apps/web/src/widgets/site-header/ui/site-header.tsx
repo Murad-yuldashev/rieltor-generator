@@ -14,6 +14,10 @@ export function SiteHeader() {
           </span>
         </Link>
 
+        <Link to="/cabinet" className="ml-auto mr-2 text-[13px] font-bold text-accent">
+          Rieltor uchun
+        </Link>
+
         {/* There is no city picker yet — every listing is in Tashkent. So this is a
             plain label rather than a button that would do nothing. */}
         <div className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-[7px] text-[13px] font-semibold text-ink-2">
