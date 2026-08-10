@@ -51,4 +51,16 @@ describe('Objects (e2e)', () => {
   it("mavjud bo'lmagan id → 404", async () => {
     await request(app.getHttpServer()).get('/api/objects/yoq-000').expect(404);
   });
+
+  it('har bir seed obyekti koordinata bilan keladi', async () => {
+    const res = await request(app.getHttpServer()).get('/api/objects').expect(200);
+    for (const item of res.body) {
+      expect(typeof item.lat).toBe('number');
+      expect(typeof item.lng).toBe('number');
+      expect(item.lat).toBeGreaterThan(41.15);
+      expect(item.lat).toBeLessThan(41.42);
+      expect(item.lng).toBeGreaterThan(69.1);
+      expect(item.lng).toBeLessThan(69.45);
+    }
+  });
 });

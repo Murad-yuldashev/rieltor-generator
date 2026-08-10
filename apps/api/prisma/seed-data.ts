@@ -16,6 +16,9 @@ export interface SeedListing {
   description: string;
   type: ListingType;
   deal: Deal;
+  /** WGS84. Placed from the address and district; see the plan's note on accuracy. */
+  lat: number;
+  lng: number;
   listedAt: string;
   placeholderCount: number;
 }
@@ -41,6 +44,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 72,
     floor: '7/7',
     district: 'Yunusobod tumani',
+    lat: 41.372,
+    lng: 69.287,
     address: 'Kashtan turar-joy majmuasi, Yunusobod 10-kvartal',
     landmark: "265-maktab va so'nggi bekat yaqinida",
     description:
@@ -59,6 +64,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 95,
     floor: '5/9',
     district: 'Mirobod tumani',
+    lat: 41.2865,
+    lng: 69.279,
     address: "Nukus ko'chasi, 9 qavatli bino",
     landmark: 'Makro savdo markazi yaqinida',
     description:
@@ -77,6 +84,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 300,
     floor: null,
     district: 'Yashnobod tumani',
+    lat: 41.279,
+    lng: 69.352,
     address: 'Olmos mahallasi, burchak uchastka',
     landmark: 'Mahalla markazi va maktab yaqinida',
     description:
@@ -95,6 +104,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 87,
     floor: '3/4',
     district: 'Chilonzor tumani',
+    lat: 41.286,
+    lng: 69.216,
     address: "Chilonzor-1 kvartali, Muqimiy ko'chasi",
     landmark: 'Pionerskiy va Oq Saroy restorani yaqinida',
     description:
@@ -113,6 +124,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 45.23,
     floor: '11/11',
     district: 'Shayxontohur tumani',
+    lat: 41.314,
+    lng: 69.238,
     address: "Nurafshon ko'chasi, 50-uy",
     landmark: "Riviera savdo markazi ro'parasida",
     description:
@@ -131,6 +144,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 50,
     floor: '2/12',
     district: "Mirzo Ulug'bek tumani",
+    lat: 41.328,
+    lng: 69.32,
     address: 'Darhan Residence turar-joy majmuasi',
     landmark: "Darhan, Novomoskovskaya ko'chasi yaqinida",
     description:
@@ -149,6 +164,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 61.43,
     floor: '10/11',
     district: 'Yakkasaroy tumani',
+    lat: 41.276,
+    lng: 69.256,
     address: "Bog'ibo'ston ko'chasi, Salamatina turar-joy majmuasi",
     landmark: 'Yakkasaroy masjidi va Birodarlar qabri yodgorligi yaqinida',
     description:
@@ -167,6 +184,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 80,
     floor: '9/9',
     district: 'Olmazor tumani',
+    lat: 41.352,
+    lng: 69.214,
     address: 'Olmazor City turar-joy majmuasi',
     landmark: "Olmazor tumani markazi, qo'riqlanadigan yopiq hudud",
     description:
@@ -185,6 +204,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 290,
     floor: null,
     district: 'Sergeli tumani',
+    lat: 41.218,
+    lng: 69.227,
     address: 'Ikki qavatli kottej, quruvchi kompaniyadan',
     landmark: 'Metro bekatiga 350–400 metr',
     description:
@@ -203,6 +224,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 58,
     floor: '14/16',
     district: 'Uchtepa tumani',
+    lat: 41.302,
+    lng: 69.183,
     address: 'Urikzor Residence turar-joy majmuasi',
     landmark: "Majmuaning o'z maktabi va bog'chasi yonida",
     description:
@@ -221,6 +244,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 110,
     floor: '4/12',
     district: 'Yakkasaroy tumani',
+    lat: 41.28,
+    lng: 69.248,
     address: 'Uzbegim turar-joy majmuasi',
     landmark: "Qo'riqlanadigan yashil hudud ichida",
     description:
@@ -239,6 +264,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 70,
     floor: '5/5',
     district: "Mirzo Ulug'bek tumani",
+    lat: 41.3255,
+    lng: 69.3345,
     address: "Buz bozor, Buyuk Ipak Yo'li metrosi atrofi",
     landmark: "Buyuk Ipak Yo'li metrosiga piyoda",
     description:
@@ -257,6 +284,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 48,
     floor: '4/4',
     district: 'Chilonzor tumani',
+    lat: 41.272,
+    lng: 69.202,
     address: "Chilonzor tumani, 76-seriya g'isht bino",
     landmark: 'Hamza metrosi yaqinida',
     description:
@@ -275,6 +304,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 120,
     floor: '6/12',
     district: 'Mirobod tumani',
+    lat: 41.295,
+    lng: 69.283,
     address: 'Mirabad Avenue turar-joy majmuasi',
     landmark: 'Shahar markazi, infratuzilma piyoda masofada',
     description:
@@ -293,6 +324,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 96,
     floor: '1/4',
     district: "Mirzo Ulug'bek tumani",
+    lat: 41.335,
+    lng: 69.33,
     address: 'C-1 mavzesi, Dolce Italia yonida',
     landmark: "Yo'l bo'yi, birinchi liniya",
     description:
@@ -311,6 +344,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 58,
     floor: '19/20',
     district: 'Shayxontohur tumani',
+    lat: 41.311,
+    lng: 69.245,
     address: 'Nest One majmuasi, biznes markaz bloki',
     landmark: 'Konservatoriya tomon manzara ochiladi',
     description:
@@ -329,6 +364,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 48,
     floor: '1/4',
     district: "Mirzo Ulug'bek tumani",
+    lat: 41.338,
+    lng: 69.326,
     address: "C-1 mavzesi, Eko park ro'parasi",
     landmark: 'ChayKofe kafesi yonida, birinchi liniya',
     description:
@@ -347,6 +384,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     areaM2: 41,
     floor: '1/4',
     district: 'Chilonzor tumani',
+    lat: 41.279,
+    lng: 69.21,
     address: "Chilonzor 6-kvartal, Dream Park ro'parasi",
     landmark: "Korzinka yonida, yo'l bo'yi birinchi liniya",
     description:

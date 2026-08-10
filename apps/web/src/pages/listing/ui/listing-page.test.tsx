@@ -20,6 +20,8 @@ const listing = {
   deal: 'SALE',
   views: 3,
   listedAt: '2026-07-22',
+  lat: 41.31,
+  lng: 69.24,
   images: [
     {
       base: '/images/bx-002/01',

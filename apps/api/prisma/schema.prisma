@@ -56,6 +56,10 @@ model Listing {
   type        ListingType
   /// The ten listings that predate this column were all sales.
   deal        Deal        @default(SALE)
+  /// WGS84. Nullable: a listing without a pin still shows everywhere it did before,
+  /// and stage 2's draft form saves before the realtor places one.
+  lat         Float?
+  lng         Float?
   views       Int         @default(0)
   listedAt    DateTime    @db.Date
   agentId     String

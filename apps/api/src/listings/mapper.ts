@@ -30,6 +30,8 @@ export function toListingDetail(row: ListingRow): ListingDetail {
     deal: row.deal,
     views: row.views,
     listedAt: dateText(row.listedAt),
+    lat: row.lat,
+    lng: row.lng,
     images: [...row.images].sort((a, b) => a.position - b.position).map(imageDto),
     agent: {
       id: row.agent.id,
@@ -57,6 +59,8 @@ export function toListingSummary(row: ListingRow): ListingSummary {
     type: row.type,
     deal: row.deal,
     listedAt: dateText(row.listedAt),
+    lat: row.lat,
+    lng: row.lng,
     image: firstImage ? imageDto(firstImage) : null,
     // The list response carries only the first image, but the card's "1/8" counter
     // needs the total — cheaper than sending the whole array.

@@ -90,6 +90,8 @@ async function main() {
         description: listing.description,
         type: listing.type,
         deal: listing.deal,
+        lat: listing.lat,
+        lng: listing.lng,
         listedAt: new Date(listing.listedAt),
       },
       create: {
@@ -106,6 +108,8 @@ async function main() {
         description: listing.description,
         type: listing.type,
         deal: listing.deal,
+        lat: listing.lat,
+        lng: listing.lng,
         listedAt: new Date(listing.listedAt),
         agentId: AGENT_ID,
       },

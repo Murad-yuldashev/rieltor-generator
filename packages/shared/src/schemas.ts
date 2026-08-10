@@ -46,6 +46,9 @@ export const ListingSummarySchema = z.object({
   /** Drives the "Sotib olish / Ijara" segment and the "/oy" price suffix. */
   deal: DealSchema,
   listedAt: z.string(),
+  /** WGS84; null when the listing has no pin yet. */
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
   image: ImageSchema.nullable(),
   /** Powers the "1/8" counter on a card — just the count, not the whole array. */
   imageCount: z.number().int(),
