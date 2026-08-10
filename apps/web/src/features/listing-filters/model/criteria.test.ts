@@ -42,6 +42,14 @@ describe('filterListings with NEAR', () => {
     expect(result.map((l) => l.id)).toEqual(['pinned', 'unpinned']);
   });
 
+  it('keeps a deterministic order when neither listing has coordinates', () => {
+    const older = { ...listing('older', null, null), listedAt: '2026-07-01' };
+    const newer = { ...listing('newer', null, null), listedAt: '2026-08-05' };
+
+    const result = filterListings([older, newer], { ...EMPTY_CRITERIA, sort: 'NEAR' }, ORIGIN);
+    expect(result.map((l) => l.id)).toEqual(['newer', 'older']);
+  });
+
   it('falls back to the newest-first order when the origin is unknown', () => {
     const older = { ...listing('older', 41.301, 69.241), listedAt: '2026-07-01' };
     const newer = { ...listing('newer', 41.22, 69.22), listedAt: '2026-08-05' };

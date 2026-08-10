@@ -78,12 +78,18 @@ function compare(a: ListingSummary, b: ListingSummary, sort: Sort, origin: Point
   if (sort === 'NEAR' && origin) {
     // A listing without a pin cannot be ranked by distance, so it sinks to the end
     // rather than pretending to be at the origin.
-    return listingDistance(a, origin) - listingDistance(b, origin);
+    const aKm = listingDistance(a, origin);
+    const bKm = listingDistance(b, origin);
+    // Two unpinned listings are both Infinity, and Infinity - Infinity is NaN — a
+    // comparator returning NaN leaves the order undefined. An exact tie (including
+    // that one) falls back to the newest-first rule.
+    if (aKm === bKm) return b.listedAt.localeCompare(a.listedAt);
+    return aKm - bKm;
   }
   return b.listedAt.localeCompare(a.listedAt);
 }
 
-/** Infinity for an unpinned listing — it sorts last and never wins a comparison. */
+/** Infinity for an unpinned listing — forces it to sort after any pinned listing. */
 function listingDistance(listing: ListingSummary, origin: Point): number {
   if (listing.lat === null || listing.lng === null) return Infinity;
   return distanceKm(origin, { lat: listing.lat, lng: listing.lng });
