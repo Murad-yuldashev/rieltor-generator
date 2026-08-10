@@ -73,4 +73,34 @@ describe('ProfilePage', () => {
     expect(patchCall).toBeDefined();
     expect(JSON.parse(patchCall![1]!.body as string).phone).toBe('+998901234567');
   });
+
+  it('shows a separate message per field instead of one message for all', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse(profile));
+    renderPage(fetchMock);
+
+    const name = await screen.findByLabelText('Ism');
+    await userEvent.clear(name);
+    await userEvent.type(await screen.findByLabelText('Telefon'), '901234567');
+    await userEvent.click(screen.getByRole('button', { name: 'Saqlash' }));
+
+    expect(await screen.findByText(/\+998XXXXXXXXX/)).toBeInTheDocument();
+    expect(await screen.findByText(/have >=2 characters/i)).toBeInTheDocument();
+    // Only the initial GET — nothing was sent.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a failure message when the PATCH request fails', async () => {
+    const fetchMock = vi.fn(async (_path: string, init?: RequestInit) =>
+      init?.method === 'PATCH'
+        ? new Response('{}', { status: 500, headers: { 'content-type': 'application/json' } })
+        : jsonResponse(profile),
+    );
+    renderPage(fetchMock);
+
+    await userEvent.type(await screen.findByLabelText('Telefon'), '+998901234567');
+    await userEvent.click(screen.getByRole('button', { name: 'Saqlash' }));
+
+    expect(await screen.findByText(/Saqlashda xatolik/)).toBeInTheDocument();
+    expect(screen.queryByText(/Saqlandi/)).not.toBeInTheDocument();
+  });
 });

@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { RealtorProfileUpdateSchema } from '@rieltor/shared';
 import { useMe, useUpdateProfile } from '@/features/auth';
 import { PageHeading } from '@/shared/ui/page-heading';
@@ -24,11 +24,17 @@ export function ProfilePage() {
   const { realtor, isLoading } = useMe();
   const update = useUpdateProfile();
   const [form, setForm] = useState<FormState>(EMPTY);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [saved, setSaved] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+
+  // Seed the form once per realtor: a background refetch produces a new object
+  // reference, and re-seeding on it would wipe out whatever the user has typed.
+  const seededFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!realtor) return;
+    if (!realtor || seededFor.current === realtor.id) return;
+    seededFor.current = realtor.id;
     setForm({
       name: realtor.name,
       phone: realtor.phone ?? '',
@@ -40,6 +46,7 @@ export function ProfilePage() {
   function submit(event: FormEvent) {
     event.preventDefault();
     setSaved(false);
+    setSaveFailed(false);
 
     // Empty optional fields are sent as null so the server clears them; phone is
     // only sent when filled, because it cannot be cleared once set.
@@ -52,12 +59,21 @@ export function ProfilePage() {
 
     const parsed = RealtorProfileUpdateSchema.safeParse(patch);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Ma'lumot noto'g'ri");
+      // One message per field, so a bad phone never shows up under "Ism".
+      const next: Partial<Record<keyof FormState, string>> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as keyof FormState | undefined;
+        if (key && !next[key]) next[key] = issue.message;
+      }
+      setErrors(next);
       return;
     }
 
-    setError(null);
-    update.mutate(parsed.data, { onSuccess: () => setSaved(true) });
+    setErrors({});
+    update.mutate(parsed.data, {
+      onSuccess: () => setSaved(true),
+      onError: () => setSaveFailed(true),
+    });
   }
 
   if (isLoading) {
@@ -85,12 +101,23 @@ export function ProfilePage() {
                 }
                 className="w-full rounded-[12px] border border-line bg-card px-3 py-2.5 text-[15px] font-semibold"
               />
+              {errors[field.key] && (
+                <span className="mt-1 block text-[13px] font-bold text-red-600">
+                  {errors[field.key]}
+                </span>
+              )}
             </label>
           ))}
         </SectionCard>
 
-        {error && <p className="mt-3 text-[13px] font-bold text-red-600">{error}</p>}
-        {saved && !error && <p className="mt-3 text-[13px] font-bold text-emerald-600">Saqlandi</p>}
+        {saveFailed && (
+          <p className="mt-3 text-[13px] font-bold text-red-600">
+            Saqlashda xatolik. Qayta urinib ko'ring.
+          </p>
+        )}
+        {saved && Object.keys(errors).length === 0 && (
+          <p className="mt-3 text-[13px] font-bold text-emerald-600">Saqlandi</p>
+        )}
 
         <button
           type="submit"
