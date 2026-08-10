@@ -10,10 +10,21 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, method: 'GET' | 'POST', schema: ZodType<T>): Promise<T> {
+type Method = 'GET' | 'POST' | 'PATCH';
+
+async function request<T>(
+  path: string,
+  method: Method,
+  schema: ZodType<T>,
+  body?: unknown,
+): Promise<T> {
+  const headers: Record<string, string> = { accept: 'application/json' };
+  if (body !== undefined) headers['content-type'] = 'application/json';
+
   const response = await fetch(path, {
     method,
-    headers: { accept: 'application/json' },
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -28,6 +39,10 @@ export function apiGet<T>(path: string, schema: ZodType<T>): Promise<T> {
   return request(path, 'GET', schema);
 }
 
-export function apiPost<T>(path: string, schema: ZodType<T>): Promise<T> {
-  return request(path, 'POST', schema);
+export function apiPost<T>(path: string, schema: ZodType<T>, body?: unknown): Promise<T> {
+  return request(path, 'POST', schema, body);
+}
+
+export function apiPatch<T>(path: string, schema: ZodType<T>, body: unknown): Promise<T> {
+  return request(path, 'PATCH', schema, body);
 }
