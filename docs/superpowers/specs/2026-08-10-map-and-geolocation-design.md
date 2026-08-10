@@ -91,9 +91,14 @@ Backend'da yangi modul yo'q — faqat ikkita ustun va ularni javobga qo'shish.
 | `apps/web/src/widgets/site-header/ui/site-header.tsx`      | "Toshkent" yorlig'i o'rniga `LocationChip`       |
 | `apps/web/src/app/root-layout.tsx`                         | Avtomatik aniqlashni bir marta ishga tushirish   |
 | `apps/web/.env.example`                                    | `VITE_YANDEX_MAPS_KEY`                           |
+| `apps/api/prisma/seed.ts`                                  | `upsert` ga `lat`/`lng` uzatish                  |
+| `apps/web/src/entities/listing/index.ts`                   | `distanceLabel` eksporti                         |
+| `apps/api/test/listings.e2e-spec.ts`                       | Koordinatalar uchun qo'shimcha holat             |
+| `docs/project-overview.md`                                 | Yangi funksiyalar ro'yxati                       |
 | Web test fixture'lari                                      | `lat`/`lng` maydonlari (ma'nosi o'zgarmaydi)     |
 
-Boshqa mavjud fayl o'zgartirilmaydi.
+Boshqa mavjud fayl o'zgartirilmaydi. `root-layout.tsx` ro'yxatda qolgan, lekin amalda
+tegilmaydi: avtomatik aniqlash `LocationChip` ichida turadi (reja, Task 7 dagi izoh).
 
 ---
 
