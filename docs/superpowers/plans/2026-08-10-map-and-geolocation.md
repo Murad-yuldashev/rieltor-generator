@@ -783,7 +783,7 @@ describe('loadYandexMaps', () => {
     await expect(second).resolves.toBe(ymaps);
   });
 
-  it('rejects when the script fails to load', async () => {
+  it('rejects when the script fails to load, and lets a later call retry', async () => {
     vi.stubEnv('VITE_YANDEX_MAPS_KEY', 'test-key');
     const loadYandexMaps = await freshLoader();
 
@@ -791,6 +791,24 @@ describe('loadYandexMaps', () => {
     document.querySelector('script')!.dispatchEvent(new Event('error'));
 
     await expect(pending).rejects.toThrow(/yuklanmadi/i);
+
+    // A cached rejection would hand the same failure back forever.
+    loadYandexMaps();
+    expect(document.querySelectorAll('script')).toHaveLength(2);
+  });
+
+  it('rejects without caching when the script loads but the global is missing', async () => {
+    vi.stubEnv('VITE_YANDEX_MAPS_KEY', 'test-key');
+    const loadYandexMaps = await freshLoader();
+
+    const pending = loadYandexMaps();
+    delete (window as { ymaps?: unknown }).ymaps;
+    document.querySelector('script')!.dispatchEvent(new Event('load'));
+
+    await expect(pending).rejects.toThrow(/yuklanmadi/i);
+
+    loadYandexMaps();
+    expect(document.querySelectorAll('script')).toHaveLength(2);
   });
 });
 ```
@@ -842,6 +860,9 @@ export function loadYandexMaps(): Promise<YandexMaps> {
     script.addEventListener('load', () => {
       const ymaps = window.ymaps;
       if (!ymaps) {
+        // Same rule as the error listener: a failure must not be cached, or every
+        // later call replays this rejection instead of retrying.
+        pending = null;
         reject(new Error('Yandex Maps yuklanmadi'));
         return;
       }
