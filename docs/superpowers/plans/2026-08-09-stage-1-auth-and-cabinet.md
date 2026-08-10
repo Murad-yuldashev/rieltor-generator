@@ -2658,6 +2658,21 @@ git commit -m "feat(web): add the cabinet landing page"
 
 ### Task 15: Profil formasi
 
+> **Tuzatishlar (fix round 1, loyiha egasi tasdiqlagan).** Quyidagi Step 3 kodi uchta
+> kamchilikni o'z ichiga oladi; amaldagi implementatsiya ularsiz yoziladi:
+>
+> 1. `issues[0]` bitta xabar ko'rsatadi va u boshqa maydonga tegishli bo'lishi mumkin.
+>    O'rniga xatolar maydon bo'yicha guruhlanadi (`issue.path[0]`) va har input ostida
+>    o'ziniki chiqadi.
+> 2. `useEffect` har `realtor` havolasi o'zgarganda formani qayta to'ldiradi va fon
+>    rejimidagi `refetch` yozilgan matnni o'chiradi. Forma rieltor `id` si bo'yicha
+>    bir marta to'ldiriladi (`useRef` qo'riqchisi bilan).
+> 3. `update.mutate` da `onError` yo'q — muvaffaqiyatsiz saqlash jim qoladi. Qo'shiladi:
+>    "Saqlashda xatolik. Qayta urinib ko'ring."
+>
+> Shuningdek `isLoading` darvozasi va padding `cabinet-page.tsx` naqshiga moslanadi
+> (`PageHeading` o'zi `px-4` beradi).
+
 **Files:**
 
 - Create: `apps/web/src/pages/cabinet/ui/profile-page.tsx`
