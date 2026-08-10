@@ -70,4 +70,12 @@ describe('Me (e2e)', () => {
   it('PATCH /api/me without a cookie → 401', async () => {
     await request(app.getHttpServer()).patch('/api/me').send({ name: 'Hech kim' }).expect(401);
   });
+
+  it('GET /api/me with a session pointing at a deleted realtor → 401, not 500', async () => {
+    // Runs last: it deletes the realtor row the cookie still points at, which would
+    // otherwise break the tests above if it ran earlier.
+    await prisma.realtor.deleteMany({ where: { tgId: BigInt(TG_ID) } });
+
+    await request(app.getHttpServer()).get('/api/me').set('cookie', cookie).expect(401);
+  });
 });

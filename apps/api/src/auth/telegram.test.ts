@@ -30,6 +30,12 @@ describe('telegramDataCheckString', () => {
       'last_name',
     );
   });
+
+  it('includes a field this repo does not declare yet, sorted alphabetically like any other', () => {
+    expect(telegramDataCheckString({ ...payload, is_premium: true })).toBe(
+      'auth_date=1754700000\nfirst_name=Ali\nid=777000\nis_premium=true\nusername=ali_rieltor',
+    );
+  });
 });
 
 describe('verifyTelegramAuth', () => {

@@ -24,6 +24,11 @@ describe('TelegramAuthSchema', () => {
   it('rejects a hash that is not 64 hex characters', () => {
     expect(() => TelegramAuthSchema.parse({ ...valid, hash: 'qisqa' })).toThrow();
   });
+
+  it('keeps a field it does not declare, so a future Telegram field is not silently dropped', () => {
+    const parsed = TelegramAuthSchema.parse({ ...valid, is_premium: true });
+    expect(parsed['is_premium']).toBe(true);
+  });
 });
 
 describe('PhoneSchema', () => {

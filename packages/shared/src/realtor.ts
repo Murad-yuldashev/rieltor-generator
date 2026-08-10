@@ -13,8 +13,14 @@ export const PhoneSchema = z
 /**
  * What the Telegram Login Widget hands to the browser. Every value arrives as a
  * string in the widget's redirect form, so the numeric fields are coerced.
+ *
+ * looseObject rather than object: telegramDataCheckString signs every field in the
+ * payload, including ones this schema does not know about yet. A plain z.object
+ * would strip an unrecognized field before it reaches that function, so a new field
+ * Telegram adds in the future would silently drop out of the signed string and every
+ * login would start failing HMAC verification with no clue why.
  */
-export const TelegramAuthSchema = z.object({
+export const TelegramAuthSchema = z.looseObject({
   id: z.coerce.number().int().positive(),
   first_name: z.string().min(1),
   last_name: z.string().optional(),

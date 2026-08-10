@@ -108,4 +108,50 @@ describe('AuthService.upsertFromTelegram', () => {
     await service.upsertFromTelegram({ ...payload, username: undefined, first_name: 'Али' });
     expect(create.mock.calls[0]![0]!.data.username).toBe('rieltor');
   });
+
+  it('switches to an update when two concurrent first logins race on tgId', async () => {
+    const create = vi.fn().mockRejectedValue(
+      Object.assign(new Error('Unique constraint failed on the fields: (`tgId`)'), {
+        code: 'P2002',
+        meta: { target: ['tgId'] },
+      }),
+    );
+    const update = vi.fn().mockResolvedValue({ id: 'rlt_won_race' });
+    const service = new AuthService(fakePrisma({ create, update }));
+
+    await expect(service.upsertFromTelegram(payload)).resolves.toEqual({ id: 'rlt_won_race' });
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledWith({
+      where: { tgId: BigInt(777000) },
+      data: {
+        tgUsername: 'Ali_Valiyev',
+        name: 'Ali',
+        photoUrl: 'https://t.me/i/userpic/320/ali.jpg',
+      },
+      select: { id: true },
+    });
+  });
+
+  it('retries the create with a new slug when the picked username loses the race', async () => {
+    const findFirst = vi
+      .fn()
+      .mockResolvedValueOnce(null) // first pick: "ali-valiyev" looks free
+      .mockResolvedValueOnce({ id: 'rlt_concurrent' }) // retry pick: it was just taken
+      .mockResolvedValueOnce(null); // retry pick: "ali-valiyev-2" is free
+    const create = vi
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Unique constraint failed on the fields: (`username`)'), {
+          code: 'P2002',
+          meta: { target: ['username'] },
+        }),
+      )
+      .mockResolvedValueOnce({ id: 'rlt_new' });
+    const service = new AuthService(fakePrisma({ findFirst, create }));
+
+    await expect(service.upsertFromTelegram(payload)).resolves.toEqual({ id: 'rlt_new' });
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create.mock.calls[0]![0]!.data.username).toBe('ali-valiyev');
+    expect(create.mock.calls[1]![0]!.data.username).toBe('ali-valiyev-2');
+  });
 });
