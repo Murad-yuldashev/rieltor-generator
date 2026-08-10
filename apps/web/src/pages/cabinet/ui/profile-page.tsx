@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Navigate } from 'react-router';
 import { RealtorProfileUpdateSchema } from '@rieltor/shared';
 import { useMe, useUpdateProfile } from '@/features/auth';
 import { PageHeading } from '@/shared/ui/page-heading';
@@ -83,6 +84,10 @@ export function ProfilePage() {
       </main>
     );
   }
+
+  // Publicly reachable route: a signed-out visitor gets bounced to /cabinet, which
+  // owns the sign-in prompt, instead of an editable form that saves into a 401.
+  if (!realtor) return <Navigate to="/cabinet" replace />;
 
   return (
     <main>

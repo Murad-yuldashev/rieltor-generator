@@ -30,6 +30,13 @@ function renderPage(fetchMock: ReturnType<typeof vi.fn>) {
   );
 }
 
+function errorResponse(status: number, body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
 function jsonResponse(body: unknown) {
   return new Response(JSON.stringify(body), {
     status: 200,
@@ -40,6 +47,15 @@ function jsonResponse(body: unknown) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ProfilePage', () => {
+  it('redirects a signed-out visitor instead of rendering an editable form', async () => {
+    renderPage(vi.fn(async () => errorResponse(401, { message: 'Sessiya topilmadi' })));
+
+    await vi.waitFor(() => {
+      expect(screen.queryByLabelText('Ism')).not.toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'Saqlash' })).not.toBeInTheDocument();
+  });
+
   it('fills the form from the current profile', async () => {
     renderPage(vi.fn(async () => jsonResponse(profile)));
 
