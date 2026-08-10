@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { loginWithTelegram } from '../api';
 
@@ -18,6 +18,7 @@ declare global {
 export function TelegramLoginButton() {
   const container = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [failed, setFailed] = useState(false);
   // Read per render, not at module scope: a module-level const is captured once and
   // the tests (which stub the env after import) could never change it.
   const botUsername = import.meta.env.VITE_TG_BOT_USERNAME ?? '';
@@ -25,9 +26,17 @@ export function TelegramLoginButton() {
   useEffect(() => {
     if (!botUsername || !container.current) return;
 
+    // The widget calls this global from a plain script snippet and never awaits it,
+    // so a rejection here would be unhandled and a failed login would look like a
+    // dead button.
     window.onTelegramAuth = async (user) => {
-      const profile = await loginWithTelegram(user);
-      queryClient.setQueryData(['me'], profile);
+      try {
+        setFailed(false);
+        const profile = await loginWithTelegram(user);
+        queryClient.setQueryData(['me'], profile);
+      } catch {
+        setFailed(true);
+      }
     };
 
     const script = document.createElement('script');
@@ -55,5 +64,14 @@ export function TelegramLoginButton() {
     );
   }
 
-  return <div ref={container} />;
+  return (
+    <div>
+      <div ref={container} />
+      {failed && (
+        <p className="mt-2 text-[13px] font-bold text-red-600">
+          Kirishda xatolik. Birozdan so'ng qayta urinib ko'ring.
+        </p>
+      )}
+    </div>
+  );
 }
