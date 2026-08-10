@@ -60,18 +60,24 @@ Demo skeleti to'liq bajarildi, ustiga **haqiqiy ilovaga o'xshash qatlam** qo'shi
 - **Ommaviy oferta (`/offer`)** — 10 bo'limli shartlar matni (namuna, yurist ko'rigidan o'tmagan).
 - **404** — noto'g'ri `id` yoki mavjud bo'lmagan marshrut uchun uslublangan sahifa
   (server ham HTTP 404 status qaytaradi).
+- **Rieltor kabineti (`/cabinet`)** — Telegram orqali kirish, profil (ism, telefon, agentlik,
+  reestr raqami) va chiqish. Kabinet faqat `TELEGRAM_BOT_TOKEN` va `JWT_SECRET` berilganda
+  yoqiladi; ular bo'lmasa sayt avvalgidek anonim rejimda ishlaydi.
 
 ### Server tomonidagi qism
 
-| Endpoint               | Vazifa                                                           |
-| ---------------------- | ---------------------------------------------------------------- |
-| `GET /api/objects`     | E'lonlar ro'yxati (karta uchun qisqartirilgan ma'lumot)          |
-| `GET /api/objects/:id` | Bitta e'lon — to'liq ma'lumot, rasmlar, rieltor                  |
-| `POST /api/view/:id`   | Ko'rishlar +1 (atomik `increment`, bir IP — 10 daqiqada 1 marta) |
-| `GET /api/view/:id`    | Joriy ko'rishlar soni                                            |
-| `GET /api/health`      | Servis va DB tirikligi                                           |
-| `GET /api/docs`        | Swagger — sxemalar Zod'dan avtomatik generatsiya qilinadi        |
-| `GET /obj/:id`         | HTML qobiq + `<head>` ga `og:*` teglar inject qilinadi           |
+| Endpoint                  | Vazifa                                                           |
+| ------------------------- | ---------------------------------------------------------------- |
+| `GET /api/objects`        | E'lonlar ro'yxati (karta uchun qisqartirilgan ma'lumot)          |
+| `GET /api/objects/:id`    | Bitta e'lon — to'liq ma'lumot, rasmlar, rieltor                  |
+| `POST /api/view/:id`      | Ko'rishlar +1 (atomik `increment`, bir IP — 10 daqiqada 1 marta) |
+| `GET /api/view/:id`       | Joriy ko'rishlar soni                                            |
+| `GET /api/health`         | Servis va DB tirikligi                                           |
+| `GET /api/docs`           | Swagger — sxemalar Zod'dan avtomatik generatsiya qilinadi        |
+| `GET /obj/:id`            | HTML qobiq + `<head>` ga `og:*` teglar inject qilinadi           |
+| `POST /api/auth/telegram` | Telegram Login Widget imzosini tekshirib sessiya beradi          |
+| `POST /api/auth/logout`   | Sessiya cookie'sini tozalaydi                                    |
+| `GET\|PATCH /api/me`      | Rieltor profili (faqat sessiya bilan)                            |
 
 Qo'shimcha server funksiyalari:
 
