@@ -79,6 +79,21 @@ export function ContactPage() {
           </Link>
         </SectionCard>
 
+        <SectionCard className="py-1">
+          <Link to="/cabinet" className="flex items-center gap-3 py-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-white">
+              <Icon name="homeSolid" className="h-5 w-5" strokeWidth={2.2} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14.5px] font-bold">Rieltor uchun</span>
+              <span className="block text-xs font-semibold text-ink-3">
+                O'z e'lonlaringizni joylang
+              </span>
+            </span>
+            <Icon name="chevronRight" className="h-4 w-4 text-ink-3" strokeWidth={2.4} />
+          </Link>
+        </SectionCard>
+
         <SectionCard title="Ko'p so'raladigan savollar">
           {FAQ.map((item) => (
             <FaqItem key={item.question} {...item} />

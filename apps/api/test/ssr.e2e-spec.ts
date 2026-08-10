@@ -95,4 +95,10 @@ describe('SSR / OG (e2e)', () => {
     const res = await request(app.getHttpServer()).get('/api/yoq-endpoint').expect(404);
     expect(res.headers['content-type']).toContain('application/json');
   });
+
+  it.each(['/cabinet', '/cabinet/profile'])('GET %s → the SPA shell with a 200', async (path) => {
+    const res = await request(app.getHttpServer()).get(path).expect(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.text).toContain('<div id="root">');
+  });
 });

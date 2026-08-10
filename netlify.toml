@@ -77,6 +77,16 @@
   to = "/index.html"
   status = 200
 
+[[redirects]]
+  from = "/cabinet"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/cabinet/profile"
+  to = "/index.html"
+  status = 200
+
 # NotFoundShellFilter's behaviour: the shell still renders (the SPA draws its own
 # NotFoundPage), but the status tells crawlers the URL is gone.
 [[redirects]]
