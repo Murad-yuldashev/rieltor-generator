@@ -25,8 +25,11 @@ import { ViewsModule } from './views/views.module';
     ViewsModule,
     AuthModule,
     RealtorsModule,
-    // Never in production: the module is not even constructed there (spec §7.2).
-    ...(process.env.NODE_ENV !== 'production' && process.env.DEV_LOGIN_SECRET
+    // A positive allowlist rather than `!== 'production'`: NODE_ENV is not reliably
+    // set on every deploy path (Netlify's build environment is the exception, not
+    // the rule), so an unset NODE_ENV must fail closed instead of defaulting this
+    // module into a production build (spec §7.2).
+    ...(['development', 'test'].includes(process.env.NODE_ENV ?? '') && process.env.DEV_LOGIN_SECRET
       ? [AuthDevModule]
       : []),
     SsrModule,

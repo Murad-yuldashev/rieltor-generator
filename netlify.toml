@@ -5,6 +5,7 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  NODE_ENV = "production"
 
 [functions]
   # nft copies the traced files instead of bundling them into one module. NestJS resolves

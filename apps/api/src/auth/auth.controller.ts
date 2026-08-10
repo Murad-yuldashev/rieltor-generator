@@ -49,7 +49,7 @@ export class AuthController {
     const token = signSession(id, secret, Math.floor(Date.now() / 1000));
     res.setHeader(
       'set-cookie',
-      serializeSessionCookie(token, SESSION_TTL_SEC, this.isProduction()),
+      serializeSessionCookie(token, SESSION_TTL_SEC, this.useSecureCookie()),
     );
 
     return this.prisma.realtor.findUniqueOrThrow({ where: { id }, select: REALTOR_SELECT });
@@ -57,12 +57,17 @@ export class AuthController {
 
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response): { ok: true } {
-    res.setHeader('set-cookie', clearedSessionCookie(this.isProduction()));
+    res.setHeader('set-cookie', clearedSessionCookie(this.useSecureCookie()));
     return { ok: true };
   }
 
-  /** A Secure cookie is dropped over plain http, which is what e2e runs on. */
-  private isProduction(): boolean {
-    return this.config.get('NODE_ENV', { infer: true }) === 'production';
+  /**
+   * A Secure cookie is dropped over plain http, which is what e2e runs on. NODE_ENV
+   * is not a reliable production signal here — the Netlify build never sets it — so
+   * this derives from PUBLIC_BASE_URL instead, which is required and Netlify fills
+   * in from its own deploy URL.
+   */
+  private useSecureCookie(): boolean {
+    return this.config.get('PUBLIC_BASE_URL', { infer: true }).startsWith('https://');
   }
 }
