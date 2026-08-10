@@ -2194,7 +2194,7 @@ git commit -m "feat(web): support request bodies in the API client"
 
 ```tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TelegramLoginButton } from './telegram-login-button';
 
@@ -2209,6 +2209,7 @@ function renderButton() {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   document.querySelectorAll('script').forEach((node) => node.remove());
 });
 
@@ -2230,6 +2231,25 @@ describe('TelegramLoginButton', () => {
 
     expect(screen.getByText(/Telegram orqali kirish sozlanmagan/)).toBeInTheDocument();
     expect(container.querySelector('script')).toBeNull();
+  });
+
+  it('reports a failed login instead of swallowing the rejection', async () => {
+    vi.stubEnv('VITE_TG_BOT_USERNAME', 'rieltor_test_bot');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('{}', { status: 500, headers: { 'content-type': 'application/json' } }),
+      ),
+    );
+    renderButton();
+
+    // The widget calls the global directly; act() lets the state update flush.
+    await act(async () => {
+      await window.onTelegramAuth?.({ id: 777000 });
+    });
+
+    expect(screen.getByText(/Kirishda xatolik/)).toBeInTheDocument();
   });
 });
 ```
@@ -2308,7 +2328,7 @@ export function useMe(): { realtor: RealtorProfile | null; isLoading: boolean } 
 - [ ] **Step 5: `ui/telegram-login-button.tsx` ni yozish**
 
 ```tsx
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { loginWithTelegram } from '../api';
 
@@ -2328,6 +2348,7 @@ declare global {
 export function TelegramLoginButton() {
   const container = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [failed, setFailed] = useState(false);
   // Read per render, not at module scope: a module-level const is captured once and
   // the tests (which stub the env after import) could never change it.
   const botUsername = import.meta.env.VITE_TG_BOT_USERNAME ?? '';
@@ -2335,9 +2356,17 @@ export function TelegramLoginButton() {
   useEffect(() => {
     if (!botUsername || !container.current) return;
 
+    // The widget calls this global from a plain script snippet and never awaits it,
+    // so a rejection here would be unhandled and a failed login would look like a
+    // dead button.
     window.onTelegramAuth = async (user) => {
-      const profile = await loginWithTelegram(user);
-      queryClient.setQueryData(['me'], profile);
+      try {
+        setFailed(false);
+        const profile = await loginWithTelegram(user);
+        queryClient.setQueryData(['me'], profile);
+      } catch {
+        setFailed(true);
+      }
     };
 
     const script = document.createElement('script');
@@ -2365,7 +2394,16 @@ export function TelegramLoginButton() {
     );
   }
 
-  return <div ref={container} />;
+  return (
+    <div>
+      <div ref={container} />
+      {failed && (
+        <p className="mt-2 text-[13px] font-bold text-red-600">
+          Kirishda xatolik. Birozdan so'ng qayta urinib ko'ring.
+        </p>
+      )}
+    </div>
+  );
 }
 ```
 
@@ -2374,7 +2412,7 @@ export function TelegramLoginButton() {
 `apps/web/src/features/auth/index.ts`:
 
 ```ts
-export { meQuery, useLogout, useUpdateProfile } from './api';
+export { loginWithTelegram, meQuery, useLogout, useUpdateProfile } from './api';
 export { useMe } from './model/use-me';
 export { TelegramLoginButton } from './ui/telegram-login-button';
 ```
