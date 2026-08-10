@@ -1,0 +1,12 @@
+# Overlay used only by the Playwright run:
+#   docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build
+#
+# NODE_ENV=test does two things the browser test needs: it registers the dev-login
+# module, and it drops the Secure flag from the session cookie, which a browser would
+# otherwise refuse to store over plain http://localhost.
+services:
+  app:
+    environment:
+      NODE_ENV: test
+      JWT_SECRET: e2e-jwt-secret-at-least-16
+      DEV_LOGIN_SECRET: e2e-dev-login-secret
