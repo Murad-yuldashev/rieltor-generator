@@ -35,6 +35,9 @@ export function loadYandexMaps(): Promise<YandexMaps> {
     script.addEventListener('load', () => {
       const ymaps = window.ymaps;
       if (!ymaps) {
+        // Same rule as the error listener: a failure must not be cached, or every
+        // later call replays this rejection instead of retrying.
+        pending = null;
         reject(new Error('Yandex Maps yuklanmadi'));
         return;
       }
