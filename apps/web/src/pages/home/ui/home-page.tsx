@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ListingCard, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
 import { ListingFilters, SortSelect, useListingFilters } from '@/features/listing-filters';
+import { RealtorCta } from '@/widgets/realtor-cta';
 
 /** How many cards fill the first screen — the rest arrive via "Ko'proq". */
 const PAGE_SIZE = 6;
@@ -39,6 +40,8 @@ export function HomePage() {
 
   return (
     <main>
+      <RealtorCta />
+
       <ListingFilters
         deal={filters.deal}
         onDealChange={resetPaging(filters.setDeal)}
