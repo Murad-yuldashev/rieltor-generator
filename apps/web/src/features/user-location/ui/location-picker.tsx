@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Icon } from '@/shared/ui/icon';
 import { loadYandexMaps } from '@/shared/lib/yandex-maps';
 import { useUserLocation } from '../model/use-user-location';
 
@@ -106,19 +107,25 @@ export function LocationPicker({ open, onClose }: Props) {
       aria-label="Joyni tanlash"
       className="fixed inset-0 z-[60] flex flex-col justify-end bg-ink/40"
     >
-      <div className="rounded-t-[20px] bg-card p-4">
-        <div className="mb-3 flex items-center justify-between">
+      {/* 85vh: the map is the whole point of this sheet, so it gets almost the screen. */}
+      <div className="flex h-[85vh] flex-col rounded-t-[20px] bg-card p-3">
+        <div className="mb-2 flex shrink-0 items-center justify-between px-1">
           <h2 className="text-[16px] font-extrabold">Joyingizni tanlang</h2>
-          <button type="button" onClick={onClose} className="text-[14px] font-bold text-ink-3">
-            Yopish
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Yopish"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white"
+          >
+            <Icon name="close" className="h-[18px] w-[18px]" strokeWidth={2.6} />
           </button>
         </div>
 
-        <div className="relative">
+        <div className="relative min-h-0 flex-1">
           {/* Stays mounted through an error so its ref survives for a retry — the
               earlier bug swapped it out for the message below, which left `container`
               null forever and made every later open a no-op. */}
-          <div ref={container} className="h-[260px] w-full overflow-hidden rounded-[14px]" />
+          <div ref={container} className="h-full w-full overflow-hidden rounded-[14px]" />
           {!error && (
             /* The pin never moves; the map slides underneath it. */
             <span className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full text-[28px]">
@@ -130,23 +137,25 @@ export function LocationPicker({ open, onClose }: Props) {
               {error}
             </p>
           )}
-        </div>
 
-        <div className="mt-3 flex gap-2">
+          {/* Both controls float over the map, the way a map app puts them. Icon-only,
+              so they carry aria-labels — the label is also what the tests query by. */}
           <button
             type="button"
             onClick={detect}
-            className="flex-1 rounded-[14px] border-[1.5px] border-line py-3 text-[14px] font-extrabold text-ink-2"
+            aria-label="Meni topish"
+            className="absolute right-3 bottom-[76px] flex h-11 w-11 items-center justify-center rounded-full bg-card text-ink-2 shadow-card"
           >
-            Meni topish
+            <Icon name="crosshair" className="h-5 w-5" strokeWidth={2.2} />
           </button>
           <button
             type="button"
             onClick={confirm}
             disabled={!ready}
-            className="flex-1 rounded-[14px] bg-accent py-3 text-[14px] font-extrabold text-white disabled:opacity-60"
+            aria-label="Shu yerni tanlash"
+            className="absolute right-3 bottom-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-card disabled:opacity-60"
           >
-            Shu yerni tanlash
+            <Icon name="check" className="h-6 w-6" strokeWidth={2.8} />
           </button>
         </div>
       </div>

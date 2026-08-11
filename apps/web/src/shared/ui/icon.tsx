@@ -9,6 +9,9 @@ const PATHS = {
   home: ['M3 10.5 12 3l9 7.5', 'M5 9.5V21h14V9.5'],
   homeSolid: ['M3 10.5 12 3l9 7.5', 'M5 9.5V21h14V9.5', 'M9 21v-6h6v6'],
   pin: ['M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z', 'M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z'],
+  close: ['m6 6 12 12', 'm18 6-12 12'],
+  /** "Locate me" — the universal crosshair, distinct from `pin` which marks a place. */
+  crosshair: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 3v3M12 18v3M3 12h3M18 12h3'],
   chevronDown: ['m6 9 6 6 6-6'],
   chevronUp: ['m6 15 6-6 6 6'],
   chevronLeft: ['m15 18-6-6 6-6'],
