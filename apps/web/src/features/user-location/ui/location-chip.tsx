@@ -31,7 +31,7 @@ export function LocationChip() {
         type="button"
         onClick={() => setPickerOpen(true)}
         title={label}
-        className="flex max-w-[105px] shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-[7px] text-[13px] font-semibold text-ink-2"
+        className="flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-[7px] text-[13px] font-semibold text-ink-2"
       >
         <Icon name="pin" className="h-[13px] w-[13px] shrink-0 text-accent" strokeWidth={2.4} />
         <span className="truncate">{shortLabel}</span>

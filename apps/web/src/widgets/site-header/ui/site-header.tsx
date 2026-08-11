@@ -15,10 +15,6 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <Link to="/cabinet" className="ml-auto mr-2 text-[13px] font-bold text-accent">
-          Rieltor uchun
-        </Link>
-
         <LocationChip />
       </div>
     </header>
