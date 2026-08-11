@@ -24,7 +24,16 @@ function read(): UserLocation | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as UserLocation;
-    return typeof parsed.lat === 'number' && typeof parsed.lng === 'number' ? parsed : null;
+    // A partially-corrupt entry — e.g. hand-edited storage, or a shape from an
+    // older build — must not reach the app: `label` in particular flows straight
+    // into a `.replace()` in location-chip.tsx, and there is no ErrorBoundary to
+    // catch a crash from a non-string value.
+    return typeof parsed.lat === 'number' &&
+      typeof parsed.lng === 'number' &&
+      typeof parsed.label === 'string' &&
+      (parsed.source === 'gps' || parsed.source === 'manual')
+      ? parsed
+      : null;
   } catch {
     // A corrupt entry is not worth crashing the app over.
     return null;

@@ -83,6 +83,24 @@ describe('useUserLocation', () => {
     });
   });
 
+  it('ignores corrupt JSON in storage instead of throwing', async () => {
+    localStorage.setItem(STORAGE_KEY, '{not json');
+    stubGeolocation({ getCurrentPosition: vi.fn() });
+    const useUserLocation = await freshHook();
+
+    const { result } = renderHook(() => useUserLocation());
+    expect(result.current.location).toBeNull();
+  });
+
+  it('ignores a structurally-wrong stored entry instead of throwing', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ lat: 1, lng: 2 }));
+    stubGeolocation({ getCurrentPosition: vi.fn() });
+    const useUserLocation = await freshHook();
+
+    const { result } = renderHook(() => useUserLocation());
+    expect(result.current.location).toBeNull();
+  });
+
   it('shares one state between two consumers', async () => {
     stubGeolocation({ getCurrentPosition: vi.fn() });
     const useUserLocation = await freshHook();

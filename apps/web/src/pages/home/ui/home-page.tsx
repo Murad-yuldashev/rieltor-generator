@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ListingCard, distanceLabel, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
-import { ListingFilters, SortSelect, useListingFilters } from '@/features/listing-filters';
+import {
+  ListingFilters,
+  SortSelect,
+  useListingFilters,
+  type Sort,
+} from '@/features/listing-filters';
 import { useUserLocation } from '@/features/user-location';
 import { MAPS_ENABLED } from '@/shared/ui/static-map';
 import { RealtorCta } from '@/widgets/realtor-cta';
@@ -25,7 +30,7 @@ function CardSkeleton() {
 
 export function HomePage() {
   const { data, isPending, isError } = useQuery(listingsQuery());
-  const { location } = useUserLocation();
+  const { location, detect } = useUserLocation();
   const origin = location ? { lat: location.lat, lng: location.lng } : null;
   const filters = useListingFilters(data, origin);
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -41,6 +46,13 @@ export function HomePage() {
       apply(value);
       setLimit(PAGE_SIZE);
     };
+  }
+
+  // Design spec §7: picking "Yaqin" without a known location asks for it, rather
+  // than silently keeping the newest-first order with no distance badges.
+  function changeSort(sort: Sort) {
+    if (sort === 'NEAR' && !origin) detect();
+    filters.setSort(sort);
   }
 
   return (
@@ -61,7 +73,7 @@ export function HomePage() {
           <b className="text-[15px] font-extrabold">{filters.visible.length} ta obyekt</b>{' '}
           <span className="text-[13px] font-semibold text-ink-3">· bugun yangilandi</span>
         </p>
-        <SortSelect value={filters.sort} onChange={resetPaging(filters.setSort)} />
+        <SortSelect value={filters.sort} onChange={resetPaging(changeSort)} />
       </div>
 
       <div className="flex flex-col gap-4 px-4">
