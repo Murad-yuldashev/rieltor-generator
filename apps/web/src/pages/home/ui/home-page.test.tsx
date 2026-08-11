@@ -26,12 +26,12 @@ const listings = [
   },
 ];
 
-function renderPage() {
+function renderPage(Page: typeof HomePage = HomePage) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <HomePage />
+        <Page />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -68,7 +68,6 @@ describe('HomePage', () => {
       'rieltor:user-location',
       JSON.stringify({ lat: 41.31, lng: 69.24, label: 'Shayxontohur tumani', source: 'manual' }),
     );
-    vi.stubEnv('VITE_YANDEX_MAPS_KEY', 'test-key');
     vi.stubGlobal(
       'fetch',
       vi.fn(
@@ -79,8 +78,14 @@ describe('HomePage', () => {
           }),
       ),
     );
+    // MAPS_ENABLED (shared/ui/static-map.tsx) reads the key once at module load,
+    // so the stub has to be in place before a fresh copy of the page is imported —
+    // stubbing after the top-level import (as the other tests do) would be too late.
+    vi.stubEnv('VITE_YANDEX_MAPS_KEY', 'test-key');
+    vi.resetModules();
+    const { HomePage: FreshHomePage } = await import('./home-page');
 
-    renderPage();
+    renderPage(FreshHomePage);
 
     const buttons = await screen.findAllByRole('button', { name: "Joylashuvni ko'rsatish" });
     await userEvent.click(buttons[0]!);

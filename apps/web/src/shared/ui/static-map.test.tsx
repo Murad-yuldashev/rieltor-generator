@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StaticMap } from './static-map';
 
@@ -39,6 +39,15 @@ describe('StaticMap', () => {
   it('renders nothing when the key is not configured', () => {
     vi.stubEnv('VITE_YANDEX_MAPS_KEY', '');
     const { container } = render(<StaticMap point={POINT} label="Uy joylashuvi" />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('renders nothing once the image fails to load, matching a missing key', () => {
+    vi.stubEnv('VITE_YANDEX_MAPS_KEY', 'test-key');
+    const { container } = render(<StaticMap point={POINT} label="Uy joylashuvi" />);
+
+    fireEvent.error(screen.getByRole('img', { name: 'Uy joylashuvi' }));
+
     expect(container).toBeEmptyDOMElement();
   });
 });

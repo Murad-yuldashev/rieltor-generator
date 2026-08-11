@@ -56,6 +56,14 @@ describe('ListingCard location', () => {
     expect(onToggleMap).toHaveBeenCalledOnce();
   });
 
+  it('renders no map control when maps are not enabled', () => {
+    // The page decides whether to pass onToggleMap based on MAPS_ENABLED (shared/ui/static-map.tsx);
+    // the card itself stays dumb and controlled by its props (FSD: it may not import that module).
+    vi.stubEnv('VITE_YANDEX_MAPS_KEY', '');
+    renderCard();
+    expect(screen.queryByRole('button', { name: "Joylashuvni ko'rsatish" })).toBeNull();
+  });
+
   it('renders the map only while open', () => {
     vi.stubEnv('VITE_YANDEX_MAPS_KEY', 'test-key');
 

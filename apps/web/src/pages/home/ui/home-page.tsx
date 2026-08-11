@@ -4,6 +4,7 @@ import { ListingCard, distanceLabel, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
 import { ListingFilters, SortSelect, useListingFilters } from '@/features/listing-filters';
 import { useUserLocation } from '@/features/user-location';
+import { MAPS_ENABLED } from '@/shared/ui/static-map';
 import { RealtorCta } from '@/widgets/realtor-cta';
 
 /** How many cards fill the first screen — the rest arrive via "Ko'proq". */
@@ -74,7 +75,11 @@ export function HomePage() {
             favoriteSlot={<FavoriteButton id={listing.id} />}
             distanceLabel={distanceLabel(listing, origin)}
             mapOpen={openMapId === listing.id}
-            onToggleMap={() => setOpenMapId((id) => (id === listing.id ? null : listing.id))}
+            onToggleMap={
+              MAPS_ENABLED
+                ? () => setOpenMapId((id) => (id === listing.id ? null : listing.id))
+                : undefined
+            }
           />
         ))}
       </div>

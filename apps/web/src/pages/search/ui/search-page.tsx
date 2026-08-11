@@ -14,6 +14,7 @@ import { useUserLocation } from '@/features/user-location';
 import { Icon } from '@/shared/ui/icon';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
+import { MAPS_ENABLED } from '@/shared/ui/static-map';
 
 /** The mockup lists four districts. */
 const TOP_DISTRICTS = 4;
@@ -199,7 +200,11 @@ export function SearchPage() {
                   favoriteSlot={<FavoriteButton id={listing.id} />}
                   distanceLabel={distanceLabel(listing, origin)}
                   mapOpen={openMapId === listing.id}
-                  onToggleMap={() => setOpenMapId((id) => (id === listing.id ? null : listing.id))}
+                  onToggleMap={
+                    MAPS_ENABLED
+                      ? () => setOpenMapId((id) => (id === listing.id ? null : listing.id))
+                      : undefined
+                  }
                 />
               ))}
             </div>
