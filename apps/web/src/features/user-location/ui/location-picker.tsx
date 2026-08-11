@@ -10,6 +10,8 @@ interface Props {
 /** Tashkent centre — where the map starts when nothing better is known. */
 const FALLBACK_CENTER = { lat: 41.2995, lng: 69.2401 };
 const ZOOM = 13;
+/** Matches the geolocation timeout already used elsewhere in this feature. */
+const LOAD_TIMEOUT_MS = 10_000;
 
 /**
  * The one place an interactive map earns its ~300 KB: the visitor drags the map
@@ -21,16 +23,36 @@ export function LocationPicker({ open, onClose }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<{ getCenter(): [number, number]; destroy(): void } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Tracked separately from `error`: reading mapRef during render wouldn't
+  // re-render when the map becomes ready, and "no error yet" isn't the same as
+  // "a map actually exists" while the load is still in flight.
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!open || !container.current) return;
+    if (!open) return;
+
+    // The container stays mounted across an error (see below), so a retry must
+    // clear the previous attempt's error itself instead of relying on unmounting.
+    setError(null);
+    setReady(false);
 
     let cancelled = false;
     const start = location ?? FALLBACK_CENTER;
 
+    // If the script loads but ymaps.ready() never fires — a content blocker, a
+    // stalled CDN, a key that answers 200 without initialising — the promise
+    // below never settles. Without this, the visitor sees an empty grey box
+    // forever with no explanation.
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return;
+      cancelled = true;
+      setError("Xaritani yuklab bo'lmadi. Keyinroq urinib ko'ring.");
+    }, LOAD_TIMEOUT_MS);
+
     loadYandexMaps()
       .then((ymaps) => {
         if (cancelled || !container.current) return;
+        clearTimeout(timeoutId);
         const maps = ymaps as unknown as {
           Map: new (
             el: HTMLElement,
@@ -43,17 +65,21 @@ export function LocationPicker({ open, onClose }: Props) {
           zoom: ZOOM,
           controls: ['zoomControl'],
         });
+        setReady(true);
       })
-      .catch(() =>
+      .catch(() => {
+        if (cancelled) return;
+        clearTimeout(timeoutId);
         setError(
           import.meta.env.VITE_YANDEX_MAPS_KEY
             ? "Xaritani yuklab bo'lmadi. Keyinroq urinib ko'ring."
             : 'Xarita sozlanmagan.',
-        ),
-      );
+        );
+      });
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
       mapRef.current?.destroy();
       mapRef.current = null;
     };
@@ -82,17 +108,23 @@ export function LocationPicker({ open, onClose }: Props) {
           </button>
         </div>
 
-        {error ? (
-          <p className="py-8 text-center text-[14px] font-semibold text-ink-2">{error}</p>
-        ) : (
-          <div className="relative">
-            <div ref={container} className="h-[260px] w-full overflow-hidden rounded-[14px]" />
-            {/* The pin never moves; the map slides underneath it. */}
+        <div className="relative">
+          {/* Stays mounted through an error so its ref survives for a retry — the
+              earlier bug swapped it out for the message below, which left `container`
+              null forever and made every later open a no-op. */}
+          <div ref={container} className="h-[260px] w-full overflow-hidden rounded-[14px]" />
+          {!error && (
+            /* The pin never moves; the map slides underneath it. */
             <span className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full text-[28px]">
               📍
             </span>
-          </div>
-        )}
+          )}
+          {error && (
+            <p className="absolute inset-0 flex items-center justify-center rounded-[14px] bg-card px-4 text-center text-[14px] font-semibold text-ink-2">
+              {error}
+            </p>
+          )}
+        </div>
 
         <div className="mt-3 flex gap-2">
           <button
@@ -105,7 +137,7 @@ export function LocationPicker({ open, onClose }: Props) {
           <button
             type="button"
             onClick={confirm}
-            disabled={Boolean(error)}
+            disabled={!ready}
             className="flex-1 rounded-[14px] bg-accent py-3 text-[14px] font-extrabold text-white disabled:opacity-60"
           >
             Shu yerni tanlash
