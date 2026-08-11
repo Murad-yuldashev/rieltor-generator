@@ -42,4 +42,19 @@ test.describe('Location (360px)', () => {
     );
     expect(hasOverflow).toBe(false);
   });
+
+  test('the picker sheet covers the viewport, not the header', async ({ page }) => {
+    await page.goto('/');
+    // The chip's visible text drops the " tumani" suffix; the full name is the title.
+    await page.getByTitle(/Yunusobod tumani/).click();
+
+    // The chip lives inside a header that carries backdrop-blur, and a backdrop-filter
+    // makes its element the containing block for fixed-position descendants. Rendered
+    // in place, this dialog's `inset-0` resolved against the ~60px header and pushed
+    // the map above the top edge. Only a real layout catches that — jsdom cannot.
+    const box = await page.getByRole('dialog').boundingBox();
+    const viewport = page.viewportSize();
+    expect(box?.height).toBe(viewport?.height);
+    expect(box?.y).toBe(0);
+  });
 });

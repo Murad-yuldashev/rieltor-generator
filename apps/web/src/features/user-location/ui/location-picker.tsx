@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { loadYandexMaps } from '@/shared/lib/yandex-maps';
 import { useUserLocation } from '../model/use-user-location';
 
@@ -94,7 +95,12 @@ export function LocationPicker({ open, onClose }: Props) {
     onClose();
   }
 
-  return (
+  // Rendered into <body>, not in place. The chip that opens this sheet lives inside
+  // the site header, and the header carries backdrop-blur — a backdrop-filter makes
+  // its element the containing block for any fixed-position descendant. Left in
+  // place, `inset-0` resolved against the 60px header instead of the viewport, so the
+  // map sat above the top edge and only the buttons were visible.
+  return createPortal(
     <div
       role="dialog"
       aria-label="Joyni tanlash"
@@ -144,6 +150,7 @@ export function LocationPicker({ open, onClose }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
