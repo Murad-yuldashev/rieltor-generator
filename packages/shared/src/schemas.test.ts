@@ -17,6 +17,8 @@ const fullListing = {
   deal: 'SALE',
   views: 7,
   listedAt: '2026-07-28',
+  lat: 41.31,
+  lng: 69.24,
   images: [
     {
       base: '/images/bx-001/01',
