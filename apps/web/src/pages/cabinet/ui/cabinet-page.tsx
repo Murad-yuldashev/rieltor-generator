@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { TelegramLoginButton, useLogout, useMe } from '@/features/auth';
+import { DevLoginForm, TelegramLoginButton, useLogout, useMe } from '@/features/auth';
 import { Icon } from '@/shared/ui/icon';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
@@ -25,6 +25,8 @@ export function CabinetPage() {
         />
         <div className="mt-4 px-4">
           <TelegramLoginButton />
+          {/* Renders nothing unless the dev-login build flag is on. */}
+          <DevLoginForm />
         </div>
       </main>
     );
