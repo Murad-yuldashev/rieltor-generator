@@ -1453,33 +1453,177 @@ git commit -m "feat(web): add the location chip and map picker"
 
 ### Task 8: Header'ni ulash
 
+> **Loyiha egasining qarori (o'lchovlardan keyin).** 360px header'da logotip + "Rieltor uchun"
+> havolasi + joylashuv yorlig'i bir qatorga sig'maydi: yorliqqa 105px dan ko'p berilsa havola
+> ikkinchi qatorga tushadi, 105px da esa `Joyni tanlash` (83px kerak) va `Mirzo Ulug'bek`
+> (94px kerak) kesiladi. Qaror: **"Rieltor uchun" havolasi header'dan butunlay olib
+> tashlanadi** va uning o'rniga bosh sahifada alohida blok quriladi (Task 8b). Shundan keyin
+> yorliqqa cheklov umuman kerak emas.
+
 **Files:**
 
 - Modify: `apps/web/src/widgets/site-header/ui/site-header.tsx`
+- Modify: `apps/web/src/features/user-location/ui/location-chip.tsx`
 
 **Interfaces:**
 
 - Consumes: `LocationChip` (Task 7)
-- Produces: header'da joylashuv yorlig'i
+- Produces: header'da joylashuv yorlig'i, kesilmasdan
 
 - [ ] **Step 1: Header'ni yangilash**
 
 `site-header.tsx` da statik "Toshkent" bloki (`<div className="flex items-center gap-1.5 rounded-full border border-line bg-surface …">Toshkent</div>` va uning ustidagi izoh) `<LocationChip />` bilan almashtiriladi. Import: `import { LocationChip } from '@/features/user-location';`
 
-"Rieltor uchun" havolasi va logotip tegilmaydi.
+Shu bilan birga **"Rieltor uchun" `<Link>` bloki butunlay o'chiriladi** — u Task 8b dagi bosh sahifa blokiga ko'chadi. Logotip tegilmaydi.
 
-- [ ] **Step 2: 360px da sig'ishini tekshirish**
+- [ ] **Step 2: Yorliqdagi cheklovni olib tashlash**
 
-Run: `yarn workspace @rieltor/web test`
-Expected: mavjud testlar PASS.
+`location-chip.tsx` dagi `max-w-[…]` cheklovi olib tashlanadi. ` tumani` qo'shimchasini
+tashlab, to'liq nomni `title` da saqlash — qoladi: yorliq qisqaroq va aniqroq bo'ladi.
 
-Keyin `yarn workspace @rieltor/web dev` ni ishga tushirib, brauzerni 360px kenglikda ochib, header bir qatorga sig'ishini va gorizontal skroll paydo bo'lmasligini ko'z bilan tekshir. Tuman nomi uzun bo'lsa (`Mirzo Ulug'bek tumani`) yorliqqa `max-w-[130px] truncate` qo'sh — logotipni yoki "Rieltor uchun" havolasini qisqartirma.
+- [ ] **Step 3: 360px da uchala holatni o'lchash**
 
-- [ ] **Step 3: Commit**
+`yarn workspace @rieltor/web dev` ni ishga tushirib, /tmp dagi bir martalik Playwright skripti bilan 360×740 da o'lchanadi. Har bir holat uchun yorliq matnining `scrollWidth` va `clientWidth` qiymatlari yozib olinadi (`scrollWidth > clientWidth` — kesilgan degani):
+
+1. saqlangan joylashuvsiz → `Joyni tanlash`
+2. `{"lat":41.22,"lng":69.22,"label":"Sergeli tumani","source":"manual"}` → `Sergeli`
+3. `{"lat":41.325,"lng":69.34,"label":"Mirzo Ulug'bek tumani","source":"manual"}` → `Mirzo Ulug'bek`
+
+Uchalasi ham kesilmasligi va `document.documentElement.scrollWidth === clientWidth === 360` bo'lishi shart.
+
+- [ ] **Step 4: Testlar va commit**
+
+Run: `yarn workspace @rieltor/web test`, `yarn lint`, `yarn typecheck`
 
 ```bash
-git add apps/web/src/widgets/site-header
+git add apps/web/src/widgets/site-header apps/web/src/features/user-location
 git commit -m "feat(web): show the visitor's district in the header"
+```
+
+---
+
+### Task 8b: Bosh sahifada "Rieltor bo'lmoqchimisiz?" bloki
+
+**Files:**
+
+- Create: `apps/web/src/widgets/realtor-cta/ui/realtor-cta.tsx`
+- Create: `apps/web/src/widgets/realtor-cta/ui/realtor-cta.test.tsx`
+- Create: `apps/web/src/widgets/realtor-cta/index.ts`
+- Modify: `apps/web/src/pages/home/ui/home-page.tsx`
+
+**Interfaces:**
+
+- Consumes: —
+- Produces: `<RealtorCta />` — bosh sahifada qidiruv blokidan tepada turadigan blok
+
+- [ ] **Step 1: Testni yozish**
+
+`apps/web/src/widgets/realtor-cta/ui/realtor-cta.test.tsx`:
+
+```tsx
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import { describe, expect, it } from 'vitest';
+import { RealtorCta } from './realtor-cta';
+
+describe('RealtorCta', () => {
+  it('invites a realtor to the cabinet', () => {
+    render(
+      <MemoryRouter>
+        <RealtorCta />
+      </MemoryRouter>,
+    );
+
+    const link = screen.getByRole('link', { name: /Rieltor bo'lmoqchimisiz/ });
+    expect(link).toHaveAttribute('href', '/cabinet');
+  });
+
+  it('explains what the cabinet is for', () => {
+    render(
+      <MemoryRouter>
+        <RealtorCta />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/o'z e'lonlaringizni joylang/i)).toBeInTheDocument();
+  });
+});
+```
+
+- [ ] **Step 2: Testni ishga tushirib, yiqilishini ko'rish**
+
+Run: `yarn workspace @rieltor/web vitest run src/widgets/realtor-cta`
+Expected: FAIL — `Failed to resolve import "./realtor-cta"`.
+
+- [ ] **Step 3: Komponentni yozish**
+
+`apps/web/src/widgets/realtor-cta/ui/realtor-cta.tsx`:
+
+```tsx
+import { Link } from 'react-router';
+import { Icon } from '@/shared/ui/icon';
+
+/**
+ * The cabinet's entry point. It used to be a link in the site header, but at 360px
+ * the header could not hold it alongside the location chip — so it lives here, above
+ * the search block, where there is room to say what it actually offers.
+ */
+export function RealtorCta() {
+  return (
+    <section className="px-4 pt-3">
+      <div className="flex items-center gap-3 rounded-card border border-line/60 bg-card p-3.5 shadow-card">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+          <Icon name="homeSolid" className="h-5 w-5" strokeWidth={2.2} />
+        </span>
+
+        <p className="min-w-0 flex-1 text-[13px] leading-[1.35] font-semibold text-ink-2">
+          O'z e'lonlaringizni joylang va mijozlarga bir bosishda yeting.
+        </p>
+
+        <Link
+          to="/cabinet"
+          className="shrink-0 rounded-[12px] bg-accent px-3 py-2 text-[12.5px] font-extrabold whitespace-nowrap text-white"
+        >
+          Rieltor bo'lmoqchimisiz?
+        </Link>
+      </div>
+    </section>
+  );
+}
+```
+
+Agar 360px da tugma matni blokni kengaytirib yuborsa — matnni va tugmani ustma-ust joylash
+(`flex-col items-start`) mumkin; qaysi variantni tanlaganingni o'lchov bilan asosla.
+
+`apps/web/src/widgets/realtor-cta/index.ts`:
+
+```ts
+export { RealtorCta } from './ui/realtor-cta';
+```
+
+- [ ] **Step 4: Bosh sahifaga qo'shish**
+
+`home-page.tsx` da `<main>` ning birinchi bolasi sifatida, `<ListingFilters …/>` dan **oldin**:
+
+```tsx
+<RealtorCta />
+```
+
+Import: `import { RealtorCta } from '@/widgets/realtor-cta';`
+
+- [ ] **Step 5: 360px da tekshirish**
+
+Step 3 dagi kabi bir martalik Playwright skripti bilan bosh sahifani 360×740 da ochib,
+`document.documentElement.scrollWidth === clientWidth === 360` ekanini va blok matni
+kesilmaganini tasdiqla.
+
+- [ ] **Step 6: Testlar va commit**
+
+Run: `yarn workspace @rieltor/web test`, `yarn lint`, `yarn typecheck`
+
+```bash
+git add apps/web/src/widgets/realtor-cta apps/web/src/pages/home
+git commit -m "feat(web): move the cabinet entry point into a home page block"
 ```
 
 ---
