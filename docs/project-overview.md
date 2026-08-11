@@ -63,6 +63,10 @@ Demo skeleti to'liq bajarildi, ustiga **haqiqiy ilovaga o'xshash qatlam** qo'shi
 - **Rieltor kabineti (`/cabinet`)** — Telegram orqali kirish, profil (ism, telefon, agentlik,
   reestr raqami) va chiqish. Kabinet faqat `TELEGRAM_BOT_TOKEN` va `JWT_SECRET` berilganda
   yoqiladi; ular bo'lmasa sayt avvalgidek anonim rejimda ishlaydi.
+- **Joylashuv va xarita** — sayt ochilganda foydalanuvchining joyi so'raladi (rad etilsa header'dagi
+  yorliqdan xaritada qo'lda tanlanadi). "Yaqin" saralash e'lonlarni masofa bo'yicha tartiblaydi va
+  kartalarda masofa ko'rinadi; kartadagi "Joylashuvni ko'rsatish" tugmasi va obyekt sahifasi uyni
+  Yandex xaritasida ko'rsatadi. Xarita `VITE_YANDEX_MAPS_KEY` berilganda yoqiladi.
 
 ### Server tomonidagi qism
 
