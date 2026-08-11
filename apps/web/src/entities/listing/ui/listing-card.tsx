@@ -8,6 +8,7 @@ import {
 } from '@rieltor/shared';
 import { Icon } from '@/shared/ui/icon';
 import { ResponsiveImage } from '@/shared/ui/responsive-image';
+import { StaticMap } from '@/shared/ui/static-map';
 import { TypeBadge } from './type-badge';
 
 interface Props {
@@ -19,6 +20,11 @@ interface Props {
    * layer while the card is an `entity`, so it cannot import them directly (FSD).
    */
   favoriteSlot?: ReactNode;
+  /** Pre-formatted, e.g. "2.4 km" — the card never computes it (FSD: entities have no user location). */
+  distanceLabel?: string;
+  mapOpen?: boolean;
+  /** Absent when the page does not offer maps at all. */
+  onToggleMap?: () => void;
 }
 
 function Param({ icon, text }: { icon: 'rooms' | 'area' | 'floor'; text: string }) {
@@ -30,7 +36,14 @@ function Param({ icon, text }: { icon: 'rooms' | 'area' | 'floor'; text: string 
   );
 }
 
-export function ListingCard({ listing, isFirst = false, favoriteSlot }: Props) {
+export function ListingCard({
+  listing,
+  isFirst = false,
+  favoriteSlot,
+  distanceLabel,
+  mapOpen,
+  onToggleMap,
+}: Props) {
   return (
     <article className="overflow-hidden rounded-card border border-line/60 bg-card shadow-card">
       <Link to={`/obj/${listing.id}`} className="block">
@@ -54,6 +67,13 @@ export function ListingCard({ listing, isFirst = false, favoriteSlot }: Props) {
             <div className="absolute right-2.5 bottom-2.5 flex items-center gap-1.5 rounded-lg bg-ink/55 px-2 py-1 text-[11.5px] font-bold text-white backdrop-blur-sm">
               <Icon name="camera" className="h-3 w-3" strokeWidth={2.2} />
               {listing.imageCount}
+            </div>
+          )}
+
+          {distanceLabel && (
+            <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-ink/55 px-2 py-1 text-[11.5px] font-bold text-white backdrop-blur-sm">
+              <Icon name="pin" className="h-3 w-3" strokeWidth={2.2} />
+              {distanceLabel}
             </div>
           )}
         </div>
@@ -93,6 +113,28 @@ export function ListingCard({ listing, isFirst = false, favoriteSlot }: Props) {
           </p>
         </div>
       </Link>
+
+      {onToggleMap && listing.lat !== null && listing.lng !== null && (
+        <div className="border-t border-line/60 px-4 py-2.5">
+          <button
+            type="button"
+            onClick={onToggleMap}
+            aria-expanded={mapOpen}
+            className="flex items-center gap-1.5 text-[13px] font-bold text-accent"
+          >
+            <Icon name="pin" className="h-3.5 w-3.5" strokeWidth={2.4} />
+            Joylashuvni ko'rsatish
+          </button>
+
+          {mapOpen && (
+            <StaticMap
+              point={{ lat: listing.lat, lng: listing.lng }}
+              label={`${listing.title} joylashuvi`}
+              className="mt-2.5 block"
+            />
+          )}
+        </div>
+      )}
     </article>
   );
 }
