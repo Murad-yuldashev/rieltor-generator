@@ -79,7 +79,13 @@ export function ListingPage() {
         </SectionCard>
 
         <SectionCard title="Joylashuv">
-          <Location landmark={data.landmark} address={data.address} />
+          <Location
+            landmark={data.landmark}
+            address={data.address}
+            lat={data.lat}
+            lng={data.lng}
+            title={data.title}
+          />
         </SectionCard>
 
         <SectionCard>

@@ -72,7 +72,10 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 describe('ListingPage', () => {
   it('renders the listing fields', async () => {
@@ -116,5 +119,19 @@ describe('ListingPage', () => {
     renderPage();
 
     expect(await screen.findByText(/topilmadi/i)).toBeInTheDocument();
+  });
+
+  it('shows the map under the address', async () => {
+    vi.stubEnv('VITE_YANDEX_MAPS_KEY', 'test-key');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('/api/view/') ? response(200, { views: 3 }) : response(200, listing),
+      ),
+    );
+
+    renderPage();
+
+    expect(await screen.findByRole('img', { name: /joylashuvi/i })).toBeInTheDocument();
   });
 });
