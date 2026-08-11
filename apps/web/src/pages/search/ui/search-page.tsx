@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { ListingSummary } from '@rieltor/shared';
-import { ListingCard, listingsQuery } from '@/entities/listing';
+import { ListingCard, distanceLabel, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
 import {
   EMPTY_CRITERIA,
@@ -10,6 +10,7 @@ import {
   type Criteria,
 } from '@/features/listing-filters';
 import { useSearchHistory } from '@/features/search-history';
+import { useUserLocation } from '@/features/user-location';
 import { Icon } from '@/shared/ui/icon';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
@@ -34,6 +35,8 @@ function countByDistrict(listings: ListingSummary[] | undefined) {
 export function SearchPage() {
   const { data } = useQuery(listingsQuery());
   const { recent, remember, clear: clearHistory } = useSearchHistory();
+  const { location } = useUserLocation();
+  const origin = location ? { lat: location.lat, lng: location.lng } : null;
 
   const [criteria, setCriteria] = useState<Criteria>(EMPTY_CRITERIA);
   // Uncontrolled <input>s hold the price/area text, so "clear" rebuilds the
@@ -43,10 +46,11 @@ export function SearchPage() {
   // filter form, not as a listing feed.
   const [submitted, setSubmitted] = useState(false);
   const [limit, setLimit] = useState(PAGE_SIZE);
+  const [openMapId, setOpenMapId] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   // Same function the home list uses, so the counter and the results always agree.
-  const matches = filterListings(data, criteria);
+  const matches = filterListings(data, criteria, origin);
   const districts = countByDistrict(data);
   const shown = matches.slice(0, limit);
 
@@ -193,6 +197,9 @@ export function SearchPage() {
                   key={listing.id}
                   listing={listing}
                   favoriteSlot={<FavoriteButton id={listing.id} />}
+                  distanceLabel={distanceLabel(listing, origin)}
+                  mapOpen={openMapId === listing.id}
+                  onToggleMap={() => setOpenMapId((id) => (id === listing.id ? null : listing.id))}
                 />
               ))}
             </div>

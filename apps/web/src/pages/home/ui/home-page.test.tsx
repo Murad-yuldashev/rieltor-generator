@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HomePage } from './home-page';
@@ -36,7 +37,11 @@ function renderPage() {
   );
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  localStorage.clear();
+});
 
 describe('HomePage', () => {
   it('renders the listing list as links', async () => {
@@ -56,5 +61,32 @@ describe('HomePage', () => {
     const link = await screen.findByRole('link', { name: /3 xonali kvartira/ });
     expect(link).toHaveAttribute('href', '/obj/bx-001');
     expect(screen.getByText("780 000 000 so'm")).toBeInTheDocument();
+  });
+
+  it('opens one card map at a time', async () => {
+    localStorage.setItem(
+      'rieltor:user-location',
+      JSON.stringify({ lat: 41.31, lng: 69.24, label: 'Shayxontohur tumani', source: 'manual' }),
+    );
+    vi.stubEnv('VITE_YANDEX_MAPS_KEY', 'test-key');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify([listings[0], { ...listings[0], id: 'bx-002' }]), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+      ),
+    );
+
+    renderPage();
+
+    const buttons = await screen.findAllByRole('button', { name: "Joylashuvni ko'rsatish" });
+    await userEvent.click(buttons[0]!);
+    expect(screen.getAllByRole('img', { name: /joylashuvi/i })).toHaveLength(1);
+
+    await userEvent.click(buttons[1]!);
+    expect(screen.getAllByRole('img', { name: /joylashuvi/i })).toHaveLength(1);
   });
 });

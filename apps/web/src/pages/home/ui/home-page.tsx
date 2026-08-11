@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ListingCard, listingsQuery } from '@/entities/listing';
+import { ListingCard, distanceLabel, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
 import { ListingFilters, SortSelect, useListingFilters } from '@/features/listing-filters';
+import { useUserLocation } from '@/features/user-location';
 import { RealtorCta } from '@/widgets/realtor-cta';
 
 /** How many cards fill the first screen — the rest arrive via "Ko'proq". */
@@ -23,8 +24,11 @@ function CardSkeleton() {
 
 export function HomePage() {
   const { data, isPending, isError } = useQuery(listingsQuery());
-  const filters = useListingFilters(data);
+  const { location } = useUserLocation();
+  const origin = location ? { lat: location.lat, lng: location.lng } : null;
+  const filters = useListingFilters(data, origin);
   const [limit, setLimit] = useState(PAGE_SIZE);
+  const [openMapId, setOpenMapId] = useState<string | null>(null);
 
   const shown = filters.visible.slice(0, limit);
   const hasMore = filters.visible.length > shown.length;
@@ -68,6 +72,9 @@ export function HomePage() {
             listing={listing}
             isFirst={i === 0}
             favoriteSlot={<FavoriteButton id={listing.id} />}
+            distanceLabel={distanceLabel(listing, origin)}
+            mapOpen={openMapId === listing.id}
+            onToggleMap={() => setOpenMapId((id) => (id === listing.id ? null : listing.id))}
           />
         ))}
       </div>
