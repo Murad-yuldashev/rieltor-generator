@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { LocationChip } from '@/features/user-location';
 import { Icon } from '@/shared/ui/icon';
 
 export function SiteHeader() {
@@ -18,12 +19,7 @@ export function SiteHeader() {
           Rieltor uchun
         </Link>
 
-        {/* There is no city picker yet — every listing is in Tashkent. So this is a
-            plain label rather than a button that would do nothing. */}
-        <div className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-[7px] text-[13px] font-semibold text-ink-2">
-          <Icon name="pin" className="h-[13px] w-[13px] text-accent" strokeWidth={2.4} />
-          Toshkent
-        </div>
+        <LocationChip />
       </div>
     </header>
   );
