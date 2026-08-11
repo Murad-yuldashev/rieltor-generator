@@ -30,7 +30,9 @@ describe('LocationChip', () => {
     const LocationChip = await freshChip();
     render(<LocationChip />);
 
-    expect(screen.getByRole('button', { name: /Sergeli tumani/ })).toBeInTheDocument();
+    // The chip strips the common " tumani" suffix from its visible/accessible text
+    // (kept in full on the button's `title`) to save space for the identifying part.
+    expect(screen.getByRole('button', { name: /Sergeli/ })).toBeInTheDocument();
   });
 
   it('opens the picker when tapped', async () => {
