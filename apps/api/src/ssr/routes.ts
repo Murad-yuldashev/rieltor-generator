@@ -13,4 +13,6 @@ export const SPA_ROUTES = [
   'offer',
   'cabinet',
   'cabinet/profile',
+  'cabinet/new',
+  'cabinet/obj/:id/edit',
 ] as const;

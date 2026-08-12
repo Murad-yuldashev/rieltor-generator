@@ -1,12 +1,21 @@
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { DevLoginForm, TelegramLoginButton, useLogout, useMe } from '@/features/auth';
+import { myListingsQuery } from '@/features/listing-form';
 import { Icon } from '@/shared/ui/icon';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
+import { MyListingRow } from './my-listing-row';
 
 export function CabinetPage() {
   const { realtor, isLoading } = useMe();
   const logout = useLogout();
+  // Called unconditionally (Rules of Hooks) but only actually fetches once signed in —
+  // an anonymous visit to /cabinet would otherwise fire a doomed 401 request.
+  const { data: listings = [], isLoading: listingsLoading } = useQuery({
+    ...myListingsQuery(),
+    enabled: Boolean(realtor),
+  });
 
   if (isLoading) {
     return (
@@ -69,7 +78,30 @@ export function CabinetPage() {
           </p>
         )}
 
-        <SectionCard className="mt-3 py-1">
+        <div className="mt-5 flex items-center justify-between">
+          <h2 className="text-[15px] font-extrabold tracking-tight">Mening e'lonlarim</h2>
+          <Link to="/cabinet/new" className="flex items-center gap-1 text-[13px] font-bold text-accent">
+            <span className="text-base leading-none">＋</span> Yangi e'lon
+          </Link>
+        </div>
+
+        {listingsLoading ? (
+          <p className="mt-3 text-[13px] font-semibold text-ink-3">Yuklanmoqda…</p>
+        ) : listings.length === 0 ? (
+          <SectionCard className="mt-3">
+            <p className="py-2 text-center text-[13.5px] font-semibold text-ink-3">
+              Hali e'lon yo'q. Birinchisini qo'shing.
+            </p>
+          </SectionCard>
+        ) : (
+          <div className="mt-3 flex flex-col gap-2.5">
+            {listings.map((listing) => (
+              <MyListingRow key={listing.id} listing={listing} />
+            ))}
+          </div>
+        )}
+
+        <SectionCard className="mt-5 py-1">
           <Link to="/cabinet/profile" className="flex items-center gap-3 py-3.5">
             <span className="min-w-0 flex-1 text-[14.5px] font-bold">Profilni tahrirlash</span>
             <Icon name="chevronRight" className="h-4 w-4 text-ink-3" strokeWidth={2.4} />

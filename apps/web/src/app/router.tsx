@@ -1,5 +1,5 @@
 import { createBrowserRouter } from 'react-router';
-import { CabinetPage, ProfilePage } from '@/pages/cabinet';
+import { CabinetPage, EditListingPage, NewListingPage, ProfilePage } from '@/pages/cabinet';
 import { ContactPage } from '@/pages/contact';
 import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
@@ -32,6 +32,10 @@ export const router = createBrowserRouter([
       },
       // The listing page sits outside TabLayout: full-bleed gallery and its own sticky CTA.
       { path: '/obj/:id', element: <ListingPage /> },
+      // The listing form sits outside TabLayout too: a focused, deep task (12+
+      // fields, photo upload) where the bottom nav would only be clutter.
+      { path: '/cabinet/new', element: <NewListingPage /> },
+      { path: '/cabinet/obj/:id/edit', element: <EditListingPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
