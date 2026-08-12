@@ -1,13 +1,6 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import sharp from 'sharp';
-import {
-  IMAGE_MAX_WIDTH,
-  IMAGE_WIDTHS,
-  OG_IMAGE_HEIGHT,
-  OG_IMAGE_WIDTH,
-  imageVariantSrc,
-} from '@rieltor/shared';
+import { renderImageVariants } from '../src/media/variants';
 
 export interface ProcessedImage {
   /** Base path without a variant; this is what is stored in the DB: "/images/bx-001/01" */
@@ -28,8 +21,11 @@ export interface ProcessImageOptions {
   makeOg: boolean;
 }
 
-const QUALITY = 78;
-
+/**
+ * Thin disk-writing shell around the buffer-only core in src/media/variants.ts
+ * (design spec §6.2). Kept here — with this exact exported signature — so seed.ts
+ * and prisma/images.test.ts need zero changes; the test is the refactor's safety net.
+ */
 export async function processImage(opts: ProcessImageOptions): Promise<ProcessedImage> {
   const { source, outputRoot, listingId, position, makeOg } = opts;
 
@@ -39,37 +35,21 @@ export async function processImage(opts: ProcessImageOptions): Promise<Processed
   const fileName = String(position).padStart(2, '0');
   const base = `/images/${listingId}/${fileName}`;
 
-  let width = 0;
-  let height = 0;
+  // The buffer-only core has no filesystem access, so a source path is read in first.
+  const buffer = typeof source === 'string' ? await readFile(source) : source;
+  const rendered = await renderImageVariants(buffer);
 
-  for (const w of IMAGE_WIDTHS) {
-    // withoutEnlargement: never upscale a small source, it would only look worse.
-    const info = await sharp(source)
-      .resize({ width: w, withoutEnlargement: true })
-      .webp({ quality: QUALITY })
-      .toFile(join(outputDir, imageVariantSrc(fileName, w)));
-
-    if (w === IMAGE_MAX_WIDTH) {
-      width = info.width;
-      height = info.height;
-    }
-  }
-
-  // Single fallback for older browsers without WebP support.
-  await sharp(source)
-    .resize({ width: IMAGE_MAX_WIDTH, withoutEnlargement: true })
-    .jpeg({ quality: QUALITY, mozjpeg: true })
-    .toFile(join(outputDir, `${fileName}-${IMAGE_MAX_WIDTH}.jpg`));
+  await Promise.all(
+    rendered.variants.map((variant) =>
+      writeFile(join(outputDir, `${fileName}-${variant.name}`), variant.body),
+    ),
+  );
 
   let ogUrl: string | null = null;
-  if (makeOg) {
-    // Telegram expects exactly 1200×630, so here resizing is mandatory, via cover crop.
-    await sharp(source)
-      .resize({ width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, fit: 'cover', position: 'centre' })
-      .jpeg({ quality: 82, mozjpeg: true })
-      .toFile(join(outputDir, 'og.jpg'));
+  if (makeOg && rendered.og) {
+    await writeFile(join(outputDir, 'og.jpg'), rendered.og);
     ogUrl = `/images/${listingId}/og.jpg`;
   }
 
-  return { base, ogUrl, width, height };
+  return { base, ogUrl, width: rendered.width, height: rendered.height };
 }

@@ -106,6 +106,9 @@ model Image {
   width     Int
   height    Int
   position  Int
+  /// Perceptual average-hash (64-bit hex). Written by the stage-2b upload pipeline;
+  /// comparison and dupFlag are out of scope until a later spec.
+  phash     String?
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([listingId, position])

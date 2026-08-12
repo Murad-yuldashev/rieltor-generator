@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { AuthDevModule } from './auth-dev/auth-dev.module';
 import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
+import { MediaModule } from './media/media.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RealtorsModule } from './realtors/realtors.module';
 import { SsrModule } from './ssr/ssr.module';
@@ -33,6 +34,7 @@ const RAW_NODE_ENV = process.env.NODE_ENV;
     PrismaModule,
     HealthModule,
     ListingsModule,
+    MediaModule,
     ViewsModule,
     AuthModule,
     RealtorsModule,

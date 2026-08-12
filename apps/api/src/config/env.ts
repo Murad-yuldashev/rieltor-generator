@@ -23,6 +23,17 @@ export const envSchema = z.object({
   ADMIN_TOKEN: z.string().min(16).optional(),
   /** Enables POST /api/auth/dev — ignored when NODE_ENV is production. */
   DEV_LOGIN_SECRET: z.string().min(8).optional(),
+  /**
+   * Cloudflare R2 (S3-compatible) object storage for uploaded listing photos
+   * (stage 2b, spec §6.1). All five are optional: unset means createMediaStorage()
+   * falls back to LocalDiskStorage and the media module still registers and works.
+   */
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET: z.string().optional(),
+  /** Public base URL images are served from once R2 is live, e.g. https://media.example.com. */
+  MEDIA_PUBLIC_URL: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

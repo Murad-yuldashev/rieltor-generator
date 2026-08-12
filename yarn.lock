@@ -1864,9 +1864,11 @@ __metadata:
     "@swc/core": "npm:^1.10.0"
     "@types/compression": "npm:^1"
     "@types/express": "npm:^5.0.0"
+    "@types/multer": "npm:^2.2.0"
     "@types/node": "npm:^22.10.0"
     "@types/supertest": "npm:^6.0.2"
     compression: "npm:^1.8.1"
+    multer: "npm:^2.2.0"
     nestjs-zod: "npm:^5.5.0"
     prisma: "npm:6.19.3"
     reflect-metadata: "npm:^0.2.2"
@@ -2761,6 +2763,15 @@ __metadata:
   version: 1.1.4
   resolution: "@types/methods@npm:1.1.4"
   checksum: 10c0/a78534d79c300718298bfff92facd07bf38429c66191f640c1db4c9cff1e36f819304298a96f7536b6512bfc398e5c3e6b831405e138cd774b88ad7be78d682a
+  languageName: node
+  linkType: hard
+
+"@types/multer@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "@types/multer@npm:2.2.0"
+  dependencies:
+    "@types/express": "npm:*"
+  checksum: 10c0/72472c2da0a9afe86e2d64cfec53f4564727affcb691f78fcbdef495978857903f03326e4ecf58f6d1c3c4c89bb39e5d94fb97d4722a1f448f777c4fa690754b
   languageName: node
   linkType: hard
 
@@ -6502,7 +6513,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multer@npm:2.2.0":
+"multer@npm:2.2.0, multer@npm:^2.2.0":
   version: 2.2.0
   resolution: "multer@npm:2.2.0"
   dependencies:
