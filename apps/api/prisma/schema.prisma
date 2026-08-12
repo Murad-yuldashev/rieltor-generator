@@ -48,7 +48,7 @@ model Agent {
 }
 
 model Listing {
-  id          String      @id
+  id          String      @id @default(cuid())
   title       String
   /// An Int overflows at 2.1 bn so'm, and a house can cost more than that.
   /// For a RENT listing this is the price per month.

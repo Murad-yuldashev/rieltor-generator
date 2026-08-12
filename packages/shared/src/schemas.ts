@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { ListingStatusSchema } from './listing-status';
 
 export const AgentSchema = z.object({
   id: z.string(),
@@ -65,6 +66,16 @@ export const ListingDetailSchema = ListingSummarySchema.omit({
   agent: AgentSchema,
 });
 
+/** The card the realtor sees in their own cabinet — the public summary plus status. */
+export const OwnerListingSummarySchema = ListingSummarySchema.extend({
+  status: ListingStatusSchema,
+});
+
+/** The listing the realtor edits — the public detail plus status. */
+export const OwnerListingDetailSchema = ListingDetailSchema.extend({
+  status: ListingStatusSchema,
+});
+
 export const ViewsSchema = z.object({ views: z.number().int() });
 
 export type Agent = z.infer<typeof AgentSchema>;
@@ -73,4 +84,6 @@ export type ListingType = z.infer<typeof ListingTypeSchema>;
 export type Deal = z.infer<typeof DealSchema>;
 export type ListingSummary = z.infer<typeof ListingSummarySchema>;
 export type ListingDetail = z.infer<typeof ListingDetailSchema>;
+export type OwnerListingSummary = z.infer<typeof OwnerListingSummarySchema>;
+export type OwnerListingDetail = z.infer<typeof OwnerListingDetailSchema>;
 export type Views = z.infer<typeof ViewsSchema>;
