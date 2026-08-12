@@ -9,4 +9,5 @@ export { ListingRow } from './ui/listing-row';
 export { Location } from './ui/location';
 export { ParamsRow } from './ui/params-row';
 export { PriceBlock } from './ui/price-block';
+export { PriceDroppedBadge } from './ui/price-dropped-badge';
 export { TypeBadge } from './ui/type-badge';

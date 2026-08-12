@@ -23,6 +23,8 @@ export const envSchema = z.object({
   ADMIN_TOKEN: z.string().min(16).optional(),
   /** Enables POST /api/auth/dev — ignored when NODE_ENV is production. */
   DEV_LOGIN_SECRET: z.string().min(8).optional(),
+  /** Guards POST /api/internal/cron/daily (stage 4, spec §7.5). 503 if unset. */
+  CRON_SECRET: z.string().min(16).optional(),
   /**
    * Salts Event.ipHash (stage 3, spec §8.2) so a raw IP is never stored. Optional:
    * unset does not disable analytics, it just hashes without a secret — a weaker

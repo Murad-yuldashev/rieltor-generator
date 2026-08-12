@@ -36,6 +36,7 @@ const fullListing = {
     phone: '+998901234567',
     telegram: 'murod',
   },
+  priceDropped: false,
 };
 
 describe('ListingDetailSchema', () => {

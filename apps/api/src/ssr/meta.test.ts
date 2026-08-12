@@ -36,6 +36,7 @@ const listing = {
     phone: '+998901234567',
     telegram: 'username',
   },
+  priceDropped: false,
 };
 
 const BASE = 'https://misol.uz';

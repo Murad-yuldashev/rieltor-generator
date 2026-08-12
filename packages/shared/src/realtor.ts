@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { ListingSummarySchema, SoldListingSchema } from './schemas';
 
 /** +998 and nine digits, no spaces — the format tel: links need. */
 export const UZ_PHONE_PATTERN = /^\+998\d{9}$/;
@@ -73,6 +74,30 @@ export function slugifyUsername(source: string): string {
   return slug.length >= 3 ? slug : USERNAME_FALLBACK;
 }
 
+/**
+ * GET /api/realtors/:username and the /r/:username SSR shell (design spec §9.1) —
+ * the public card plus the active listings and the "sold/rented" portfolio below it.
+ * Deliberately narrower than RealtorProfile: no tgId, no phoneVerified — nothing a
+ * stranger visiting the page has any use for.
+ */
+export const RealtorShowcaseSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  name: z.string(),
+  photoUrl: z.string().nullable(),
+  agency: z.string().nullable(),
+  phone: z.string().nullable(),
+  /** https://t.me/<tgUsername>, or null when the realtor has no public Telegram username. */
+  telegram: z.string().nullable(),
+  registryNo: z.string().nullable(),
+  trusted: z.boolean(),
+  /** ACTIVE + RESERVED. */
+  listings: z.array(ListingSummarySchema),
+  /** SOLD + RENTED — kept visible on purpose as a trust signal (design spec §5.3). */
+  sold: z.array(SoldListingSchema),
+});
+
 export type TelegramAuth = z.infer<typeof TelegramAuthSchema>;
 export type RealtorProfile = z.infer<typeof RealtorProfileSchema>;
 export type RealtorProfileUpdate = z.infer<typeof RealtorProfileUpdateSchema>;
+export type RealtorShowcase = z.infer<typeof RealtorShowcaseSchema>;

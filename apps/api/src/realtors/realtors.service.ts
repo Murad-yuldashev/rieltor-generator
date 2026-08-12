@@ -1,7 +1,28 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import type { RealtorProfile, RealtorProfileUpdate } from '@rieltor/shared';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import type { RealtorProfile, RealtorProfileUpdate, RealtorShowcase, SoldListing } from '@rieltor/shared';
 import { REALTOR_SELECT } from '../auth/realtor-select';
+import { listingInclude, toListingSummary } from '../listings/mapper';
 import { PrismaService } from '../prisma/prisma.service';
+
+/** Fields the public /r/:username card and its SSR meta tags need — nothing more. */
+const SHOWCASE_SELECT = {
+  id: true,
+  username: true,
+  name: true,
+  photoUrl: true,
+  agency: true,
+  phone: true,
+  registryNo: true,
+  trusted: true,
+  tgUsername: true,
+} as const;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** soldAt − publishedAt, in whole days, floored at 0 for any bad/legacy data. */
+function daysBetween(publishedAt: Date, soldAt: Date): number {
+  return Math.max(0, Math.round((soldAt.getTime() - publishedAt.getTime()) / DAY_MS));
+}
 
 @Injectable()
 export class RealtorsService {
@@ -76,5 +97,57 @@ export class RealtorsService {
     const agent = await this.prisma.agent.create({ data, select: { id: true } });
     await this.prisma.realtor.update({ where: { id: realtorId }, data: { agentId: agent.id } });
     return agent.id;
+  }
+
+  /**
+   * GET /api/realtors/:username and the /r/:username SSR shell (design spec §9.1):
+   * the public card plus the realtor's ACTIVE+RESERVED listings and, separately, the
+   * SOLD+RENTED ones — kept visible on purpose as a trust signal (spec §5.3), each
+   * carrying how many days the sale took.
+   */
+  async showcase(username: string): Promise<RealtorShowcase> {
+    const realtor = await this.prisma.realtor.findUnique({
+      where: { username },
+      select: SHOWCASE_SELECT,
+    });
+    if (!realtor) throw new NotFoundException(`Rieltor topilmadi: ${username}`);
+
+    const rows = await this.prisma.listing.findMany({
+      where: { realtorId: realtor.id, status: { in: ['ACTIVE', 'RESERVED', 'SOLD', 'RENTED'] } },
+      include: listingInclude(),
+      orderBy: { id: 'desc' },
+    });
+
+    const listings = rows
+      .filter((row) => row.status === 'ACTIVE' || row.status === 'RESERVED')
+      .map(toListingSummary);
+
+    const sold: SoldListing[] = [];
+    for (const row of rows) {
+      if (row.status !== 'SOLD' && row.status !== 'RENTED') continue;
+      // Both are always set by the time a listing reaches SOLD/RENTED (only reachable
+      // from ACTIVE/RESERVED, which themselves require publishedAt) — skipped instead
+      // of crashing the whole showcase over one malformed row.
+      if (!row.publishedAt || !row.soldAt) continue;
+      sold.push({
+        ...toListingSummary(row),
+        status: row.status,
+        soldInDays: daysBetween(row.publishedAt, row.soldAt),
+      });
+    }
+
+    return {
+      id: realtor.id,
+      username: realtor.username,
+      name: realtor.name,
+      photoUrl: realtor.photoUrl,
+      agency: realtor.agency,
+      phone: realtor.phone,
+      telegram: realtor.tgUsername ? `https://t.me/${realtor.tgUsername}` : null,
+      registryNo: realtor.registryNo,
+      trusted: realtor.trusted,
+      listings,
+      sold,
+    };
   }
 }

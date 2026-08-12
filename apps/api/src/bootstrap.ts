@@ -22,6 +22,7 @@ export function configureApp(app: NestExpressApplication): void {
     exclude: [
       { path: '/', method: RequestMethod.GET },
       { path: 'obj/:id', method: RequestMethod.GET },
+      { path: 'r/:username', method: RequestMethod.GET },
       ...SPA_ROUTES.map((path) => ({ path, method: RequestMethod.GET })),
     ],
   });

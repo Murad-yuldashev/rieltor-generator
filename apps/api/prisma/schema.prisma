@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   /// "native" covers local dev and the Docker image; the RHEL engine is the one
   /// AWS Lambda (and therefore Netlify Functions) loads at runtime.
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
@@ -55,49 +55,53 @@ model Agent {
 }
 
 model Listing {
-  id          String      @id @default(cuid())
-  title       String
+  id               String         @id @default(cuid())
+  title            String
   /// An Int overflows at 2.1 bn so'm, and a house can cost more than that.
   /// For a RENT listing this is the price per month.
-  priceSom    BigInt
-  priceUsd    Int
+  priceSom         BigInt
+  priceUsd         Int
   /// Commercial premises are not measured in rooms — OLX omits the field too.
-  rooms       Int?
-  areaM2      Float
+  rooms            Int?
+  areaM2           Float
   /// Houses have no floor.
-  floor       String?
-  district    String
-  address     String
-  landmark    String
-  description String
-  type        ListingType
+  floor            String?
+  district         String
+  address          String
+  landmark         String
+  description      String
+  type             ListingType
   /// The ten listings that predate this column were all sales.
-  deal        Deal        @default(SALE)
+  deal             Deal           @default(SALE)
   /// Lifecycle. The seed listings predate this column and default to ACTIVE, so
   /// they keep showing on the public feed exactly as before.
-  status         ListingStatus @default(ACTIVE)
+  status           ListingStatus  @default(ACTIVE)
   /// The owning realtor. NULL for the seed listings, which have no cabinet owner.
-  realtorId      String?
-  realtor        Realtor?      @relation(fields: [realtorId], references: [id])
+  realtorId        String?
+  realtor          Realtor?       @relation(fields: [realtorId], references: [id])
   /// Set the moment the listing first goes ACTIVE. Drives expiresAt and the cron.
-  publishedAt    DateTime?
+  publishedAt      DateTime?
   /// publishedAt + 30 days; the stage-4 cron archives listings past this.
-  expiresAt      DateTime?
+  expiresAt        DateTime?
   /// When it became SOLD or RENTED — drives "SOTILDI · N kunda".
-  soldAt         DateTime?
+  soldAt           DateTime?
   /// Admin's reason when a PENDING listing is rejected back to DRAFT (stage 4).
-  moderationNote String?
+  moderationNote   String?
+  /// expiresAt − 3 days reached and the realtor already notified — set once so the
+  /// stage-4 cron never sends the reminder twice.
+  expiryNotifiedAt DateTime?
   /// WGS84. Nullable: a listing without a pin still shows everywhere it did before,
   /// and stage 2's draft form saves before the realtor places one.
-  lat         Float?
-  lng         Float?
-  views       Int         @default(0)
-  listedAt    DateTime    @db.Date
-  agentId     String
-  agent       Agent       @relation(fields: [agentId], references: [id])
-  images      Image[]
-  shareLinks  ShareLink[]
-  events      Event[]
+  lat              Float?
+  lng              Float?
+  views            Int            @default(0)
+  listedAt         DateTime       @db.Date
+  agentId          String
+  agent            Agent          @relation(fields: [agentId], references: [id])
+  images           Image[]
+  priceHistory     PriceHistory[]
+  shareLinks       ShareLink[]
+  events           Event[]
 
   @@index([type])
   @@index([deal])
@@ -127,9 +131,9 @@ model Image {
 /// The public-facing card on a listing page still comes from Agent — see
 /// syncAgent() in stage 2, which mirrors this profile into an Agent row.
 model Realtor {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   /// Telegram user id. Bigger than a 32-bit int, hence BigInt.
-  tgId          BigInt   @unique
+  tgId          BigInt    @unique
   tgUsername    String?
   name          String
   photoUrl      String?
@@ -137,18 +141,18 @@ model Realtor {
   /// half-filled profile can still be saved.
   phone         String?
   /// Set to true when the realtor shares their contact through the bot (stage 5).
-  phoneVerified Boolean  @default(false)
+  phoneVerified Boolean   @default(false)
   agency        String?
   /// Slug for /r/:username — [a-z0-9-]{3,30}.
-  username      String   @unique
+  username      String    @unique
   /// Realtor registry number. Optional and never verified.
   registryNo    String?
   /// Once true, this realtor's listings go live without moderation.
-  trusted       Boolean  @default(false)
+  trusted       Boolean   @default(false)
   /// The mirrored public Agent row; created on first publish (stage 2).
-  agentId       String?  @unique
-  agent         Agent?   @relation(fields: [agentId], references: [id])
-  createdAt     DateTime @default(now())
+  agentId       String?   @unique
+  agent         Agent?    @relation(fields: [agentId], references: [id])
+  createdAt     DateTime  @default(now())
   /// The realtor's own listings (reverse of Listing.realtor).
   listings      Listing[]
 }
@@ -186,4 +190,27 @@ model Event {
 
   @@index([listingId, createdAt])
   @@index([ipHash, listingId, type, createdAt])
+}
+
+/// The price a listing carried right before a change — written by
+/// ListingsWriteService.update() before it applies a new priceSom/priceUsd (stage 4,
+/// spec §7.6). Read back only as a 7-day window to flag the "price dropped" badge.
+model PriceHistory {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  priceSom  BigInt
+  priceUsd  Int
+  changedAt DateTime @default(now())
+
+  @@index([listingId, changedAt])
+}
+
+/// One row per calendar day — the USD/UZS rate fetched from CBU's public JSON API by
+/// the stage-4 daily cron. A fetch failure leaves yesterday's row as the latest, which
+/// is exactly the fallback ListingsWriteService.update() and the cron rely on.
+model FxRate {
+  date      DateTime @id @db.Date
+  usdRate   Float
+  fetchedAt DateTime @default(now())
 }

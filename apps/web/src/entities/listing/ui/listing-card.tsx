@@ -9,6 +9,7 @@ import {
 import { Icon } from '@/shared/ui/icon';
 import { ResponsiveImage } from '@/shared/ui/responsive-image';
 import { StaticMap } from '@/shared/ui/static-map';
+import { PriceDroppedBadge } from './price-dropped-badge';
 import { TypeBadge } from './type-badge';
 
 interface Props {
@@ -57,8 +58,9 @@ export function ListingCard({
             />
           )}
 
-          <div className="absolute top-3 left-3 flex gap-1.5">
+          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
             <TypeBadge type={listing.type} />
+            {listing.priceDropped && <PriceDroppedBadge />}
           </div>
 
           {favoriteSlot && <div className="absolute top-2.5 right-2.5">{favoriteSlot}</div>}

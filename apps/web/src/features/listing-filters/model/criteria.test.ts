@@ -20,6 +20,7 @@ function listing(id: string, lat: number | null, lng: number | null): ListingSum
     lng,
     image: null,
     imageCount: 0,
+    priceDropped: false,
   };
 }
 

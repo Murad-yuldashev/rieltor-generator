@@ -12,6 +12,7 @@ import { HomePage } from '@/pages/home';
 import { ListingPage } from '@/pages/listing';
 import { NotFoundPage } from '@/pages/not-found';
 import { OfferPage } from '@/pages/offer';
+import { RealtorShowcasePage } from '@/pages/realtor-showcase';
 import { SearchPage } from '@/pages/search';
 import { RootLayout } from './root-layout';
 import { TabLayout } from './tab-layout';
@@ -38,6 +39,9 @@ export const router = createBrowserRouter([
       },
       // The listing page sits outside TabLayout: full-bleed gallery and its own sticky CTA.
       { path: '/obj/:id', element: <ListingPage /> },
+      // The realtor showcase sits outside TabLayout too — a standalone, landing-like
+      // page reached from a shared /r/:username link, not from the bottom nav.
+      { path: '/r/:username', element: <RealtorShowcasePage /> },
       // The listing form sits outside TabLayout too: a focused, deep task (12+
       // fields, photo upload) where the bottom nav would only be clutter.
       { path: '/cabinet/new', element: <NewListingPage /> },

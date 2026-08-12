@@ -22,6 +22,7 @@ const listing: ListingSummary = {
   lng: 69.287,
   image: null,
   imageCount: 0,
+  priceDropped: false,
 };
 
 function renderCard(props: Partial<Parameters<typeof ListingCard>[0]> = {}) {

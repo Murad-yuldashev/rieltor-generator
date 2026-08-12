@@ -62,6 +62,7 @@ export function ListingPage() {
             priceUsd={data.priceUsd}
             areaM2={data.areaM2}
             deal={data.deal}
+            priceDropped={data.priceDropped}
           />
           <h1 className="mt-2.5 text-[17px] leading-[1.35] font-bold">{data.title}</h1>
           <ListingMeta

@@ -83,7 +83,16 @@ export class ListingsWriteService {
 
   async update(realtorId: string, id: string, input: ListingInput): Promise<{ id: string }> {
     await this.assertOwner(realtorId, id);
-    await this.prisma.listing.update({ where: { id }, data: this.toData(input) });
+    const data = this.toData(input);
+
+    // Only touch PriceHistory/FxRate when a price field is actually part of this
+    // PATCH — the common no-price-change edit (district, description, ...) stays a
+    // single query, exactly as before.
+    if (input.priceSom !== undefined || input.priceUsd !== undefined) {
+      await this.applyPriceChange(id, input, data);
+    }
+
+    await this.prisma.listing.update({ where: { id }, data });
     return { id };
   }
 
@@ -95,6 +104,54 @@ export class ListingsWriteService {
     });
     if (!row) throw new NotFoundException(`Obyekt topilmadi: ${id}`);
     if (row.realtorId !== realtorId) throw new ForbiddenException('Bu obyekt sizga tegishli emas');
+  }
+
+  /**
+   * Runs the two price side-effects from design spec §7.6, mutating `data` (the
+   * payload the caller is about to send to prisma.listing.update) in place:
+   *   1. auto-converts whichever currency the realtor did not type, from the latest
+   *      FxRate — sending both is treated as an explicit override, so no conversion
+   *      runs in that case;
+   *   2. if the resulting price differs from what is stored today, archives today's
+   *      (still current) price into PriceHistory before the caller applies `data`.
+   */
+  private async applyPriceChange(
+    id: string,
+    input: ListingInput,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    const current = await this.prisma.listing.findUnique({
+      where: { id },
+      select: { priceSom: true, priceUsd: true },
+    });
+    // The listing vanished between assertOwner and here (a very tight race) — let
+    // the caller's own prisma.listing.update below surface that failure.
+    if (!current) return;
+
+    if (input.priceSom !== undefined && input.priceUsd === undefined) {
+      const rate = await this.latestUsdRate();
+      if (rate) data.priceUsd = Math.round(Number(data.priceSom as bigint) / rate);
+    } else if (input.priceUsd !== undefined && input.priceSom === undefined) {
+      const rate = await this.latestUsdRate();
+      if (rate) data.priceSom = BigInt(Math.round((data.priceUsd as number) * rate));
+    }
+
+    const newPriceSom = (data.priceSom as bigint | undefined) ?? current.priceSom;
+    const newPriceUsd = (data.priceUsd as number | undefined) ?? current.priceUsd;
+    if (newPriceSom === current.priceSom && newPriceUsd === current.priceUsd) return;
+
+    await this.prisma.priceHistory.create({
+      data: { listingId: id, priceSom: current.priceSom, priceUsd: current.priceUsd },
+    });
+  }
+
+  /** So'm per US dollar, from the most recent FxRate row — null if the cron has never run. */
+  private async latestUsdRate(): Promise<number | null> {
+    const row = await this.prisma.fxRate.findFirst({
+      orderBy: { date: 'desc' },
+      select: { usdRate: true },
+    });
+    return row?.usdRate ?? null;
   }
 
   /**

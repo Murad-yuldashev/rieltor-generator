@@ -22,6 +22,7 @@ const row = {
   expiresAt: null,
   soldAt: null,
   moderationNote: null,
+  expiryNotifiedAt: null,
   views: 3,
   listedAt: new Date('2026-07-22T00:00:00.000Z'),
   lat: 41.31,
@@ -45,6 +46,7 @@ const row = {
     },
     { base: '/images/bx-002/02', ogUrl: null, width: 1200, height: 900, position: 2 },
   ],
+  priceHistory: [],
 };
 
 describe('toListingDetail', () => {
