@@ -24,6 +24,16 @@ enum Deal {
   RENT
 }
 
+enum ListingStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  RESERVED
+  SOLD
+  RENTED
+  ARCHIVED
+}
+
 model Agent {
   id       String    @id @default(cuid())
   name     String
@@ -56,6 +66,20 @@ model Listing {
   type        ListingType
   /// The ten listings that predate this column were all sales.
   deal        Deal        @default(SALE)
+  /// Lifecycle. The seed listings predate this column and default to ACTIVE, so
+  /// they keep showing on the public feed exactly as before.
+  status         ListingStatus @default(ACTIVE)
+  /// The owning realtor. NULL for the seed listings, which have no cabinet owner.
+  realtorId      String?
+  realtor        Realtor?      @relation(fields: [realtorId], references: [id])
+  /// Set the moment the listing first goes ACTIVE. Drives expiresAt and the cron.
+  publishedAt    DateTime?
+  /// publishedAt + 30 days; the stage-4 cron archives listings past this.
+  expiresAt      DateTime?
+  /// When it became SOLD or RENTED — drives "SOTILDI · N kunda".
+  soldAt         DateTime?
+  /// Admin's reason when a PENDING listing is rejected back to DRAFT (stage 4).
+  moderationNote String?
   /// WGS84. Nullable: a listing without a pin still shows everywhere it did before,
   /// and stage 2's draft form saves before the realtor places one.
   lat         Float?
@@ -68,6 +92,8 @@ model Listing {
 
   @@index([type])
   @@index([deal])
+  @@index([status])
+  @@index([realtorId])
 }
 
 model Image {
@@ -111,4 +137,6 @@ model Realtor {
   agentId       String?  @unique
   agent         Agent?   @relation(fields: [agentId], references: [id])
   createdAt     DateTime @default(now())
+  /// The realtor's own listings (reverse of Listing.realtor).
+  listings      Listing[]
 }
