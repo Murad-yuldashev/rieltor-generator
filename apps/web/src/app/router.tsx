@@ -1,5 +1,11 @@
 import { createBrowserRouter } from 'react-router';
-import { CabinetPage, EditListingPage, NewListingPage, ProfilePage } from '@/pages/cabinet';
+import {
+  CabinetPage,
+  EditListingPage,
+  NewListingPage,
+  ProfilePage,
+  StatsPage,
+} from '@/pages/cabinet';
 import { ContactPage } from '@/pages/contact';
 import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
@@ -36,6 +42,7 @@ export const router = createBrowserRouter([
       // fields, photo upload) where the bottom nav would only be clutter.
       { path: '/cabinet/new', element: <NewListingPage /> },
       { path: '/cabinet/obj/:id/edit', element: <EditListingPage /> },
+      { path: '/cabinet/obj/:id/stats', element: <StatsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { envSchema } from './config/env';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { AuthDevModule } from './auth-dev/auth-dev.module';
 import { HealthModule } from './health/health.module';
@@ -10,6 +11,7 @@ import { ListingsModule } from './listings/listings.module';
 import { MediaModule } from './media/media.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RealtorsModule } from './realtors/realtors.module';
+import { ShareModule } from './share/share.module';
 import { SsrModule } from './ssr/ssr.module';
 import { ViewsModule } from './views/views.module';
 
@@ -38,6 +40,8 @@ const RAW_NODE_ENV = process.env.NODE_ENV;
     ViewsModule,
     AuthModule,
     RealtorsModule,
+    ShareModule,
+    AnalyticsModule,
     // A positive allowlist rather than `!== 'production'`: NODE_ENV is not reliably
     // set on every deploy path (Netlify's build environment is the exception, not
     // the rule), so an unset NODE_ENV must fail closed instead of defaulting this

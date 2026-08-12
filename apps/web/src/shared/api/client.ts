@@ -44,7 +44,9 @@ export function apiGet<T>(path: string, schema: ZodType<T>): Promise<T> {
   return request(path, 'GET', schema);
 }
 
-export function apiPost<T>(path: string, schema: ZodType<T>, body?: unknown): Promise<T> {
+/** schema is optional: pass none for a call whose response body is never read (e.g. a
+ *  fire-and-forget analytics ping, whose body may not even be valid JSON). */
+export function apiPost<T = void>(path: string, schema?: ZodType<T>, body?: unknown): Promise<T> {
   return request(path, 'POST', schema, body);
 }
 

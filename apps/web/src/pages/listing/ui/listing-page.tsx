@@ -9,6 +9,7 @@ import {
   PriceBlock,
   listingQuery,
 } from '@/entities/listing';
+import { useShareCode, useTrackView } from '@/features/event-tracking';
 import { ViewCounter } from '@/features/view-counter';
 import { ApiError } from '@/shared/api/client';
 import { SectionCard } from '@/shared/ui/section-card';
@@ -32,6 +33,11 @@ function PageSkeleton() {
 export function ListingPage() {
   const { id = '' } = useParams();
   const { data, isPending, error } = useQuery(listingQuery(id));
+  const shareCode = useShareCode();
+  // Called unconditionally (Rules of Hooks), same as the query above — it only
+  // actually fires once `data` confirms the listing exists, so a 404 id is never
+  // counted as a view.
+  useTrackView(id, Boolean(data));
 
   if (isPending) return <PageSkeleton />;
 
@@ -93,7 +99,12 @@ export function ListingPage() {
         </SectionCard>
       </main>
 
-      <StickyCTA phone={data.agent.phone} telegram={data.agent.telegram} />
+      <StickyCTA
+        phone={data.agent.phone}
+        telegram={data.agent.telegram}
+        listingId={data.id}
+        shareCode={shareCode}
+      />
     </div>
   );
 }

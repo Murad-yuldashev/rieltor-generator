@@ -1,16 +1,22 @@
 import type { UseMutationResult } from '@tanstack/react-query';
 import { allowedTransitions, type ListingStatus } from '@rieltor/shared';
 import { Link } from 'react-router';
+import { PUBLIC_DETAIL_STATUSES } from '@/entities/listing';
 import { cn } from '@/shared/lib/cn';
+import { Icon } from '@/shared/ui/icon';
 import { SectionCard } from '@/shared/ui/section-card';
 import { STATUS_META, TRANSITION_LABEL } from '../lib/status-meta';
 
 interface Props {
+  listingId: string;
   status: ListingStatus;
   missing: string[];
   hasPhone: boolean;
   save: UseMutationResult<{ id: string }, Error, void>;
   transition: UseMutationResult<{ status: ListingStatus }, Error, ListingStatus>;
+  /** Opens the share screen (design spec §8.1) — called right after a DRAFT→ACTIVE
+   *  publish succeeds, and also from the "Ulashish" button below for a re-share. */
+  onShare: () => void;
 }
 
 /**
@@ -18,7 +24,15 @@ interface Props {
  * publish button gated on `missing`, and every other §7.4 transition the realtor may
  * request from the current status, read straight off the shared allowedTransitions().
  */
-export function StatusBar({ status, missing, hasPhone, save, transition }: Props) {
+export function StatusBar({
+  listingId,
+  status,
+  missing,
+  hasPhone,
+  save,
+  transition,
+  onShare,
+}: Props) {
   const meta = STATUS_META[status];
   // DRAFT→ACTIVE is the publish button below, rendered on its own — every other
   // allowed target lands in the plain transition-button row.
@@ -28,14 +42,39 @@ export function StatusBar({ status, missing, hasPhone, save, transition }: Props
 
   return (
     <SectionCard className="mt-4" title="Holat">
-      <span
-        className={cn(
-          'inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-extrabold text-white',
-          meta.badge,
-        )}
-      >
-        {meta.label}
-      </span>
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className={cn(
+            'inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-extrabold text-white',
+            meta.badge,
+          )}
+        >
+          {meta.label}
+        </span>
+
+        <div className="flex items-center gap-3.5">
+          <Link
+            to={`/cabinet/obj/${listingId}/stats`}
+            className="flex items-center gap-1 text-[12.5px] font-bold text-ink-2"
+          >
+            <Icon name="eye" className="h-3.5 w-3.5" strokeWidth={2.2} />
+            Statistika
+          </Link>
+          {/* A DRAFT/PENDING/ARCHIVED listing 404s for everyone but its owner — sharing
+              its link would be pointless (entities/listing's PUBLIC_DETAIL_STATUSES,
+              mirroring the API's own visibility rule, §5.3). */}
+          {PUBLIC_DETAIL_STATUSES.has(status) && (
+            <button
+              type="button"
+              onClick={onShare}
+              className="flex items-center gap-1 text-[12.5px] font-bold text-accent"
+            >
+              <Icon name="share" className="h-3.5 w-3.5" strokeWidth={2.2} />
+              Ulashish
+            </button>
+          )}
+        </div>
+      </div>
 
       {status === 'PENDING' && (
         <p className="mt-2 text-[13px] font-semibold text-ink-2">
@@ -72,7 +111,15 @@ export function StatusBar({ status, missing, hasPhone, save, transition }: Props
         {status === 'DRAFT' && (
           <button
             type="button"
-            onClick={() => transition.mutate('ACTIVE')}
+            onClick={() =>
+              transition.mutate('ACTIVE', {
+                // Untrusted realtors land on PENDING instead (§7.4) — the share
+                // screen only makes sense once the listing is actually live.
+                onSuccess: (result) => {
+                  if (result.status === 'ACTIVE') onShare();
+                },
+              })
+            }
             disabled={transition.isPending || missing.length > 0}
             className="flex-1 rounded-[14px] bg-accent py-3 text-[14.5px] font-extrabold text-white disabled:opacity-60"
           >
@@ -81,7 +128,9 @@ export function StatusBar({ status, missing, hasPhone, save, transition }: Props
         )}
       </div>
 
-      {save.isError && <p className="mt-2 text-[13px] font-bold text-red-600">Saqlashda xatolik.</p>}
+      {save.isError && (
+        <p className="mt-2 text-[13px] font-bold text-red-600">Saqlashda xatolik.</p>
+      )}
       {save.isSuccess && <p className="mt-2 text-[13px] font-bold text-emerald-600">Saqlandi</p>}
 
       {otherTargets.length > 0 && (

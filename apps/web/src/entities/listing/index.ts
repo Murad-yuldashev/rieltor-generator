@@ -1,6 +1,7 @@
 export { listingQuery, listingsQuery } from './api';
 export { distanceLabel } from './lib/distance-label';
 export { LISTING_TYPES, LISTING_TYPE_META } from './lib/type-meta';
+export { PUBLIC_DETAIL_STATUSES } from './lib/visibility';
 export { Description } from './ui/description';
 export { ListingCard } from './ui/listing-card';
 export { ListingMeta } from './ui/listing-meta';

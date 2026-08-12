@@ -24,6 +24,12 @@ export const envSchema = z.object({
   /** Enables POST /api/auth/dev — ignored when NODE_ENV is production. */
   DEV_LOGIN_SECRET: z.string().min(8).optional(),
   /**
+   * Salts Event.ipHash (stage 3, spec §8.2) so a raw IP is never stored. Optional:
+   * unset does not disable analytics, it just hashes without a secret — a weaker
+   * but still-working default (the project's usual "degrade, don't crash" rule).
+   */
+  IP_HASH_SECRET: z.string().optional(),
+  /**
    * Cloudflare R2 (S3-compatible) object storage for uploaded listing photos
    * (stage 2b, spec §6.1). All five are optional: unset means createMediaStorage()
    * falls back to LocalDiskStorage and the media module still registers and works.

@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { formatPriceSom, type Deal, type OwnerListingDetail } from '@rieltor/shared';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
+import { SharePanel } from '@/features/listing-share';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { SectionCard } from '@/shared/ui/section-card';
@@ -50,17 +51,21 @@ function uploadErrorMessage(error: unknown): string {
 }
 
 export function ListingForm({ listingId, initial, hasPhone }: Props) {
-  const { form, setField, images, missing, save, transition, upload, removeImage } =
-    useListingForm({ listingId, initial, hasPhone });
+  const { form, setField, images, missing, save, transition, upload, removeImage } = useListingForm(
+    { listingId, initial, hasPhone },
+  );
+  const [shareOpen, setShareOpen] = useState(false);
 
   return (
     <div className="px-4 pb-10">
       <StatusBar
+        listingId={listingId}
         status={initial.status}
         missing={missing}
         hasPhone={hasPhone}
         save={save}
         transition={transition}
+        onShare={() => setShareOpen(true)}
       />
 
       <SectionCard className="mt-3" title="Asosiy ma'lumot">
@@ -74,7 +79,11 @@ export function ListingForm({ listingId, initial, hasPhone }: Props) {
           />
         </Field>
 
-        <div role="tablist" aria-label="Amal turi" className="mt-1 flex rounded-xl bg-[#e8e8ee] p-1">
+        <div
+          role="tablist"
+          aria-label="Amal turi"
+          className="mt-1 flex rounded-xl bg-[#e8e8ee] p-1"
+        >
           {DEALS.map(({ value, label }) => (
             <button
               key={value}
@@ -233,6 +242,15 @@ export function ListingForm({ listingId, initial, hasPhone }: Props) {
           deleting={removeImage.isPending}
         />
       </SectionCard>
+
+      {/* Opened right after a fresh DRAFT→ACTIVE publish (StatusBar's onShare) and
+          reachable again any time via its "Ulashish" button — see status-bar.tsx. */}
+      <SharePanel
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        listingId={listingId}
+        listing={initial}
+      />
     </div>
   );
 }
