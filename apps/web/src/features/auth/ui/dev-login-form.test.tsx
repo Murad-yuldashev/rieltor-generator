@@ -29,18 +29,19 @@ describe('DevLoginForm', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('offers a password field when the flag is on', async () => {
+  it('offers a name field and no password when the flag is on', async () => {
     vi.stubEnv('VITE_DEV_LOGIN_ENABLED', 'true');
     renderForm(await freshForm());
 
-    expect(screen.getByLabelText('Parol')).toBeInTheDocument();
+    expect(screen.getByLabelText('Ism')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Parol')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Kirish' })).toBeInTheDocument();
   });
 
-  it('keeps the submit button disabled until a password is typed', async () => {
+  it('enables the submit button for a one-click login', async () => {
     vi.stubEnv('VITE_DEV_LOGIN_ENABLED', 'true');
     renderForm(await freshForm());
 
-    expect(screen.getByRole('button', { name: 'Kirish' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Kirish' })).toBeEnabled();
   });
 });

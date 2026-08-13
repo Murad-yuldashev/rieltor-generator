@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/shared/ui/icon';
 import { loadYandexMaps } from '@/shared/lib/yandex-maps';
 import { useUserLocation } from '../model/use-user-location';
@@ -21,6 +22,7 @@ const LOAD_TIMEOUT_MS = 10_000;
  * this opens, never before.
  */
 export function LocationPicker({ open, onClose }: Props) {
+  const { t } = useTranslation('misc');
   const { location, setManual, detect } = useUserLocation();
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<{ getCenter(): [number, number]; destroy(): void } | null>(null);
@@ -48,7 +50,7 @@ export function LocationPicker({ open, onClose }: Props) {
     const timeoutId = setTimeout(() => {
       if (cancelled) return;
       cancelled = true;
-      setError("Xaritani yuklab bo'lmadi. Keyinroq urinib ko'ring.");
+      setError(t('mapLoadError'));
     }, LOAD_TIMEOUT_MS);
 
     loadYandexMaps()
@@ -73,9 +75,7 @@ export function LocationPicker({ open, onClose }: Props) {
         if (cancelled) return;
         clearTimeout(timeoutId);
         setError(
-          import.meta.env.VITE_YANDEX_MAPS_KEY
-            ? "Xaritani yuklab bo'lmadi. Keyinroq urinib ko'ring."
-            : 'Xarita sozlanmagan.',
+          import.meta.env.VITE_YANDEX_MAPS_KEY ? t('mapLoadError') : t('mapNotConfigured'),
         );
       });
 
@@ -104,17 +104,17 @@ export function LocationPicker({ open, onClose }: Props) {
   return createPortal(
     <div
       role="dialog"
-      aria-label="Joyni tanlash"
+      aria-label={t('chooseLocation')}
       className="fixed inset-0 z-[60] flex flex-col justify-end bg-ink/40"
     >
       {/* 85vh: the map is the whole point of this sheet, so it gets almost the screen. */}
       <div className="flex h-[85vh] flex-col rounded-t-[20px] bg-card p-3">
         <div className="mb-2 flex shrink-0 items-center justify-between px-1">
-          <h2 className="text-[16px] font-extrabold">Joyingizni tanlang</h2>
+          <h2 className="text-[16px] font-extrabold">{t('chooseYourLocationHeading')}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Yopish"
+            aria-label={t('common:close')}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white"
           >
             <Icon name="close" className="h-[18px] w-[18px]" strokeWidth={2.6} />
@@ -143,7 +143,7 @@ export function LocationPicker({ open, onClose }: Props) {
           <button
             type="button"
             onClick={detect}
-            aria-label="Meni topish"
+            aria-label={t('findMe')}
             className="absolute right-3 bottom-[76px] flex h-11 w-11 items-center justify-center rounded-full bg-card text-ink-2 shadow-card"
           >
             <Icon name="crosshair" className="h-5 w-5" strokeWidth={2.2} />
@@ -152,7 +152,7 @@ export function LocationPicker({ open, onClose }: Props) {
             type="button"
             onClick={confirm}
             disabled={!ready}
-            aria-label="Shu yerni tanlash"
+            aria-label={t('chooseThisPlace')}
             className="absolute right-3 bottom-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-card disabled:opacity-60"
           >
             <Icon name="check" className="h-6 w-6" strokeWidth={2.8} />

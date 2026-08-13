@@ -1,6 +1,7 @@
 import type { UseMutationResult } from '@tanstack/react-query';
 import { allowedTransitions, type ListingStatus } from '@rieltor/shared';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { PUBLIC_DETAIL_STATUSES } from '@/entities/listing';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
@@ -33,6 +34,7 @@ export function StatusBar({
   transition,
   onShare,
 }: Props) {
+  const { t } = useTranslation('cabinet');
   const meta = STATUS_META[status];
   // DRAFT→ACTIVE is the publish button below, rendered on its own — every other
   // allowed target lands in the plain transition-button row.
@@ -41,7 +43,7 @@ export function StatusBar({
   );
 
   return (
-    <SectionCard className="mt-4" title="Holat">
+    <SectionCard className="mt-4" title={t('statusSectionTitle')}>
       <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
@@ -49,7 +51,7 @@ export function StatusBar({
             meta.badge,
           )}
         >
-          {meta.label}
+          {t(meta.labelKey)}
         </span>
 
         <div className="flex items-center gap-3.5">
@@ -58,7 +60,7 @@ export function StatusBar({
             className="flex items-center gap-1 text-[12.5px] font-bold text-ink-2"
           >
             <Icon name="eye" className="h-3.5 w-3.5" strokeWidth={2.2} />
-            Statistika
+            {t('statsTitle')}
           </Link>
           {/* A DRAFT/PENDING/ARCHIVED listing 404s for everyone but its owner — sharing
               its link would be pointless (entities/listing's PUBLIC_DETAIL_STATUSES,
@@ -70,21 +72,19 @@ export function StatusBar({
               className="flex items-center gap-1 text-[12.5px] font-bold text-accent"
             >
               <Icon name="share" className="h-3.5 w-3.5" strokeWidth={2.2} />
-              Ulashish
+              {t('shareTitle')}
             </button>
           )}
         </div>
       </div>
 
       {status === 'PENDING' && (
-        <p className="mt-2 text-[13px] font-semibold text-ink-2">
-          E'lon moderatsiyada — admin ko'rib chiqqach chiqadi.
-        </p>
+        <p className="mt-2 text-[13px] font-semibold text-ink-2">{t('pendingHint')}</p>
       )}
 
       {status === 'DRAFT' && missing.length > 0 && (
         <div className="mt-2.5 rounded-[12px] bg-surface px-3 py-2.5 text-[13px] text-ink-2">
-          <p className="font-bold text-ink">Nashr qilish uchun to'ldiring:</p>
+          <p className="font-bold text-ink">{t('missingFieldsHeading')}</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-4 font-semibold">
             {missing.map((item) => (
               <li key={item}>{item}</li>
@@ -92,7 +92,7 @@ export function StatusBar({
           </ul>
           {!hasPhone && (
             <Link to="/cabinet/profile" className="mt-1.5 inline-block font-bold text-accent">
-              Profilni to'ldirish →
+              {t('profileCompleteLink')}
             </Link>
           )}
         </div>
@@ -105,7 +105,7 @@ export function StatusBar({
           disabled={save.isPending}
           className="flex-1 rounded-[14px] border-[1.5px] border-line py-3 text-[14.5px] font-extrabold text-ink-2 disabled:opacity-60"
         >
-          {save.isPending ? 'Saqlanmoqda…' : 'Saqlash'}
+          {save.isPending ? t('saving') : t('common:save')}
         </button>
 
         {status === 'DRAFT' && (
@@ -123,19 +123,21 @@ export function StatusBar({
             disabled={transition.isPending || missing.length > 0}
             className="flex-1 rounded-[14px] bg-accent py-3 text-[14.5px] font-extrabold text-white disabled:opacity-60"
           >
-            {transition.isPending ? 'Yuborilmoqda…' : "E'lon berish"}
+            {transition.isPending ? t('submitting') : t('statusAction.publish')}
           </button>
         )}
       </div>
 
       {save.isError && (
-        <p className="mt-2 text-[13px] font-bold text-red-600">Saqlashda xatolik.</p>
+        <p className="mt-2 text-[13px] font-bold text-red-600">{t('saveErrorShort')}</p>
       )}
-      {save.isSuccess && <p className="mt-2 text-[13px] font-bold text-emerald-600">Saqlandi</p>}
+      {save.isSuccess && (
+        <p className="mt-2 text-[13px] font-bold text-emerald-600">{t('savedSuccess')}</p>
+      )}
 
       {otherTargets.length > 0 && (
         <div className="mt-3.5 border-t border-line pt-3.5">
-          <p className="mb-2 text-xs font-bold text-ink-3">Holatni o'zgartirish</p>
+          <p className="mb-2 text-xs font-bold text-ink-3">{t('changeStatusHeading')}</p>
           <div className="flex flex-wrap gap-2">
             {otherTargets.map((to) => (
               <button
@@ -145,7 +147,7 @@ export function StatusBar({
                 disabled={transition.isPending}
                 className="rounded-full border border-line px-3.5 py-2 text-[12.5px] font-bold text-ink-2 disabled:opacity-60"
               >
-                {TRANSITION_LABEL[to] ?? to}
+                {TRANSITION_LABEL[to] ? t(TRANSITION_LABEL[to]) : to}
               </button>
             ))}
           </div>
@@ -153,11 +155,11 @@ export function StatusBar({
       )}
 
       {transition.isError && (
-        <p className="mt-2 text-[13px] font-bold text-red-600">Holatni o'zgartirib bo'lmadi.</p>
+        <p className="mt-2 text-[13px] font-bold text-red-600">{t('statusChangeError')}</p>
       )}
       {transition.isSuccess && transition.data && (
         <p className="mt-2 text-[13px] font-bold text-emerald-600">
-          Holat: {STATUS_META[transition.data.status].label}
+          {t('statusChangedTo', { label: t(STATUS_META[transition.data.status].labelKey) })}
         </p>
       )}
     </SectionCard>

@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router';
 import { RealtorProfileUpdateSchema } from '@rieltor/shared';
+import { useTranslation } from 'react-i18next';
 import { useMe, useUpdateProfile } from '@/features/auth';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
@@ -14,14 +15,21 @@ interface FormState {
 
 const EMPTY: FormState = { name: '', phone: '', agency: '', registryNo: '' };
 
-const FIELDS: { key: keyof FormState; label: string; placeholder: string }[] = [
-  { key: 'name', label: 'Ism', placeholder: 'Ali Valiyev' },
-  { key: 'phone', label: 'Telefon', placeholder: '+998901234567' },
-  { key: 'agency', label: 'Agentlik', placeholder: "Toshkent Ko'chmas Mulk" },
-  { key: 'registryNo', label: 'Reestr raqami', placeholder: '00-0000' },
+/** labelKey/placeholderKey, not display text — module scope has no useTranslation(),
+ *  same pattern as bottom-nav's NAV_TABS. */
+const FIELDS: { key: keyof FormState; labelKey: string; placeholderKey: string }[] = [
+  { key: 'name', labelKey: 'field.name', placeholderKey: 'field.namePlaceholder' },
+  { key: 'phone', labelKey: 'field.phone', placeholderKey: 'field.phonePlaceholder' },
+  { key: 'agency', labelKey: 'field.agency', placeholderKey: 'field.agencyPlaceholder' },
+  {
+    key: 'registryNo',
+    labelKey: 'field.registryNo',
+    placeholderKey: 'field.registryNoPlaceholder',
+  },
 ];
 
 export function ProfilePage() {
+  const { t } = useTranslation('cabinet');
   const { realtor, isLoading } = useMe();
   const update = useUpdateProfile();
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -80,7 +88,7 @@ export function ProfilePage() {
   if (isLoading) {
     return (
       <main className="px-4 py-6">
-        <p className="text-[14px] font-semibold text-ink-3">Yuklanmoqda…</p>
+        <p className="text-[14px] font-semibold text-ink-3">{t('common:loading')}</p>
       </main>
     );
   }
@@ -91,16 +99,18 @@ export function ProfilePage() {
 
   return (
     <main>
-      <PageHeading title="Profil" subtitle="Bu ma'lumotlar e'lon sahifasida ko'rinadi" />
+      <PageHeading title={t('profileTitle')} subtitle={t('profileSubtitle')} />
 
       <form onSubmit={submit} className="mt-4 px-4">
         <SectionCard>
           {FIELDS.map((field) => (
             <label key={field.key} className="block py-2">
-              <span className="mb-1 block text-xs font-bold text-ink-3">{field.label}</span>
+              <span className="mb-1 block text-xs font-bold text-ink-3">
+                {t(field.labelKey)}
+              </span>
               <input
                 value={form[field.key]}
-                placeholder={field.placeholder}
+                placeholder={t(field.placeholderKey)}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, [field.key]: event.target.value }))
                 }
@@ -116,12 +126,10 @@ export function ProfilePage() {
         </SectionCard>
 
         {saveFailed && (
-          <p className="mt-3 text-[13px] font-bold text-red-600">
-            Saqlashda xatolik. Qayta urinib ko'ring.
-          </p>
+          <p className="mt-3 text-[13px] font-bold text-red-600">{t('profileSaveError')}</p>
         )}
         {saved && Object.keys(errors).length === 0 && (
-          <p className="mt-3 text-[13px] font-bold text-emerald-600">Saqlandi</p>
+          <p className="mt-3 text-[13px] font-bold text-emerald-600">{t('savedSuccess')}</p>
         )}
 
         <button
@@ -129,7 +137,7 @@ export function ProfilePage() {
           disabled={update.isPending}
           className="mt-5 w-full rounded-[14px] bg-accent py-3.5 text-[15px] font-extrabold text-white disabled:opacity-60"
         >
-          Saqlash
+          {t('common:save')}
         </button>
       </form>
     </main>

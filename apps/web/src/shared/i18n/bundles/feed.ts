@@ -1,0 +1,250 @@
+import type { I18nBundle } from '@/shared/i18n';
+
+/**
+ * Strings for the browse/search/favourites slices: entities/listing,
+ * features/listing-filters, features/favorites, pages/home, pages/search,
+ * pages/favorites. See each slice for where a key is used.
+ */
+export const feedI18n: I18nBundle = {
+  ns: 'feed',
+  uz: {
+    // Listing type — plain label (filter dropdown, badges) and emoji chip variant.
+    'type.NEW_BUILD': 'Yangi qurilish',
+    'type.SECONDARY': 'Ikkilamchi',
+    'type.HOUSE': 'Hovli',
+    'type.COMMERCIAL': 'Tijorat',
+    'type.ALL': 'Barchasi',
+    'typeChip.NEW_BUILD': '🏗 Yangi qurilish',
+    'typeChip.SECONDARY': '🏢 Ikkilamchi',
+    'typeChip.HOUSE': '🏡 Hovli',
+    'typeChip.COMMERCIAL': '🏪 Tijorat',
+
+    // Sort pill (features/listing-filters/ui/sort-select.tsx).
+    'sort.NEW': 'Yangi',
+    'sort.CHEAP': 'Arzon',
+    'sort.EXPENSIVE': 'Qimmat',
+    'sort.NEAR': 'Yaqin',
+    sortWithValue: 'Saralash: {{value}}',
+    sortAriaLabel: 'Saralash tartibi',
+
+    // entities/listing card & row chips.
+    roomsShort: '{{n}} xona',
+    floorShort: '{{floor}}-qavat',
+    showLocation: "Joylashuvni ko'rsatish",
+    mapAlt: '{{title}} joylashuvi',
+    paramRoomsLabel: 'Xonalar',
+    paramAreaLabel: 'Maydon',
+    paramFloorLabel: 'Qavat',
+    paramDistrictLabel: 'Tuman',
+    landmarkLabel: "Mo'ljal: {{landmark}}",
+    priceDropped: '↓ Narx tushdi',
+    idLabel: 'ID: {{id}}',
+
+    // features/favorites
+    removeFromFavorites: 'Sevimlilardan olib tashlash',
+    addToFavorites: 'Sevimlilarga qo’shish',
+
+    // features/listing-filters — filter panel (search page).
+    priceLabel: "Narx, so'm",
+    priceFromPlaceholder: 'dan · 500 mln',
+    priceToPlaceholder: 'gacha · 1,5 mlrd',
+    roomsCountLabel: 'Xonalar soni',
+    areaLabel: 'Maydon, m²',
+    areaFromPlaceholder: 'dan · 40',
+    areaToPlaceholder: 'gacha · 120',
+    typeLabel: 'Obyekt turi',
+
+    // features/listing-filters — home hero + deal/type tabs.
+    heroTitle: "O'zingizga mos uyni toping 🏡",
+    heroSubtitle: "Toshkent bo'ylab tekshirilgan e'lonlar — har kuni yangilanadi",
+    searchPlaceholder: "Tuman, majmua yoki ko'cha qidiring...",
+    searchAriaLabel: "Obyektlar bo'yicha qidiruv",
+    advancedFiltersAriaLabel: 'Kengaytirilgan filtrlar',
+    dealTypeAriaLabel: 'Bitim turi',
+    dealSale: 'Sotib olish',
+    dealRent: 'Ijara',
+
+    // pages/home
+    objectCount: '{{n}} ta obyekt',
+    updatedToday: '· bugun yangilandi',
+    loadError: "Obyektlarni yuklab bo'lmadi. Keyinroq urinib ko'ring.",
+    homeNoResults: "Qidiruvga mos obyekt topilmadi. Boshqa so'z bilan urinib ko'ring.",
+    showMore: "Ko'proq ko'rsatish",
+    dailyUpdateNote: "Har kuni soat 09:00 da yangi e'lonlar qo'shiladi",
+
+    // pages/search
+    searchSubtitle: "Filtrlar orqali o'zingizga mosini toping",
+    searchInputPlaceholder: 'Masalan: Kashtan majmuasi...',
+    recentSearchesTitle: "So'nggi qidiruvlar",
+    clearX: 'Tozalash ✕',
+    popularDistrictsTitle: 'Ommabop tumanlar',
+    filtersTitle: 'Filtrlar',
+    showResults: "Natijalarni ko'rsatish · {{n}} ta",
+    clearFilters: 'Filtrlarni tozalash',
+    resultsHeading: 'Natijalar · {{n}} ta',
+    searchNoResults: "Bu shartlarga mos obyekt topilmadi. Filtrlarni kengaytirib ko'ring.",
+
+    // pages/favorites
+    favoritesEmptySubtitle: 'Hozircha bitta ham saqlangan obyekt yo‘q',
+    favoritesCountSubtitle: '{{n}} ta saqlangan obyekt',
+    priceAlertNotice:
+      "🔔 Saqlangan obyektlar narxi o'zgarsa yoki e'lon yopilsa — sizga darhol xabar beramiz.",
+    favoriteHint:
+      "Yoqqan e'lonni saqlash uchun karta burchagidagi ♡ belgisini bosing — u shu yerda saqlanadi.",
+    browseListings: "Obyektlarni ko'rish",
+  },
+  ru: {
+    'type.NEW_BUILD': 'Новостройка',
+    'type.SECONDARY': 'Вторичное жильё',
+    'type.HOUSE': 'Дом',
+    'type.COMMERCIAL': 'Коммерческая',
+    'type.ALL': 'Все',
+    'typeChip.NEW_BUILD': '🏗 Новостройка',
+    'typeChip.SECONDARY': '🏢 Вторичное жильё',
+    'typeChip.HOUSE': '🏡 Дом',
+    'typeChip.COMMERCIAL': '🏪 Коммерческая',
+
+    'sort.NEW': 'Новые',
+    'sort.CHEAP': 'Дешевле',
+    'sort.EXPENSIVE': 'Дороже',
+    'sort.NEAR': 'Ближе',
+    sortWithValue: 'Сортировка: {{value}}',
+    sortAriaLabel: 'Порядок сортировки',
+
+    roomsShort: '{{n}} комн.',
+    floorShort: '{{floor}} эт.',
+    showLocation: 'Показать местоположение',
+    mapAlt: 'Местоположение «{{title}}»',
+    paramRoomsLabel: 'Комнаты',
+    paramAreaLabel: 'Площадь',
+    paramFloorLabel: 'Этаж',
+    paramDistrictLabel: 'Район',
+    landmarkLabel: 'Ориентир: {{landmark}}',
+    priceDropped: '↓ Цена снижена',
+    idLabel: 'ID: {{id}}',
+
+    removeFromFavorites: 'Убрать из избранного',
+    addToFavorites: 'Добавить в избранное',
+
+    priceLabel: 'Цена, сум',
+    priceFromPlaceholder: 'от · 500 млн',
+    priceToPlaceholder: 'до · 1,5 млрд',
+    roomsCountLabel: 'Количество комнат',
+    areaLabel: 'Площадь, м²',
+    areaFromPlaceholder: 'от · 40',
+    areaToPlaceholder: 'до · 120',
+    typeLabel: 'Тип объекта',
+
+    heroTitle: 'Найдите подходящее жильё 🏡',
+    heroSubtitle: 'Проверенные объявления по Ташкенту — обновляются каждый день',
+    searchPlaceholder: 'Найдите район, комплекс или улицу...',
+    searchAriaLabel: 'Поиск по объектам',
+    advancedFiltersAriaLabel: 'Расширенные фильтры',
+    dealTypeAriaLabel: 'Тип сделки',
+    dealSale: 'Купить',
+    dealRent: 'Аренда',
+
+    objectCount: 'Объектов: {{n}}',
+    updatedToday: '· обновлено сегодня',
+    loadError: 'Не удалось загрузить объекты. Попробуйте позже.',
+    homeNoResults: 'По вашему запросу ничего не найдено. Попробуйте другой запрос.',
+    showMore: 'Показать ещё',
+    dailyUpdateNote: 'Каждый день в 09:00 добавляются новые объявления',
+
+    searchSubtitle: 'Найдите подходящий вариант с помощью фильтров',
+    searchInputPlaceholder: 'Например: ЖК «Каштан»...',
+    recentSearchesTitle: 'Недавние запросы',
+    clearX: 'Очистить ✕',
+    popularDistrictsTitle: 'Популярные районы',
+    filtersTitle: 'Фильтры',
+    showResults: 'Показать результаты · {{n}}',
+    clearFilters: 'Сбросить фильтры',
+    resultsHeading: 'Результаты · {{n}}',
+    searchNoResults: 'По этим критериям ничего не найдено. Попробуйте расширить фильтры.',
+
+    favoritesEmptySubtitle: 'Пока нет сохранённых объектов',
+    favoritesCountSubtitle: 'Сохранено объектов: {{n}}',
+    priceAlertNotice:
+      '🔔 Мы сразу сообщим вам, если цена сохранённого объекта изменится или объявление будет снято.',
+    favoriteHint:
+      'Чтобы сохранить понравившееся объявление, нажмите на значок ♡ в углу карточки — оно появится здесь.',
+    browseListings: 'Смотреть объекты',
+  },
+  en: {
+    'type.NEW_BUILD': 'New building',
+    'type.SECONDARY': 'Secondary',
+    'type.HOUSE': 'House',
+    'type.COMMERCIAL': 'Commercial',
+    'type.ALL': 'All',
+    'typeChip.NEW_BUILD': '🏗 New building',
+    'typeChip.SECONDARY': '🏢 Secondary',
+    'typeChip.HOUSE': '🏡 House',
+    'typeChip.COMMERCIAL': '🏪 Commercial',
+
+    'sort.NEW': 'Newest',
+    'sort.CHEAP': 'Cheapest',
+    'sort.EXPENSIVE': 'Priciest',
+    'sort.NEAR': 'Nearest',
+    sortWithValue: 'Sort: {{value}}',
+    sortAriaLabel: 'Sort order',
+
+    roomsShort: '{{n}} rooms',
+    floorShort: 'floor {{floor}}',
+    showLocation: 'Show location',
+    mapAlt: 'Location of {{title}}',
+    paramRoomsLabel: 'Rooms',
+    paramAreaLabel: 'Area',
+    paramFloorLabel: 'Floor',
+    paramDistrictLabel: 'District',
+    landmarkLabel: 'Landmark: {{landmark}}',
+    priceDropped: '↓ Price dropped',
+    idLabel: 'ID: {{id}}',
+
+    removeFromFavorites: 'Remove from favorites',
+    addToFavorites: 'Add to favorites',
+
+    priceLabel: 'Price, UZS',
+    priceFromPlaceholder: 'from · 500M',
+    priceToPlaceholder: 'to · 1.5B',
+    roomsCountLabel: 'Number of rooms',
+    areaLabel: 'Area, m²',
+    areaFromPlaceholder: 'from · 40',
+    areaToPlaceholder: 'to · 120',
+    typeLabel: 'Property type',
+
+    heroTitle: 'Find the right home for you 🏡',
+    heroSubtitle: 'Verified listings across Tashkent — updated daily',
+    searchPlaceholder: 'Search by district, complex, or street...',
+    searchAriaLabel: 'Property search',
+    advancedFiltersAriaLabel: 'Advanced filters',
+    dealTypeAriaLabel: 'Deal type',
+    dealSale: 'Buy',
+    dealRent: 'Rent',
+
+    objectCount: '{{n}} listings',
+    updatedToday: '· updated today',
+    loadError: "Couldn't load listings. Please try again later.",
+    homeNoResults: 'No listings match your search. Try a different search term.',
+    showMore: 'Show more',
+    dailyUpdateNote: 'New listings are added daily at 09:00',
+
+    searchSubtitle: 'Find what suits you using filters',
+    searchInputPlaceholder: 'E.g., Kashtan complex...',
+    recentSearchesTitle: 'Recent searches',
+    clearX: 'Clear ✕',
+    popularDistrictsTitle: 'Popular districts',
+    filtersTitle: 'Filters',
+    showResults: 'Show results · {{n}}',
+    clearFilters: 'Clear filters',
+    resultsHeading: 'Results · {{n}}',
+    searchNoResults: 'No listings match these criteria. Try widening your filters.',
+
+    favoritesEmptySubtitle: 'No saved listings yet',
+    favoritesCountSubtitle: '{{n}} saved listings',
+    priceAlertNotice:
+      "🔔 We'll notify you right away if a saved listing's price changes or it gets closed.",
+    favoriteHint:
+      'To save a listing you like, tap the ♡ icon in the corner of the card — it will appear here.',
+    browseListings: 'Browse listings',
+  },
+};

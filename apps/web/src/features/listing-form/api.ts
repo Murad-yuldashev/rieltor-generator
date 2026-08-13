@@ -63,3 +63,8 @@ export function uploadImages(id: string, files: File[]): Promise<UploadedImage[]
 export function deleteImage(id: string, imageId: string): Promise<UploadedImage[]> {
   return apiDelete(`/api/objects/${id}/images/${imageId}`, z.array(UploadedImageSchema));
 }
+
+/** Permanently deletes the whole listing. */
+export function deleteListing(id: string): Promise<{ id: string }> {
+  return apiDelete(`/api/objects/${id}`, IdResultSchema);
+}

@@ -18,7 +18,9 @@ const DEV_TG_ID = 424242;
 export function DevLoginForm() {
   const queryClient = useQueryClient();
   const [name, setName] = useState('Murod');
-  const [secret, setSecret] = useState('');
+  // The dev secret comes from the build env now instead of a typed password,
+  // so getting into the cabinet for local testing is a single click.
+  const secret = import.meta.env.VITE_DEV_LOGIN_SECRET ?? '';
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -61,22 +63,11 @@ export function DevLoginForm() {
         />
       </label>
 
-      <label className="block py-1.5">
-        <span className="mb-1 block text-xs font-bold text-ink-3">Parol</span>
-        <input
-          type="password"
-          value={secret}
-          onChange={(event) => setSecret(event.target.value)}
-          autoComplete="current-password"
-          className="w-full rounded-[12px] border border-line bg-card px-3 py-2.5 text-[15px] font-semibold"
-        />
-      </label>
-
       {error && <p className="mt-2 text-[13px] font-bold text-red-600">{error}</p>}
 
       <button
         type="submit"
-        disabled={pending || !secret}
+        disabled={pending}
         className="mt-3 w-full rounded-[14px] bg-accent py-3 text-[14.5px] font-extrabold text-white disabled:opacity-60"
       >
         Kirish

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Icon } from '@/shared/ui/icon';
 
@@ -12,6 +13,7 @@ import { Icon } from '@/shared/ui/icon';
  * development. Stacking keeps both legible without any horizontal scroll.
  */
 export function RealtorCta() {
+  const { t } = useTranslation('listing');
   return (
     <section className="px-4 pt-3">
       <div className="flex flex-col items-start gap-2.5 rounded-card border border-line/60 bg-card p-3.5 shadow-card">
@@ -21,15 +23,17 @@ export function RealtorCta() {
           </span>
 
           <p className="min-w-0 flex-1 text-[13px] leading-[1.35] font-semibold text-ink-2">
-            O'z e'lonlaringizni joylang va mijozlarga bir bosishda yeting.
+            {t('realtorCta.pitch')}
           </p>
         </div>
 
         <Link
           to="/cabinet"
-          className="w-full rounded-[12px] bg-accent px-3 py-2 text-center text-[12.5px] font-extrabold whitespace-nowrap text-white"
+          // No `whitespace-nowrap`: RU/EN can run a couple characters longer than the
+          // UZ original, so the label wraps to a second line instead of clipping.
+          className="w-full rounded-[12px] bg-accent px-3 py-2 text-center text-[12.5px] font-extrabold text-white"
         >
-          Rieltor bo'lmoqchimisiz?
+          {t('realtorCta.cta')}
         </Link>
       </div>
     </section>

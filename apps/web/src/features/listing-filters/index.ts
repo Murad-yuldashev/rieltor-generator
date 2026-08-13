@@ -1,7 +1,7 @@
 export {
   EMPTY_CRITERIA,
   MAX_ROOMS_BUCKET,
-  SORT_LABELS,
+  SORT_OPTIONS,
   filterListings,
   hasAdvancedFilters,
 } from './model/criteria';

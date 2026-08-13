@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ListingCard, distanceLabel, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
@@ -29,6 +30,7 @@ function CardSkeleton() {
 }
 
 export function HomePage() {
+  const { t } = useTranslation('feed');
   const { data, isPending, isError } = useQuery(listingsQuery());
   const { location, detect } = useUserLocation();
   const origin = location ? { lat: location.lat, lng: location.lng } : null;
@@ -70,8 +72,10 @@ export function HomePage() {
 
       <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5">
         <p className="min-w-0 truncate">
-          <b className="text-[15px] font-extrabold">{filters.visible.length} ta obyekt</b>{' '}
-          <span className="text-[13px] font-semibold text-ink-3">· bugun yangilandi</span>
+          <b className="text-[15px] font-extrabold">
+            {t('objectCount', { n: filters.visible.length })}
+          </b>{' '}
+          <span className="text-[13px] font-semibold text-ink-3">{t('updatedToday')}</span>
         </p>
         <SortSelect value={filters.sort} onChange={resetPaging(changeSort)} />
       </div>
@@ -97,14 +101,12 @@ export function HomePage() {
       </div>
 
       {isError && (
-        <p className="px-6 py-12 text-center text-[15px] text-ink-2">
-          Obyektlarni yuklab bo'lmadi. Keyinroq urinib ko'ring.
-        </p>
+        <p className="px-6 py-12 text-center text-[15px] text-ink-2">{t('loadError')}</p>
       )}
 
       {!isPending && !isError && shown.length === 0 && (
         <p className="px-6 py-12 text-center text-[15px] leading-relaxed text-ink-2">
-          Qidiruvga mos obyekt topilmadi. Boshqa so'z bilan urinib ko'ring.
+          {t('homeNoResults')}
         </p>
       )}
 
@@ -115,14 +117,14 @@ export function HomePage() {
             onClick={() => setLimit((n) => n + PAGE_SIZE)}
             className="w-full rounded-[14px] border-[1.5px] border-accent py-3.5 text-[14.5px] font-extrabold text-accent active:bg-accent-soft"
           >
-            Ko'proq ko'rsatish
+            {t('showMore')}
           </button>
         </div>
       )}
 
       {!hasMore && shown.length > 0 && (
         <p className="px-4 pt-3 pb-1 text-center text-xs font-semibold text-ink-3">
-          Har kuni soat 09:00 da yangi e'lonlar qo'shiladi
+          {t('dailyUpdateNote')}
         </p>
       )}
     </main>

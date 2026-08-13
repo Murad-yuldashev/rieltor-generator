@@ -1,10 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import type { ListingType } from '@rieltor/shared';
 import { cn } from '@/shared/lib/cn';
 import { LISTING_TYPE_META } from '../lib/type-meta';
 
 /** Coloured badge over a photo. The background is translucent so the image shows through. */
 export function TypeBadge({ type, className }: { type: ListingType; className?: string }) {
-  const { label, badge } = LISTING_TYPE_META[type];
+  const { t } = useTranslation('feed');
+  const { badge } = LISTING_TYPE_META[type];
 
   return (
     <span
@@ -14,7 +16,7 @@ export function TypeBadge({ type, className }: { type: ListingType; className?: 
         className,
       )}
     >
-      {label}
+      {t(`type.${type}`)}
     </span>
   );
 }

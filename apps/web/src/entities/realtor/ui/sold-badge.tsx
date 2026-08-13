@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { ListingStatus } from '@rieltor/shared';
 
 interface Props {
@@ -17,11 +18,12 @@ interface Props {
  * entities/listing's card happens one layer up, in pages/realtor-showcase.
  */
 export function SoldBadge({ status, days }: Props) {
-  const label = status === 'RENTED' ? 'ijaraga berilgan' : 'sotilgan';
+  const { t } = useTranslation('misc');
+  const text = status === 'RENTED' ? t('rentedInDays', { n: days }) : t('soldInDays', { n: days });
 
   return (
     <span className="inline-flex items-center gap-1 rounded-lg bg-brand-green/90 px-2.5 py-1.5 text-[11px] font-extrabold tracking-wide text-white backdrop-blur-sm">
-      {days} kunda {label}
+      {text}
     </span>
   );
 }

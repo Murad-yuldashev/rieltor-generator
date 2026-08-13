@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { buildShareCaption, type ShareCaptionListing } from '@rieltor/shared';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/shared/ui/icon';
 import { useShareLink } from '../model/use-share-link';
 
@@ -18,6 +19,7 @@ interface Props {
  * consistent feel across the app's modals.
  */
 export function SharePanel({ open, onClose, listingId, listing }: Props) {
+  const { t } = useTranslation('cabinet');
   const share = useShareLink(listingId);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
@@ -52,16 +54,16 @@ export function SharePanel({ open, onClose, listingId, listing }: Props) {
   return createPortal(
     <div
       role="dialog"
-      aria-label="Ulashish"
+      aria-label={t('shareTitle')}
       className="fixed inset-0 z-[60] flex flex-col justify-end bg-ink/40"
     >
       <div className="flex max-h-[85vh] flex-col rounded-t-[20px] bg-card p-4">
         <div className="mb-3 flex shrink-0 items-center justify-between">
-          <h2 className="text-[16px] font-extrabold">Ulashish</h2>
+          <h2 className="text-[16px] font-extrabold">{t('shareTitle')}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Yopish"
+            aria-label={t('common:close')}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-ink-2"
           >
             <Icon name="close" className="h-[18px] w-[18px]" strokeWidth={2.6} />
@@ -71,31 +73,31 @@ export function SharePanel({ open, onClose, listingId, listing }: Props) {
         <div className="min-h-0 overflow-y-auto">
           {share.isPending && (
             <p className="py-6 text-center text-[14px] font-semibold text-ink-3">
-              Havola tayyorlanmoqda…
+              {t('share.preparing')}
             </p>
           )}
 
           {share.isError && (
             <div className="py-4 text-center">
-              <p className="text-[14px] font-semibold text-ink-2">Havolani yaratib bo'lmadi.</p>
+              <p className="text-[14px] font-semibold text-ink-2">{t('share.createFailed')}</p>
               <button
                 type="button"
                 onClick={() => share.mutate(undefined)}
                 className="mt-2 text-[13.5px] font-bold text-accent"
               >
-                Qayta urinib ko'rish
+                {t('retryAction')}
               </button>
             </div>
           )}
 
           {share.data && caption && (
             <>
-              <p className="mb-1 text-xs font-bold text-ink-3">Havola</p>
+              <p className="mb-1 text-xs font-bold text-ink-3">{t('share.linkLabel')}</p>
               <div className="rounded-[12px] border border-line bg-surface px-3 py-2.5 text-[13px] font-semibold break-all text-ink-2">
                 {share.data.url}
               </div>
 
-              <p className="mt-3 mb-1 text-xs font-bold text-ink-3">Tayyor caption</p>
+              <p className="mt-3 mb-1 text-xs font-bold text-ink-3">{t('share.captionLabel')}</p>
               <div className="rounded-[12px] border border-line bg-surface px-3 py-2.5 text-[13.5px] whitespace-pre-wrap text-ink">
                 {caption}
               </div>
@@ -110,11 +112,11 @@ export function SharePanel({ open, onClose, listingId, listing }: Props) {
                   className="h-[17px] w-[17px]"
                   strokeWidth={2.4}
                 />
-                {copied ? 'Nusxalandi' : 'Nusxalash'}
+                {copied ? t('share.copiedState') : t('share.copyAction')}
               </button>
               {copyFailed && (
                 <p className="mt-2 text-center text-[12.5px] font-bold text-red-600">
-                  Nusxalab bo'lmadi — matnni qo'lda belgilab oling.
+                  {t('share.copyFailed')}
                 </p>
               )}
             </>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import type { Image, ListingType } from '@rieltor/shared';
 import { TypeBadge } from '@/entities/listing';
@@ -41,6 +42,7 @@ function OverlayButton({
  * iOS keeps its native momentum, the JS bundle stays small, and LCP is untouched.
  */
 export function Gallery({ images, alt, type, id }: Props) {
+  const { t } = useTranslation('listing');
   const [activeIndex, setActiveIndex] = useState(0);
   const stripRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -105,7 +107,7 @@ export function Gallery({ images, alt, type, id }: Props) {
       {/* Top gradient keeps the white buttons legible over a light photo. */}
       <div className="absolute inset-x-0 top-0 flex justify-between bg-linear-to-b from-ink/35 to-transparent p-3.5">
         <OverlayButton
-          label="Orqaga"
+          label={t('common:back')}
           // With no history (the link was opened directly) fall back to the home page.
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
         >
@@ -113,7 +115,7 @@ export function Gallery({ images, alt, type, id }: Props) {
         </OverlayButton>
 
         <div className="flex gap-2">
-          <OverlayButton label="Ulashish" onClick={share}>
+          <OverlayButton label={t('gallery.share')} onClick={share}>
             <Icon name="share" className="h-4 w-4" strokeWidth={2.2} />
           </OverlayButton>
           <FavoriteButton id={id} className="h-[38px] w-[38px] shadow-lg" />
@@ -128,12 +130,12 @@ export function Gallery({ images, alt, type, id }: Props) {
         <>
           <div className="absolute right-3.5 bottom-11 flex items-center gap-1.5 rounded-lg bg-ink/55 px-2.5 py-1 text-[11.5px] font-bold text-white backdrop-blur-sm">
             <Icon name="camera" className="h-3 w-3" strokeWidth={2.2} />
-            {activeIndex + 1}/{images.length}
+            {t('gallery.counter', { current: activeIndex + 1, total: images.length })}
           </div>
 
           <div
             role="tablist"
-            aria-label="Rasmlar"
+            aria-label={t('gallery.thumbnailsLabel')}
             className="absolute inset-x-0 bottom-4 flex justify-center gap-1.5"
           >
             {images.map((image, i) => (
@@ -142,7 +144,7 @@ export function Gallery({ images, alt, type, id }: Props) {
                 type="button"
                 role="tab"
                 aria-selected={i === activeIndex}
-                aria-label={`${i + 1}-rasm`}
+                aria-label={t('gallery.slideLabel', { number: i + 1 })}
                 onClick={() => scrollToSlide(i)}
                 className={
                   i === activeIndex

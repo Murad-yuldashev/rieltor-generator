@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
 
 /**
@@ -7,6 +8,8 @@ import { cn } from '@/shared/lib/cn';
  * as a callout, not another category tag.
  */
 export function PriceDroppedBadge({ className }: { className?: string }) {
+  const { t } = useTranslation('feed');
+
   return (
     <span
       className={cn(
@@ -14,7 +17,7 @@ export function PriceDroppedBadge({ className }: { className?: string }) {
         className,
       )}
     >
-      ↓ Narx tushdi
+      {t('priceDropped')}
     </span>
   );
 }

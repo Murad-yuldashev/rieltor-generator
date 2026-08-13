@@ -8,6 +8,7 @@ import {
   type ListingType,
   type OwnerListingDetail,
 } from '@rieltor/shared';
+import { useTranslation } from 'react-i18next';
 import { changeStatus, deleteImage, updateListing, uploadImages, type UploadedImage } from '../api';
 
 /** Every field is a plain string — controlled inputs stay simple, numbers are parsed
@@ -128,18 +129,20 @@ export function toListingInput(form: ListingFormState): ListingInput {
   return input;
 }
 
-/** Uzbek label per PublishableListingSchema field — the schema decides WHICH fields
- *  are missing, this decides how to say it (its own default zod messages are not all
- *  in Uzbek, so they are never shown directly). */
-const FIELD_LABEL: Record<string, string> = {
-  title: 'Sarlavha (kamida 10 belgi)',
-  priceSom: "Narx (so'm)",
-  priceUsd: 'Narx ($)',
-  areaM2: 'Maydon (m²)',
-  district: 'Tuman',
-  type: 'Obyekt turi',
-  deal: 'Amal turi',
-  rooms: 'Xonalar soni',
+/** cabinet ns i18n key per PublishableListingSchema field — the schema decides WHICH
+ *  fields are missing, this decides how to say it (its own default zod messages are
+ *  not all in Uzbek, so they are never shown directly). computeMissing is a plain
+ *  function (not a hook), so it takes `t` from the caller rather than calling
+ *  useTranslation() itself. */
+const FIELD_LABEL_KEY: Record<string, string> = {
+  title: 'field.titleMissingHint',
+  priceSom: 'field.priceSom',
+  priceUsd: 'field.priceUsd',
+  areaM2: 'field.areaM2MissingHint',
+  district: 'field.district',
+  type: 'field.type',
+  deal: 'field.deal',
+  rooms: 'field.roomsMissingHint',
 };
 
 /**
@@ -147,7 +150,12 @@ const FIELD_LABEL: Record<string, string> = {
  * step (PublishableListingSchema + ≥1 image + realtor.phone), so a listing the front
  * calls ready is never rejected by the back for a reason the user was not shown.
  */
-function computeMissing(form: ListingFormState, imageCount: number, hasPhone: boolean): string[] {
+function computeMissing(
+  form: ListingFormState,
+  imageCount: number,
+  hasPhone: boolean,
+  t: (key: string) => string,
+): string[] {
   const parsed = PublishableListingSchema.safeParse({
     title: form.title,
     priceSom: form.priceSom.trim(),
@@ -166,11 +174,11 @@ function computeMissing(form: ListingFormState, imageCount: number, hasPhone: bo
       const key = String(issue.path[0] ?? '');
       if (!key || seen.has(key)) continue;
       seen.add(key);
-      missing.push(FIELD_LABEL[key] ?? key);
+      missing.push(FIELD_LABEL_KEY[key] ? t(FIELD_LABEL_KEY[key]) : key);
     }
   }
-  if (imageCount < 1) missing.push('Kamida 1 ta rasm');
-  if (!hasPhone) missing.push('Profilda telefon raqami');
+  if (imageCount < 1) missing.push(t('field.minImages'));
+  if (!hasPhone) missing.push(t('field.phoneRequired'));
   return missing;
 }
 
@@ -183,6 +191,7 @@ export interface UseListingFormParams {
 }
 
 export function useListingForm({ listingId, initial, hasPhone }: UseListingFormParams) {
+  const { t } = useTranslation('cabinet');
   const queryClient = useQueryClient();
 
   const [form, setForm] = useState<ListingFormState>(() => toFormState(initial));
@@ -205,8 +214,8 @@ export function useListingForm({ listingId, initial, hasPhone }: UseListingFormP
   }
 
   const missing = useMemo(
-    () => computeMissing(form, images.length, hasPhone),
-    [form, images.length, hasPhone],
+    () => computeMissing(form, images.length, hasPhone, t),
+    [form, images.length, hasPhone, t],
   );
 
   function invalidateList() {

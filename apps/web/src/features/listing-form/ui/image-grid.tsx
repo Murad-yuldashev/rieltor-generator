@@ -1,4 +1,5 @@
 import { type ChangeEvent, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
 import { ResponsiveImage } from '@/shared/ui/responsive-image';
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function ImageGrid({ images, onUpload, uploading, uploadError, onDelete, deleting }: Props) {
+  const { t } = useTranslation('cabinet');
   const inputRef = useRef<HTMLInputElement>(null);
   const remaining = MAX_IMAGES - images.length;
   // Pre-existing images loaded without a known id (see FormImage's doc comment) have
@@ -45,7 +47,7 @@ export function ImageGrid({ images, onUpload, uploading, uploadError, onDelete, 
 
               {index === 0 && (
                 <span className="absolute bottom-1 left-1 rounded bg-ink/60 px-1.5 py-0.5 text-[9px] font-extrabold text-white backdrop-blur-sm">
-                  Muqova
+                  {t('image.coverBadge')}
                 </span>
               )}
 
@@ -54,7 +56,7 @@ export function ImageGrid({ images, onUpload, uploading, uploadError, onDelete, 
                   type="button"
                   onClick={() => onDelete(imageId)}
                   disabled={deleting}
-                  aria-label="Rasmni o'chirish"
+                  aria-label={t('image.deleteAria')}
                   className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-ink/60 text-white backdrop-blur-sm disabled:opacity-50"
                 >
                   <Icon name="close" className="h-3.5 w-3.5" strokeWidth={2.6} />
@@ -72,7 +74,9 @@ export function ImageGrid({ images, onUpload, uploading, uploadError, onDelete, 
             )}
           >
             <Icon name="camera" className="h-5 w-5" strokeWidth={2} />
-            <span className="text-[11px] font-bold">{uploading ? 'Yuklanmoqda…' : "Qo'shish"}</span>
+            <span className="text-[11px] font-bold">
+              {uploading ? t('common:loading') : t('image.addLabel')}
+            </span>
             <input
               ref={inputRef}
               type="file"
@@ -87,15 +91,15 @@ export function ImageGrid({ images, onUpload, uploading, uploadError, onDelete, 
       </div>
 
       <p className="mt-2 text-[12px] font-semibold text-ink-3">
-        JPEG, PNG yoki WebP · ko'pi bilan {MAX_IMAGES} ta rasm
-        {remaining > 0 && ` · yana ${remaining} ta mumkin`}
+        {t('image.formatHint', { max: MAX_IMAGES })}
+        {remaining > 0 && ` · ${t('image.remainingCount', { count: remaining })}`}
       </p>
 
       {uploadError && <p className="mt-1.5 text-[13px] font-bold text-red-600">{uploadError}</p>}
 
       {hasUndeletable && (
         <p className="mt-1.5 text-[12px] font-semibold text-ink-3">
-          Avval yuklangan rasmlarni o'chirish hozircha shu sahifada mavjud emas.
+          {t('image.cannotDeleteExisting')}
         </p>
       )}
     </div>

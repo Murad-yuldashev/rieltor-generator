@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ListingRow, listingsQuery } from '@/entities/listing';
 import { FavoriteButton, useFavoriteIds } from '@/features/favorites';
 import { PageHeading } from '@/shared/ui/page-heading';
 
 export function FavoritesPage() {
+  const { t } = useTranslation('feed');
   const { data, isPending } = useQuery(listingsQuery());
   const ids = useFavoriteIds();
 
@@ -18,17 +20,17 @@ export function FavoritesPage() {
   return (
     <main>
       <PageHeading
-        title="Sevimlilar"
+        title={t('common:nav.favorites')}
         subtitle={
           isEmpty
-            ? 'Hozircha bitta ham saqlangan obyekt yo‘q'
-            : `${saved.length} ta saqlangan obyekt`
+            ? t('favoritesEmptySubtitle')
+            : t('favoritesCountSubtitle', { n: saved.length })
         }
       />
 
       {!isEmpty && (
         <p className="mx-4 mt-3 rounded-card bg-accent-soft px-4 py-3.5 text-[13.5px] leading-snug font-bold text-accent">
-          🔔 Saqlangan obyektlar narxi o'zgarsa yoki e'lon yopilsa — sizga darhol xabar beramiz.
+          {t('priceAlertNotice')}
         </p>
       )}
 
@@ -49,21 +51,17 @@ export function FavoritesPage() {
 
       {isEmpty ? (
         <div className="px-6 py-14 text-center">
-          <p className="text-[15px] leading-relaxed text-ink-2">
-            Yoqqan e'lonni saqlash uchun karta burchagidagi ♡ belgisini bosing — u shu yerda
-            saqlanadi.
-          </p>
+          <p className="text-[15px] leading-relaxed text-ink-2">{t('favoriteHint')}</p>
           <Link
             to="/"
             className="mt-5 inline-block rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-accent/35"
           >
-            Obyektlarni ko'rish
+            {t('browseListings')}
           </Link>
         </div>
       ) : (
         <p className="px-8 py-8 text-center text-[13px] leading-relaxed font-semibold text-ink-3">
-          Yoqqan e'lonni saqlash uchun karta burchagidagi ♡ belgisini bosing — u shu yerda
-          saqlanadi.
+          {t('favoriteHint')}
         </p>
       )}
     </main>

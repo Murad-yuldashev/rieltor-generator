@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { LocationChip } from '@/features/user-location';
+import { LanguageSwitcher } from '@/shared/i18n';
 import { Icon } from '@/shared/ui/icon';
 
 export function SiteHeader() {
@@ -15,7 +16,10 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <LocationChip />
+        <div className="flex items-center gap-1.5">
+          <LanguageSwitcher />
+          <LocationChip />
+        </div>
       </div>
     </header>
   );

@@ -6,13 +6,8 @@ export type TypeFilter = ListingType | 'ALL';
 
 export type Sort = 'NEW' | 'CHEAP' | 'EXPENSIVE' | 'NEAR';
 
-/** Kept short so the "Saralash: …" pill stays on a single line. */
-export const SORT_LABELS: Record<Sort, string> = {
-  NEW: 'Yangi',
-  CHEAP: 'Arzon',
-  EXPENSIVE: 'Qimmat',
-  NEAR: 'Yaqin',
-};
+/** Display order for the sort pill's options — labels come from the `feed` i18n bundle. */
+export const SORT_OPTIONS: Sort[] = ['NEW', 'CHEAP', 'EXPENSIVE', 'NEAR'];
 
 /** The largest rooms bucket is "5+" — anything above it falls into the same bucket. */
 export const MAX_ROOMS_BUCKET = 5;

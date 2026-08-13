@@ -1,11 +1,14 @@
 import type { ListingStats } from '@rieltor/shared';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
 import { Icon, type IconName } from '@/shared/ui/icon';
 import { SectionCard } from '@/shared/ui/section-card';
 
-const WINDOWS: { key: 'last7d' | 'last30d'; label: string }[] = [
-  { key: 'last7d', label: '7 kun' },
-  { key: 'last30d', label: '30 kun' },
+/** labelKey, not display text — module scope has no useTranslation(), same pattern
+ *  as bottom-nav's NAV_TABS. */
+const WINDOWS: { key: 'last7d' | 'last30d'; labelKey: string }[] = [
+  { key: 'last7d', labelKey: 'stats.window7d' },
+  { key: 'last30d', labelKey: 'stats.window30d' },
 ];
 
 function StatTile({ icon, value, label }: { icon: IconName; value: number; label: string }) {
@@ -39,26 +42,27 @@ function IconCount({
  *  §8.3): view/call/tg counts for the 7- and 30-day windows, plus the by-ShareLink
  *  breakdown (already scoped to 30 days server-side). */
 export function StatsSummary({ stats }: { stats: ListingStats }) {
+  const { t } = useTranslation('cabinet');
   return (
     <div className="flex flex-col gap-3">
-      <SectionCard title="Umumiy">
+      <SectionCard title={t('stats.overallTitle')}>
         <div className="flex flex-col gap-3">
-          {WINDOWS.map(({ key, label }) => (
+          {WINDOWS.map(({ key, labelKey }) => (
             <div key={key}>
-              <p className="mb-1.5 text-xs font-bold text-ink-3">{label}</p>
+              <p className="mb-1.5 text-xs font-bold text-ink-3">{t(labelKey)}</p>
               <div className="flex gap-2">
-                <StatTile icon="eye" value={stats[key].views} label="Ko'rish" />
-                <StatTile icon="phone" value={stats[key].callClicks} label="Qo'ng'iroq" />
-                <StatTile icon="telegram" value={stats[key].tgClicks} label="Telegram" />
+                <StatTile icon="eye" value={stats[key].views} label={t('stats.views')} />
+                <StatTile icon="phone" value={stats[key].callClicks} label={t('stats.calls')} />
+                <StatTile icon="telegram" value={stats[key].tgClicks} label={t('telegramLabel')} />
               </div>
             </div>
           ))}
         </div>
       </SectionCard>
 
-      <SectionCard title="Manba bo'yicha (30 kun)">
+      <SectionCard title={t('stats.bySourceTitle')}>
         {stats.byShare.length === 0 ? (
-          <p className="py-1 text-[13px] font-semibold text-ink-3">Hali ma'lumot yo'q.</p>
+          <p className="py-1 text-[13px] font-semibold text-ink-3">{t('stats.noData')}</p>
         ) : (
           <div className="flex flex-col divide-y divide-line/60">
             {stats.byShare.map((row) => (
@@ -67,7 +71,7 @@ export function StatsSummary({ stats }: { stats: ListingStats }) {
                 className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
               >
                 <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-ink">
-                  {row.label ?? (row.shareCode ? `#${row.shareCode}` : "To'g'ridan-to'g'ri")}
+                  {row.label ?? (row.shareCode ? `#${row.shareCode}` : t('stats.direct'))}
                 </span>
                 <div className="flex shrink-0 gap-2.5">
                   <IconCount icon="eye" value={row.views} />

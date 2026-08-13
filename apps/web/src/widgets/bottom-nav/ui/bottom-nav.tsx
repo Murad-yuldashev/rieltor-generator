@@ -1,22 +1,24 @@
+import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 import { Icon, type IconName } from '@/shared/ui/icon';
 
 /** Single source: both the layout and the router are built from this list. */
-export const NAV_TABS: { to: string; icon: IconName; label: string }[] = [
-  { to: '/', icon: 'home', label: 'Bosh sahifa' },
-  { to: '/search', icon: 'search', label: 'Qidiruv' },
-  { to: '/favorites', icon: 'heart', label: 'Sevimlilar' },
-  { to: '/contact', icon: 'phone', label: 'Aloqa' },
+export const NAV_TABS: { to: string; icon: IconName; labelKey: string }[] = [
+  { to: '/', icon: 'home', labelKey: 'nav.home' },
+  { to: '/search', icon: 'search', labelKey: 'nav.search' },
+  { to: '/favorites', icon: 'heart', labelKey: 'nav.favorites' },
+  { to: '/contact', icon: 'phone', labelKey: 'nav.contact' },
 ];
 
 export function BottomNav() {
+  const { t } = useTranslation('common');
   return (
     <nav
-      aria-label="Asosiy menyu"
+      aria-label={t('nav.menu')}
       className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-content border-t border-line bg-white/95 px-1.5 pt-2 backdrop-blur-xl"
       style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
     >
-      {NAV_TABS.map(({ to, icon, label }) => (
+      {NAV_TABS.map(({ to, icon, labelKey }) => (
         <NavLink
           key={to}
           to={to}
@@ -29,7 +31,7 @@ export function BottomNav() {
           }
         >
           <Icon name={icon} className="h-[21px] w-[21px]" strokeWidth={2.1} />
-          {label}
+          {t(labelKey)}
         </NavLink>
       ))}
     </nav>

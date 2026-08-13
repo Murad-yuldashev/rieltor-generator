@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/shared/ui/icon';
 import { useUserLocation } from '../model/use-user-location';
 import { LocationPicker } from './location-picker';
@@ -9,6 +10,7 @@ import { LocationPicker } from './location-picker';
  * stored yet. A refusal is final: the visitor picks from the map instead.
  */
 export function LocationChip() {
+  const { t } = useTranslation('misc');
   const { location, status, detect } = useUserLocation();
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -20,7 +22,7 @@ export function LocationChip() {
     return () => clearTimeout(id);
   }, [status, detect]);
 
-  const label = location?.label ?? (status === 'locating' ? 'Aniqlanmoqda…' : 'Joyni tanlash');
+  const label = location?.label ?? (status === 'locating' ? t('locating') : t('chooseLocation'));
   // Every district label ends in " tumani"; the suffix is the same on all of them,
   // so dropping it buys back room for the part that actually identifies the place.
   const shortLabel = label.replace(/\s+tumani$/, '');

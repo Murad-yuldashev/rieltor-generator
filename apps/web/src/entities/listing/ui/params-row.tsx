@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Icon, type IconName } from '@/shared/ui/icon';
 
 interface Props {
@@ -23,17 +24,25 @@ function Tile({ icon, value, label }: { icon: IconName; value: string; label: st
 }
 
 export function ParamsRow({ rooms, areaM2, floor, district }: Props) {
+  const { t } = useTranslation('feed');
+
   return (
     // grid-flow-col + auto-cols-fr makes the column count follow the number of tiles,
     // so the row still splits evenly when the floor tile drops out.
     <ul className="grid auto-cols-fr grid-flow-col gap-2">
       {/* Commercial premises have no room count — the tile drops out. */}
-      {rooms !== null && <Tile icon="rooms" value={String(rooms)} label="Xonalar" />}
-      <Tile icon="area" value={`${areaM2} m²`} label="Maydon" />
+      {rooms !== null && (
+        <Tile icon="rooms" value={String(rooms)} label={t('paramRoomsLabel')} />
+      )}
+      <Tile icon="area" value={`${areaM2} m²`} label={t('paramAreaLabel')} />
       {/* Houses have no floor — the tile drops out entirely. */}
-      {floor !== null && <Tile icon="floor" value={floor} label="Qavat" />}
+      {floor !== null && <Tile icon="floor" value={floor} label={t('paramFloorLabel')} />}
       {/* The tile is narrow: "Yunusobod tumani" does not fit and "tumani" adds nothing. */}
-      <Tile icon="pin" value={district.replace(/\s*tumani$/, '')} label="Tuman" />
+      <Tile
+        icon="pin"
+        value={district.replace(/\s*tumani$/, '')}
+        label={t('paramDistrictLabel')}
+      />
     </ul>
   );
 }

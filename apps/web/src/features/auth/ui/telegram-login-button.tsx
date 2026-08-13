@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
 import { loginWithTelegram } from '../api';
 
 const WIDGET_SRC = 'https://telegram.org/js/telegram-widget.js?22';
@@ -16,6 +17,7 @@ declare global {
  * mount and removed on unmount together with the global it needs.
  */
 export function TelegramLoginButton() {
+  const { t } = useTranslation('cabinet');
   const container = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [failed, setFailed] = useState(false);
@@ -58,8 +60,10 @@ export function TelegramLoginButton() {
   if (!botUsername) {
     return (
       <p className="rounded-[14px] border border-line bg-surface px-4 py-3 text-[13px] font-semibold text-ink-3">
-        Telegram orqali kirish sozlanmagan. Serverda <code>VITE_TG_BOT_USERNAME</code> ni
-        to'ldiring.
+        <Trans i18nKey="cabinet:auth.notConfigured">
+          Telegram orqali kirish sozlanmagan. Serverda <code>VITE_TG_BOT_USERNAME</code> ni
+          to'ldiring.
+        </Trans>
       </p>
     );
   }
@@ -68,9 +72,7 @@ export function TelegramLoginButton() {
     <div>
       <div ref={container} />
       {failed && (
-        <p className="mt-2 text-[13px] font-bold text-red-600">
-          Kirishda xatolik. Birozdan so'ng qayta urinib ko'ring.
-        </p>
+        <p className="mt-2 text-[13px] font-bold text-red-600">{t('auth.loginFailed')}</p>
       )}
     </div>
   );

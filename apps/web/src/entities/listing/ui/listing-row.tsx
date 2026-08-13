@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { formatPriceSom, type ListingSummary } from '@rieltor/shared';
 import { cn } from '@/shared/lib/cn';
@@ -13,6 +14,8 @@ interface Props {
 
 /** Compact horizontal card used by the favourites list (a condensed full card). */
 export function ListingRow({ listing, favoriteSlot }: Props) {
+  const { t } = useTranslation('feed');
+
   return (
     <article className="rounded-card border border-line/60 bg-card p-2.5 shadow-card">
       <div className="flex gap-3">
@@ -30,7 +33,7 @@ export function ListingRow({ listing, favoriteSlot }: Props) {
               LISTING_TYPE_META[listing.type].badge,
             )}
           >
-            {LISTING_TYPE_META[listing.type].label}
+            {t(`type.${listing.type}`)}
           </span>
         </Link>
 
@@ -48,7 +51,7 @@ export function ListingRow({ listing, favoriteSlot }: Props) {
           </div>
           <p className="mt-1.5 truncate text-xs font-semibold text-ink-3">
             {/* Commercial premises have no room count — that part drops out. */}
-            {listing.rooms !== null && `${listing.rooms} xona · `}
+            {listing.rooms !== null && `${t('roomsShort', { n: listing.rooms })} · `}
             {listing.areaM2} m² · {listing.district.replace(/\s*tumani$/, '')}
           </p>
         </div>

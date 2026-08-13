@@ -1,5 +1,7 @@
+import type { TFunction } from 'i18next';
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/shared/api/client';
 import { Icon } from '@/shared/ui/icon';
 import { useLeadForm } from '../model/use-lead-form';
@@ -13,14 +15,14 @@ interface Props {
 const INPUT_CLASS =
   'w-full rounded-[12px] border border-line bg-surface px-3 py-2.5 text-[15px] font-semibold';
 
-function submitErrorMessage(error: unknown): string {
+function submitErrorMessage(error: unknown, t: TFunction<'listing'>): string {
   if (error instanceof ApiError) {
     // Matches the API's own messages (leads.service.ts) — same wording the realtor
     // would see, just addressed to the visitor instead.
-    if (error.status === 409) return "Bu e'lon uchun so'rovingiz allaqachon qabul qilingan.";
-    if (error.status === 404) return "Bu e'lon endi mavjud emas.";
+    if (error.status === 409) return t('leadForm.error.duplicate');
+    if (error.status === 404) return t('leadForm.error.notFound');
   }
-  return 'Yuborishda xatolik yuz berdi. Qayta urinib ko\'ring.';
+  return t('leadForm.error.generic');
 }
 
 /**
@@ -29,6 +31,7 @@ function submitErrorMessage(error: unknown): string {
  * features/user-location) for a consistent feel across the app's modals.
  */
 export function LeadFormModal({ open, onClose, listingId }: Props) {
+  const { t } = useTranslation('listing');
   const { form, setField, errors, submit, reset, submission } = useLeadForm(listingId);
 
   useEffect(() => {
@@ -44,16 +47,16 @@ export function LeadFormModal({ open, onClose, listingId }: Props) {
   return createPortal(
     <div
       role="dialog"
-      aria-label="Raqamingizni qoldiring"
+      aria-label={t('leadForm.title')}
       className="fixed inset-0 z-[60] flex flex-col justify-end bg-ink/40"
     >
       <div className="flex max-h-[85vh] flex-col rounded-t-[20px] bg-card p-4">
         <div className="mb-3 flex shrink-0 items-center justify-between">
-          <h2 className="text-[16px] font-extrabold">Raqamingizni qoldiring</h2>
+          <h2 className="text-[16px] font-extrabold">{t('leadForm.title')}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Yopish"
+            aria-label={t('common:close')}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-ink-2"
           >
             <Icon name="close" className="h-[18px] w-[18px]" strokeWidth={2.6} />
@@ -65,13 +68,13 @@ export function LeadFormModal({ open, onClose, listingId }: Props) {
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-green/10 text-brand-green">
               <Icon name="check" className="h-7 w-7" strokeWidth={3} />
             </span>
-            <p className="text-[15px] font-bold text-ink">Rahmat, tez orada bog'lanamiz</p>
+            <p className="text-[15px] font-bold text-ink">{t('leadForm.successMessage')}</p>
             <button
               type="button"
               onClick={onClose}
               className="mt-1 rounded-[14px] bg-accent px-6 py-3 text-[14.5px] font-extrabold text-white"
             >
-              Yopish
+              {t('common:close')}
             </button>
           </div>
         ) : (
@@ -82,17 +85,17 @@ export function LeadFormModal({ open, onClose, listingId }: Props) {
             }}
             className="min-h-0 overflow-y-auto"
           >
-            <p className="mb-3 text-[13.5px] text-ink-2">
-              Ismingiz va telefon raqamingizni qoldiring — rieltor siz bilan bog'lanadi.
-            </p>
+            <p className="mb-3 text-[13.5px] text-ink-2">{t('leadForm.description')}</p>
 
             <label className="block py-2">
-              <span className="mb-1 block text-xs font-bold text-ink-3">Ism</span>
+              <span className="mb-1 block text-xs font-bold text-ink-3">
+                {t('leadForm.nameLabel')}
+              </span>
               <input
                 value={form.name}
                 onChange={(event) => setField('name', event.target.value)}
                 maxLength={60}
-                placeholder="Ismingiz"
+                placeholder={t('leadForm.namePlaceholder')}
                 className={INPUT_CLASS}
               />
               {errors.name && (
@@ -101,12 +104,14 @@ export function LeadFormModal({ open, onClose, listingId }: Props) {
             </label>
 
             <label className="block py-2">
-              <span className="mb-1 block text-xs font-bold text-ink-3">Telefon</span>
+              <span className="mb-1 block text-xs font-bold text-ink-3">
+                {t('leadForm.phoneLabel')}
+              </span>
               <input
                 value={form.phone}
                 onChange={(event) => setField('phone', event.target.value)}
                 inputMode="tel"
-                placeholder="+998901234567"
+                placeholder={t('leadForm.phonePlaceholder')}
                 className={INPUT_CLASS}
               />
               {errors.phone && (
@@ -132,7 +137,7 @@ export function LeadFormModal({ open, onClose, listingId }: Props) {
 
             {submission.isError && (
               <p className="mt-1 text-[13px] font-bold text-red-600">
-                {submitErrorMessage(submission.error)}
+                {submitErrorMessage(submission.error, t)}
               </p>
             )}
 
@@ -141,7 +146,7 @@ export function LeadFormModal({ open, onClose, listingId }: Props) {
               disabled={submission.isPending}
               className="mt-3.5 w-full rounded-[14px] bg-accent py-3.5 text-[15px] font-extrabold text-white disabled:opacity-60"
             >
-              {submission.isPending ? 'Yuborilmoqda…' : 'Yuborish'}
+              {submission.isPending ? t('leadForm.submitting') : t('leadForm.submit')}
             </button>
           </form>
         )}

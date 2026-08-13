@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/shared/ui/icon';
 import { formatPhone } from '../lib/format-phone';
 
@@ -21,6 +22,7 @@ interface Props {
  * card is specified to show — no extra content invented beyond the spec's list.
  */
 export function RealtorCard({ name, agency, photoUrl, phone, telegram, registryNo }: Props) {
+  const { t } = useTranslation('misc');
   const username = telegram?.replace(/^@/, '');
 
   return (
@@ -52,7 +54,7 @@ export function RealtorCard({ name, agency, photoUrl, phone, telegram, registryN
           )}
           <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-telegram/10 px-2 py-0.5 text-[11px] font-extrabold text-telegram">
             <Icon name="check" className="h-3 w-3" strokeWidth={3} />
-            Tasdiqlangan Telegram
+            {t('verifiedTelegram')}
           </span>
         </div>
       </div>
@@ -60,7 +62,7 @@ export function RealtorCard({ name, agency, photoUrl, phone, telegram, registryN
       {registryNo && (
         <p className="mt-3 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-3">
           <Icon name="doc" className="h-3.5 w-3.5" />
-          Reestr raqami: {registryNo}
+          {t('registryNumber', { registryNo })}
         </p>
       )}
 
@@ -69,11 +71,11 @@ export function RealtorCard({ name, agency, photoUrl, phone, telegram, registryN
           {phone && (
             <a
               href={`tel:${phone}`}
-              aria-label={`Qo'ng'iroq qilish: ${formatPhone(phone)}`}
+              aria-label={t('callAriaLabel', { phone: formatPhone(phone) })}
               className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3.5 text-[14.5px] font-extrabold text-white shadow-lg shadow-accent/35"
             >
               <Icon name="phone" className="h-[17px] w-[17px]" strokeWidth={2.2} />
-              Qo'ng'iroq
+              {t('call')}
             </a>
           )}
           {username && (
@@ -84,7 +86,7 @@ export function RealtorCard({ name, agency, photoUrl, phone, telegram, registryN
               className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-telegram bg-card py-3.5 text-[14.5px] font-extrabold text-telegram"
             >
               <Icon name="telegram" className="h-[17px] w-[17px]" />
-              Telegram
+              {t('telegram')}
             </a>
           )}
         </div>

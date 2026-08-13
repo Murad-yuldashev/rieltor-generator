@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { AgentCard } from '@/entities/agent';
 import {
@@ -31,6 +32,7 @@ function PageSkeleton() {
 }
 
 export function ListingPage() {
+  const { t } = useTranslation('listing');
   const { id = '' } = useParams();
   const { data, isPending, error } = useQuery(listingQuery(id));
   const shareCode = useShareCode();
@@ -44,7 +46,7 @@ export function ListingPage() {
   if (error) {
     // 404 gets the plain "not found" page (spec §14). Other errors land here too.
     if (error instanceof ApiError && error.status === 404) return <NotFoundView />;
-    return <p className="p-6 text-center text-ink-2">Obyektni yuklab bo'lmadi.</p>;
+    return <p className="p-6 text-center text-ink-2">{t('listingPage.loadError')}</p>;
   }
 
   return (
@@ -81,11 +83,11 @@ export function ListingPage() {
           />
         </SectionCard>
 
-        <SectionCard title="Tavsif">
+        <SectionCard title={t('listingPage.descriptionTitle')}>
           <Description text={data.description} />
         </SectionCard>
 
-        <SectionCard title="Joylashuv">
+        <SectionCard title={t('listingPage.locationTitle')}>
           <Location
             landmark={data.landmark}
             address={data.address}

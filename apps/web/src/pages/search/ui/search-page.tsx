@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import type { ListingSummary } from '@rieltor/shared';
 import { ListingCard, distanceLabel, listingsQuery } from '@/entities/listing';
@@ -34,6 +35,7 @@ function countByDistrict(listings: ListingSummary[] | undefined) {
 }
 
 export function SearchPage() {
+  const { t } = useTranslation('feed');
   const { data } = useQuery(listingsQuery());
   const { recent, remember, clear: clearHistory } = useSearchHistory();
   const { location } = useUserLocation();
@@ -74,7 +76,7 @@ export function SearchPage() {
 
   return (
     <main>
-      <PageHeading title="Qidiruv" subtitle="Filtrlar orqali o'zingizga mosini toping" />
+      <PageHeading title={t('common:nav.search')} subtitle={t('searchSubtitle')} />
 
       <form
         className="px-4 pt-3.5"
@@ -89,8 +91,8 @@ export function SearchPage() {
             type="search"
             value={criteria.search}
             onChange={(e) => setCriteria({ ...criteria, search: e.target.value })}
-            placeholder="Masalan: Kashtan majmuasi..."
-            aria-label="Obyektlar bo'yicha qidiruv"
+            placeholder={t('searchInputPlaceholder')}
+            aria-label={t('searchAriaLabel')}
             className="w-full bg-transparent text-[14.5px] outline-none placeholder:text-ink-3"
           />
         </label>
@@ -99,14 +101,14 @@ export function SearchPage() {
       <div className="flex flex-col gap-3.5 p-4">
         {recent.length > 0 && (
           <SectionCard
-            title="So'nggi qidiruvlar"
+            title={t('recentSearchesTitle')}
             action={
               <button
                 type="button"
                 onClick={clearHistory}
                 className="shrink-0 text-[13px] font-bold text-ink-3"
               >
-                Tozalash ✕
+                {t('clearX')}
               </button>
             }
           >
@@ -130,7 +132,7 @@ export function SearchPage() {
         )}
 
         {districts.length > 0 && (
-          <SectionCard title="Ommabop tumanlar">
+          <SectionCard title={t('popularDistrictsTitle')}>
             <ul className="-my-1">
               {districts.map(({ district, count }, i) => (
                 <li key={district}>
@@ -147,7 +149,7 @@ export function SearchPage() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-bold">{district}</span>
                       <span className="block text-xs font-semibold text-ink-3">
-                        {count} ta obyekt
+                        {t('objectCount', { n: count })}
                       </span>
                     </span>
                     <Icon name="chevronRight" className="h-4 w-4 text-ink-3" />
@@ -158,7 +160,7 @@ export function SearchPage() {
           </SectionCard>
         )}
 
-        <SectionCard title="Filtrlar">
+        <SectionCard title={t('filtersTitle')}>
           <FilterPanel key={panelKey} value={criteria} onChange={setCriteria} />
 
           <button
@@ -166,28 +168,30 @@ export function SearchPage() {
             onClick={() => submit()}
             className="mt-5 w-full rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35"
           >
-            Natijalarni ko'rsatish · {matches.length} ta
+            {t('showResults', { n: matches.length })}
           </button>
           <button
             type="button"
             onClick={reset}
             className="mt-2.5 w-full py-2 text-[13px] font-bold text-ink-3"
           >
-            Filtrlarni tozalash
+            {t('clearFilters')}
           </button>
         </SectionCard>
 
         {submitted && (
           <div ref={resultsRef} className="scroll-mt-16">
             <div className="flex items-center justify-between pt-1 pb-3">
-              <p className="text-[15px] font-extrabold">Natijalar · {matches.length} ta</p>
+              <p className="text-[15px] font-extrabold">
+                {t('resultsHeading', { n: matches.length })}
+              </p>
               {matches.length > 0 && (
                 <button
                   type="button"
                   onClick={reset}
                   className="rounded-full bg-accent-soft px-3.5 py-2 text-[13px] font-bold text-accent"
                 >
-                  Tozalash ✕
+                  {t('clearX')}
                 </button>
               )}
             </div>
@@ -211,7 +215,7 @@ export function SearchPage() {
 
             {matches.length === 0 && (
               <p className="px-2 py-10 text-center text-[15px] leading-relaxed text-ink-2">
-                Bu shartlarga mos obyekt topilmadi. Filtrlarni kengaytirib ko'ring.
+                {t('searchNoResults')}
               </p>
             )}
 
@@ -221,7 +225,7 @@ export function SearchPage() {
                 onClick={() => setLimit((n) => n + PAGE_SIZE)}
                 className="mt-4 w-full rounded-[14px] border-[1.5px] border-accent py-3.5 text-[14.5px] font-extrabold text-accent active:bg-accent-soft"
               >
-                Ko'proq ko'rsatish
+                {t('showMore')}
               </button>
             )}
           </div>

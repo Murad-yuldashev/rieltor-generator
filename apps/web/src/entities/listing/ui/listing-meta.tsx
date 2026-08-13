@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatListedAt } from '@rieltor/shared';
 import { Icon } from '@/shared/ui/icon';
 
@@ -13,6 +14,8 @@ interface Props {
 }
 
 export function ListingMeta({ listedAt, id, viewSlot }: Props) {
+  const { t } = useTranslation('feed');
+
   return (
     <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line pt-2.5 text-xs font-semibold text-ink-3">
       {viewSlot}
@@ -20,7 +23,7 @@ export function ListingMeta({ listedAt, id, viewSlot }: Props) {
         <Icon name="calendar" className="h-[13px] w-[13px]" />
         {formatListedAt(listedAt)}
       </span>
-      <span>ID: {id}</span>
+      <span>{t('idLabel', { id })}</span>
     </div>
   );
 }

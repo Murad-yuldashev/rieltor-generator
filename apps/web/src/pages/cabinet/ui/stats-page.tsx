@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useMe } from '@/features/auth';
 import { myListingQuery } from '@/features/listing-form';
 import { myObjectStatsQuery, StatsSummary } from '@/features/listing-stats';
@@ -11,6 +12,7 @@ import { PageHeading } from '@/shared/ui/page-heading';
  *  than cramming a third data source into the edit form; reached from the "Statistika"
  *  link on a cabinet listing row or its edit page. */
 export function StatsPage() {
+  const { t } = useTranslation('cabinet');
   const { id = '' } = useParams();
   const { realtor, isLoading: meLoading } = useMe();
   // Deferred until sign-in state is known, same reasoning as EditListingPage: a
@@ -23,7 +25,7 @@ export function StatsPage() {
   if (meLoading) {
     return (
       <main className="px-4 py-6">
-        <p className="text-[14px] font-semibold text-ink-3">Yuklanmoqda…</p>
+        <p className="text-[14px] font-semibold text-ink-3">{t('common:loading')}</p>
       </main>
     );
   }
@@ -35,7 +37,7 @@ export function StatsPage() {
   if (listing.isPending || stats.isPending) {
     return (
       <main className="px-4 py-6">
-        <p className="text-[14px] font-semibold text-ink-3">Yuklanmoqda…</p>
+        <p className="text-[14px] font-semibold text-ink-3">{t('common:loading')}</p>
       </main>
     );
   }
@@ -45,14 +47,14 @@ export function StatsPage() {
     if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
       return (
         <main className="px-4 py-10 text-center">
-          <p className="text-[14px] font-semibold text-ink-2">E'lon topilmadi.</p>
+          <p className="text-[14px] font-semibold text-ink-2">{t('listingNotFound')}</p>
           <Link to="/cabinet" className="mt-3 inline-block text-[13.5px] font-bold text-accent">
-            Kabinetga qaytish
+            {t('backToCabinet')}
           </Link>
         </main>
       );
     }
-    return <p className="p-6 text-center text-ink-2">Statistikani yuklab bo'lmadi.</p>;
+    return <p className="p-6 text-center text-ink-2">{t('statsLoadFailed')}</p>;
   }
 
   return (
@@ -62,10 +64,10 @@ export function StatsPage() {
         className="mt-3.5 ml-4 inline-flex items-center gap-1 text-[13.5px] font-bold text-accent"
       >
         <Icon name="chevronLeft" className="h-4 w-4" strokeWidth={2.4} />
-        Kabinet
+        {t('backLink')}
       </Link>
 
-      <PageHeading title="Statistika" subtitle={listing.data?.title || "E'lon"} />
+      <PageHeading title={t('statsTitle')} subtitle={listing.data?.title || t('listingFallbackTitle')} />
 
       <div className="px-4">{stats.data && <StatsSummary stats={stats.data} />}</div>
     </div>

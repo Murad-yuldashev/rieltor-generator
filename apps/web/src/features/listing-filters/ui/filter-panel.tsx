@@ -1,4 +1,5 @@
-import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
+import { useTranslation } from 'react-i18next';
+import { LISTING_TYPES } from '@/entities/listing';
 import { cn } from '@/shared/lib/cn';
 import { MAX_ROOMS_BUCKET, type Criteria, type TypeFilter } from '../model/criteria';
 import { parseNumberInput, parsePriceInput } from '../model/parse';
@@ -9,11 +10,6 @@ interface Props {
 }
 
 const ROOM_BUCKETS = [1, 2, 3, 4, MAX_ROOMS_BUCKET];
-
-const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
-  { value: 'ALL', label: 'Barchasi' },
-  ...LISTING_TYPES.map((t) => ({ value: t as TypeFilter, label: LISTING_TYPE_META[t].label })),
-];
 
 function Label({ children }: { children: string }) {
   return <p className="mb-2 text-[13px] font-bold text-ink-2">{children}</p>;
@@ -39,24 +35,30 @@ function RangeInput({
 }
 
 export function FilterPanel({ value, onChange }: Props) {
+  const { t } = useTranslation('feed');
   const patch = (next: Partial<Criteria>) => onChange({ ...value, ...next });
+
+  const typeOptions: { value: TypeFilter; label: string }[] = [
+    { value: 'ALL', label: t('type.ALL') },
+    ...LISTING_TYPES.map((type) => ({ value: type as TypeFilter, label: t(`type.${type}`) })),
+  ];
 
   return (
     <>
-      <Label>Narx, so'm</Label>
+      <Label>{t('priceLabel')}</Label>
       <div className="mb-4 flex gap-2">
         {/* "500 mln" / "1,5 mlrd" and raw digits are all understood. */}
         <RangeInput
-          placeholder="dan · 500 mln"
+          placeholder={t('priceFromPlaceholder')}
           onChange={(raw) => patch({ priceMin: parsePriceInput(raw) })}
         />
         <RangeInput
-          placeholder="gacha · 1,5 mlrd"
+          placeholder={t('priceToPlaceholder')}
           onChange={(raw) => patch({ priceMax: parsePriceInput(raw) })}
         />
       </div>
 
-      <Label>Xonalar soni</Label>
+      <Label>{t('roomsCountLabel')}</Label>
       <div className="mb-4 flex gap-2">
         {ROOM_BUCKETS.map((n) => (
           <button
@@ -75,21 +77,21 @@ export function FilterPanel({ value, onChange }: Props) {
         ))}
       </div>
 
-      <Label>Maydon, m²</Label>
+      <Label>{t('areaLabel')}</Label>
       <div className="mb-4 flex gap-2">
         <RangeInput
-          placeholder="dan · 40"
+          placeholder={t('areaFromPlaceholder')}
           onChange={(raw) => patch({ areaMin: parseNumberInput(raw) })}
         />
         <RangeInput
-          placeholder="gacha · 120"
+          placeholder={t('areaToPlaceholder')}
           onChange={(raw) => patch({ areaMax: parseNumberInput(raw) })}
         />
       </div>
 
-      <Label>Obyekt turi</Label>
+      <Label>{t('typeLabel')}</Label>
       <div className="flex flex-wrap gap-2">
-        {TYPE_OPTIONS.map(({ value: option, label }) => (
+        {typeOptions.map(({ value: option, label }) => (
           <button
             key={option}
             type="button"

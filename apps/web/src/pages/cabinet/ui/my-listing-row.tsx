@@ -1,7 +1,9 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { formatPriceSom, type OwnerListingSummary } from '@rieltor/shared';
+import { formatPriceSom, type ListingStatus, type OwnerListingSummary } from '@rieltor/shared';
+import { useTranslation } from 'react-i18next';
 import { LISTING_TYPE_META, PUBLIC_DETAIL_STATUSES } from '@/entities/listing';
-import { STATUS_META } from '@/features/listing-form';
+import { changeStatus, deleteListing, STATUS_META } from '@/features/listing-form';
 import { ShareButton } from '@/features/listing-share';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
@@ -20,7 +22,28 @@ interface Props {
  * (design spec §8.1/§8.3).
  */
 export function MyListingRow({ listing }: Props) {
+  const { t } = useTranslation(['cabinet', 'feed']);
   const meta = STATUS_META[listing.status];
+  const queryClient = useQueryClient();
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['myListings'] });
+
+  const toggle = useMutation({
+    mutationFn: (to: ListingStatus) => changeStatus(listing.id, to),
+    onSuccess: refresh,
+    onError: () => window.alert(t('myListingStatusChangeError')),
+  });
+  const remove = useMutation({ mutationFn: () => deleteListing(listing.id), onSuccess: refresh });
+
+  // A plain active/inactive toggle mapped onto the status machine: ACTIVE/RESERVED
+  // archive to "inactive", ARCHIVED reactivates, a DRAFT/PENDING publishes.
+  const toggleAction: { to: ListingStatus; labelKey: string } | null =
+    listing.status === 'ACTIVE' || listing.status === 'RESERVED'
+      ? { to: 'ARCHIVED', labelKey: 'statusAction.deactivate' }
+      : listing.status === 'ARCHIVED'
+        ? { to: 'ACTIVE', labelKey: 'statusAction.activate' }
+        : listing.status === 'DRAFT' || listing.status === 'PENDING'
+          ? { to: 'ACTIVE', labelKey: 'statusAction.publish' }
+          : null;
 
   return (
     <div className="rounded-card border border-line/60 bg-card p-2.5 shadow-card">
@@ -38,7 +61,7 @@ export function MyListingRow({ listing }: Props) {
               LISTING_TYPE_META[listing.type].badge,
             )}
           >
-            {LISTING_TYPE_META[listing.type].label}
+            {t(`feed:type.${listing.type}`)}
           </span>
         </div>
 
@@ -49,22 +72,22 @@ export function MyListingRow({ listing }: Props) {
               meta.badge,
             )}
           >
-            {meta.label}
+            {t(meta.labelKey)}
           </span>
           <p className="mt-1 text-[14.5px] leading-tight font-extrabold text-accent-dark">
             {/* A brand-new DRAFT starts at priceSom "0" (listings-write.service.ts's
                 DRAFT_DEFAULTS) — shown as a prompt rather than a literal "0 so'm". */}
             {listing.priceSom === '0'
-              ? 'Narx kiritilmagan'
+              ? t('priceNotSet')
               : formatPriceSom(listing.priceSom, listing.deal)}
           </p>
           <p className="mt-0.5 line-clamp-1 text-[13px] font-semibold text-ink">
-            {listing.title || "Sarlavhasiz e'lon"}
+            {listing.title || t('untitledListing')}
           </p>
           <p className="mt-1 truncate text-xs font-semibold text-ink-3">
-            {listing.rooms !== null && `${listing.rooms} xona · `}
+            {listing.rooms !== null && `${t('roomsCount', { count: listing.rooms })} · `}
             {listing.areaM2} m² ·{' '}
-            {listing.district.replace(/\s*tumani$/, '') || 'Tuman kiritilmagan'}
+            {listing.district.replace(/\s*tumani$/, '') || t('districtNotSet')}
           </p>
         </div>
 
@@ -77,7 +100,7 @@ export function MyListingRow({ listing }: Props) {
           className="flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-surface py-1.5 text-[12px] font-bold text-ink-2"
         >
           <Icon name="eye" className="h-3.5 w-3.5" strokeWidth={2.2} />
-          Statistika
+          {t('statsTitle')}
         </Link>
         {/* A DRAFT/PENDING/ARCHIVED listing 404s for everyone but its owner — sharing
             its link would be pointless. */}
@@ -88,9 +111,32 @@ export function MyListingRow({ listing }: Props) {
             className="flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-accent/10 py-1.5 text-[12px] font-bold text-accent"
           >
             <Icon name="share" className="h-3.5 w-3.5" strokeWidth={2.2} />
-            Ulashish
+            {t('shareTitle')}
           </ShareButton>
         )}
+      </div>
+
+      <div className="mt-2 flex gap-2">
+        {toggleAction && (
+          <button
+            type="button"
+            onClick={() => toggle.mutate(toggleAction.to)}
+            disabled={toggle.isPending}
+            className="flex-1 rounded-[10px] bg-surface py-1.5 text-[12px] font-bold text-ink-2 disabled:opacity-60"
+          >
+            {t(toggleAction.labelKey)}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm(t('deleteListingConfirm'))) remove.mutate();
+          }}
+          disabled={remove.isPending}
+          className="flex-1 rounded-[10px] bg-red-50 py-1.5 text-[12px] font-bold text-red-600 disabled:opacity-60"
+        >
+          {t('common:delete')}
+        </button>
       </div>
     </div>
   );

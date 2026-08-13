@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { DevLoginForm, TelegramLoginButton, useLogout, useMe } from '@/features/auth';
 import { myListingsQuery } from '@/features/listing-form';
 import { Icon } from '@/shared/ui/icon';
@@ -8,6 +9,7 @@ import { SectionCard } from '@/shared/ui/section-card';
 import { MyListingRow } from './my-listing-row';
 
 export function CabinetPage() {
+  const { t } = useTranslation('cabinet');
   const { realtor, isLoading } = useMe();
   const logout = useLogout();
   // Called unconditionally (Rules of Hooks) but only actually fetches once signed in —
@@ -20,7 +22,7 @@ export function CabinetPage() {
   if (isLoading) {
     return (
       <main className="px-4 py-6">
-        <p className="text-[14px] font-semibold text-ink-3">Yuklanmoqda…</p>
+        <p className="text-[14px] font-semibold text-ink-3">{t('common:loading')}</p>
       </main>
     );
   }
@@ -28,10 +30,7 @@ export function CabinetPage() {
   if (!realtor) {
     return (
       <main>
-        <PageHeading
-          title="Rieltor kabineti"
-          subtitle="O'z e'lonlaringizni joylash uchun Telegram orqali kiring — parol yoki SMS kerak emas."
-        />
+        <PageHeading title={t('pageTitle')} subtitle={t('signedOutSubtitle')} />
         <div className="mt-4 px-4">
           <TelegramLoginButton />
           {/* Renders nothing unless the dev-login build flag is on. */}
@@ -43,7 +42,7 @@ export function CabinetPage() {
 
   return (
     <main>
-      <PageHeading title="Rieltor kabineti" subtitle="Profilingiz va e'lonlaringiz" />
+      <PageHeading title={t('pageTitle')} subtitle={t('signedInSubtitle')} />
 
       <div className="px-4">
         <SectionCard className="mt-4">
@@ -67,30 +66,30 @@ export function CabinetPage() {
             </span>
             <span className="flex items-center gap-1 text-xs font-bold text-telegram">
               <Icon name="check" className="h-3.5 w-3.5" strokeWidth={3} />
-              Telegram
+              {t('telegramLabel')}
             </span>
           </div>
         </SectionCard>
 
         {!realtor.phone && (
           <p className="mt-3 rounded-[14px] border border-line bg-surface px-4 py-3 text-[13px] font-semibold text-ink-2">
-            Telefon raqami kiritilmagan — e'lon joylash uchun u talab qilinadi.
+            {t('phoneMissingWarning')}
           </p>
         )}
 
         <div className="mt-5 flex items-center justify-between">
-          <h2 className="text-[15px] font-extrabold tracking-tight">Mening e'lonlarim</h2>
+          <h2 className="text-[15px] font-extrabold tracking-tight">{t('myListingsHeading')}</h2>
           <Link to="/cabinet/new" className="flex items-center gap-1 text-[13px] font-bold text-accent">
-            <span className="text-base leading-none">＋</span> Yangi e'lon
+            <span className="text-base leading-none">＋</span> {t('newListing')}
           </Link>
         </div>
 
         {listingsLoading ? (
-          <p className="mt-3 text-[13px] font-semibold text-ink-3">Yuklanmoqda…</p>
+          <p className="mt-3 text-[13px] font-semibold text-ink-3">{t('common:loading')}</p>
         ) : listings.length === 0 ? (
           <SectionCard className="mt-3">
             <p className="py-2 text-center text-[13.5px] font-semibold text-ink-3">
-              Hali e'lon yo'q. Birinchisini qo'shing.
+              {t('noListingsYet')}
             </p>
           </SectionCard>
         ) : (
@@ -106,11 +105,13 @@ export function CabinetPage() {
             to="/cabinet/leads"
             className="flex items-center gap-3 border-b border-line/60 py-3.5"
           >
-            <span className="min-w-0 flex-1 text-[14.5px] font-bold">Lidlar</span>
+            <span className="min-w-0 flex-1 text-[14.5px] font-bold">{t('leadsTitle')}</span>
             <Icon name="chevronRight" className="h-4 w-4 text-ink-3" strokeWidth={2.4} />
           </Link>
           <Link to="/cabinet/profile" className="flex items-center gap-3 py-3.5">
-            <span className="min-w-0 flex-1 text-[14.5px] font-bold">Profilni tahrirlash</span>
+            <span className="min-w-0 flex-1 text-[14.5px] font-bold">
+              {t('profileEditLink')}
+            </span>
             <Icon name="chevronRight" className="h-4 w-4 text-ink-3" strokeWidth={2.4} />
           </Link>
         </SectionCard>
@@ -121,7 +122,7 @@ export function CabinetPage() {
           disabled={logout.isPending}
           className="mt-5 w-full rounded-[14px] border-[1.5px] border-line py-3.5 text-[15px] font-extrabold text-ink-2 disabled:opacity-60"
         >
-          Chiqish
+          {t('logout')}
         </button>
       </div>
     </main>

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { formatPriceSom, type Deal, type OwnerListingDetail } from '@rieltor/shared';
+import { useTranslation } from 'react-i18next';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
 import { SharePanel } from '@/features/listing-share';
 import { ApiError } from '@/shared/api/client';
@@ -20,9 +21,11 @@ interface Props {
 const INPUT_CLASS =
   'w-full rounded-[12px] border border-line bg-card px-3 py-2.5 text-[15px] font-semibold';
 
-const DEALS: { value: Deal; label: string }[] = [
-  { value: 'SALE', label: 'Sotish' },
-  { value: 'RENT', label: 'Ijaraga berish' },
+/** labelKey, not display text — module scope has no useTranslation(), same pattern
+ *  as bottom-nav's NAV_TABS. */
+const DEALS: { value: Deal; labelKey: string }[] = [
+  { value: 'SALE', labelKey: 'deal.sale' },
+  { value: 'RENT', labelKey: 'deal.rent' },
 ];
 
 function Field({
@@ -42,15 +45,16 @@ function Field({
   );
 }
 
-function uploadErrorMessage(error: unknown): string {
+function uploadErrorMessage(error: unknown, t: (key: string) => string): string {
   if (error instanceof ApiError) {
-    if (error.status === 413) return 'Rasmlar hajmi juda katta (4 MB dan oshmasin).';
-    if (error.status === 422) return "Rasmlarni yuklab bo'lmadi — format yoki soni noto'g'ri.";
+    if (error.status === 413) return t('uploadErrorTooLarge');
+    if (error.status === 422) return t('uploadErrorInvalid');
   }
-  return 'Yuklashda xatolik yuz berdi.';
+  return t('uploadErrorGeneric');
 }
 
 export function ListingForm({ listingId, initial, hasPhone }: Props) {
+  const { t } = useTranslation('cabinet');
   const { form, setField, images, missing, save, transition, upload, removeImage } = useListingForm(
     { listingId, initial, hasPhone },
   );
@@ -68,23 +72,23 @@ export function ListingForm({ listingId, initial, hasPhone }: Props) {
         onShare={() => setShareOpen(true)}
       />
 
-      <SectionCard className="mt-3" title="Asosiy ma'lumot">
-        <Field label="Sarlavha">
+      <SectionCard className="mt-3" title={t('section.basicInfo')}>
+        <Field label={t('field.title')}>
           <input
             value={form.title}
             onChange={(event) => setField('title', event.target.value)}
             maxLength={120}
-            placeholder="Masalan: Yunusobodda 3 xonali kvartira"
+            placeholder={t('field.titlePlaceholder')}
             className={INPUT_CLASS}
           />
         </Field>
 
         <div
           role="tablist"
-          aria-label="Amal turi"
+          aria-label={t('field.deal')}
           className="mt-1 flex rounded-xl bg-[#e8e8ee] p-1"
         >
-          {DEALS.map(({ value, label }) => (
+          {DEALS.map(({ value, labelKey }) => (
             <button
               key={value}
               type="button"
@@ -96,14 +100,14 @@ export function ListingForm({ listingId, initial, hasPhone }: Props) {
                 form.deal === value ? 'bg-white text-ink shadow-sm' : 'text-ink-2',
               )}
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
 
         <div
           role="tablist"
-          aria-label="Obyekt turi"
+          aria-label={t('field.type')}
           className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-1"
         >
           {LISTING_TYPES.map((type) => (
@@ -126,23 +130,23 @@ export function ListingForm({ listingId, initial, hasPhone }: Props) {
         </div>
       </SectionCard>
 
-      <SectionCard className="mt-3" title="Narx">
+      <SectionCard className="mt-3" title={t('section.price')}>
         <div className="flex gap-3">
-          <Field label="Narx (so'm)" className="flex-1">
+          <Field label={t('field.priceSom')} className="flex-1">
             <input
               value={form.priceSom}
               onChange={(event) => setField('priceSom', sanitizeDigits(event.target.value))}
               inputMode="numeric"
-              placeholder="480000000"
+              placeholder={t('field.priceSomPlaceholder')}
               className={INPUT_CLASS}
             />
           </Field>
-          <Field label="Narx ($)" className="flex-1">
+          <Field label={t('field.priceUsd')} className="flex-1">
             <input
               value={form.priceUsd}
               onChange={(event) => setField('priceUsd', sanitizeDigits(event.target.value))}
               inputMode="numeric"
-              placeholder="38000"
+              placeholder={t('field.priceUsdPlaceholder')}
               className={INPUT_CLASS}
             />
           </Field>
@@ -154,36 +158,36 @@ export function ListingForm({ listingId, initial, hasPhone }: Props) {
         )}
       </SectionCard>
 
-      <SectionCard className="mt-3" title="Parametrlar">
+      <SectionCard className="mt-3" title={t('section.params')}>
         <div
           className={cn('grid gap-2', form.type === 'COMMERCIAL' ? 'grid-cols-2' : 'grid-cols-3')}
         >
           {/* Commercial premises are not measured in rooms (§7.4) — the field drops out. */}
           {form.type !== 'COMMERCIAL' && (
-            <Field label="Xonalar">
+            <Field label={t('field.rooms')}>
               <input
                 value={form.rooms}
                 onChange={(event) => setField('rooms', sanitizeDigits(event.target.value))}
                 inputMode="numeric"
-                placeholder="3"
+                placeholder={t('field.roomsPlaceholder')}
                 className={INPUT_CLASS}
               />
             </Field>
           )}
-          <Field label="Maydon, m²">
+          <Field label={t('field.areaM2')}>
             <input
               value={form.areaM2}
               onChange={(event) => setField('areaM2', sanitizeDecimal(event.target.value))}
               inputMode="decimal"
-              placeholder="65"
+              placeholder={t('field.areaM2Placeholder')}
               className={INPUT_CLASS}
             />
           </Field>
-          <Field label="Qavat">
+          <Field label={t('field.floor')}>
             <input
               value={form.floor}
               onChange={(event) => setField('floor', event.target.value)}
-              placeholder="3/9"
+              placeholder={t('field.floorPlaceholder')}
               maxLength={20}
               className={INPUT_CLASS}
             />
@@ -191,53 +195,53 @@ export function ListingForm({ listingId, initial, hasPhone }: Props) {
         </div>
       </SectionCard>
 
-      <SectionCard className="mt-3" title="Manzil">
-        <Field label="Tuman">
+      <SectionCard className="mt-3" title={t('section.addressGroup')}>
+        <Field label={t('field.district')}>
           <input
             value={form.district}
             onChange={(event) => setField('district', event.target.value)}
-            placeholder="Yunusobod tumani"
+            placeholder={t('field.districtPlaceholder')}
             maxLength={60}
             className={INPUT_CLASS}
           />
         </Field>
-        <Field label="Manzil">
+        <Field label={t('field.address')}>
           <input
             value={form.address}
             onChange={(event) => setField('address', event.target.value)}
-            placeholder="Ko'cha, uy raqami"
+            placeholder={t('field.addressPlaceholder')}
             maxLength={200}
             className={INPUT_CLASS}
           />
         </Field>
-        <Field label="Mo'ljal">
+        <Field label={t('field.landmark')}>
           <input
             value={form.landmark}
             onChange={(event) => setField('landmark', event.target.value)}
-            placeholder="Metro «Shahriston» 10 daq."
+            placeholder={t('field.landmarkPlaceholder')}
             maxLength={120}
             className={INPUT_CLASS}
           />
         </Field>
       </SectionCard>
 
-      <SectionCard className="mt-3" title="Tavsif">
+      <SectionCard className="mt-3" title={t('section.description')}>
         <textarea
           value={form.description}
           onChange={(event) => setField('description', event.target.value)}
           maxLength={4000}
           rows={5}
-          placeholder="Obyekt haqida batafsil yozing..."
+          placeholder={t('field.descriptionPlaceholder')}
           className={cn(INPUT_CLASS, 'min-h-[110px] resize-y')}
         />
       </SectionCard>
 
-      <SectionCard className="mt-3" title="Rasmlar">
+      <SectionCard className="mt-3" title={t('section.images')}>
         <ImageGrid
           images={images}
           onUpload={(files) => upload.mutate(files)}
           uploading={upload.isPending}
-          uploadError={upload.isError ? uploadErrorMessage(upload.error) : null}
+          uploadError={upload.isError ? uploadErrorMessage(upload.error, t) : null}
           onDelete={(imageId) => removeImage.mutate(imageId)}
           deleting={removeImage.isPending}
         />

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   formatPricePerM2,
@@ -45,6 +46,8 @@ export function ListingCard({
   mapOpen,
   onToggleMap,
 }: Props) {
+  const { t } = useTranslation('feed');
+
   return (
     <article className="overflow-hidden rounded-card border border-line/60 bg-card shadow-card">
       <Link to={`/obj/${listing.id}`} className="block">
@@ -101,10 +104,14 @@ export function ListingCard({
 
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {/* Commercial premises have no room count — the chip drops out. */}
-            {listing.rooms !== null && <Param icon="rooms" text={`${listing.rooms} xona`} />}
+            {listing.rooms !== null && (
+              <Param icon="rooms" text={t('roomsShort', { n: listing.rooms })} />
+            )}
             <Param icon="area" text={`${listing.areaM2} m²`} />
             {/* Houses have no floor — the chip drops out entirely. */}
-            {listing.floor !== null && <Param icon="floor" text={`${listing.floor}-qavat`} />}
+            {listing.floor !== null && (
+              <Param icon="floor" text={t('floorShort', { floor: listing.floor })} />
+            )}
           </div>
 
           <p className="mt-2.5 flex items-start gap-1.5 text-[13px] font-medium text-ink-2">
@@ -125,13 +132,13 @@ export function ListingCard({
             className="flex items-center gap-1.5 text-[13px] font-bold text-accent"
           >
             <Icon name="pin" className="h-3.5 w-3.5" strokeWidth={2.4} />
-            Joylashuvni ko'rsatish
+            {t('showLocation')}
           </button>
 
           {mapOpen && (
             <StaticMap
               point={{ lat: listing.lat, lng: listing.lng }}
-              label={`${listing.title} joylashuvi`}
+              label={t('mapAlt', { title: listing.title })}
               className="mt-2.5 block"
             />
           )}

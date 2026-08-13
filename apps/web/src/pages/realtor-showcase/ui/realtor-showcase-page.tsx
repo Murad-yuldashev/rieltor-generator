@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import { ListingCard } from '@/entities/listing';
 import { RealtorCard, SoldBadge, realtorShowcaseQuery } from '@/entities/realtor';
@@ -38,6 +39,7 @@ function PageSkeleton() {
  * browser actually shows once the page's JS has loaded.
  */
 export function RealtorShowcasePage() {
+  const { t } = useTranslation('misc');
   const { username = '' } = useParams();
   const navigate = useNavigate();
   const { data, isPending, error } = useQuery(realtorShowcaseQuery(username));
@@ -50,13 +52,13 @@ export function RealtorShowcasePage() {
     if (error instanceof ApiError && error.status === 404) {
       return (
         <NotFoundView
-          title="Bunday rieltor topilmadi"
-          subtitle="Havola eskirgan yoki foydalanuvchi nomi noto'g'ri."
-          linkLabel="Bosh sahifa"
+          title={t('realtorNotFoundTitle')}
+          subtitle={t('realtorNotFoundSubtitle')}
+          linkLabel={t('common:nav.home')}
         />
       );
     }
-    return <p className="p-6 text-center text-ink-2">Rieltor ma'lumotini yuklab bo'lmadi.</p>;
+    return <p className="p-6 text-center text-ink-2">{t('realtorLoadError')}</p>;
   }
 
   return (
@@ -71,7 +73,7 @@ export function RealtorShowcasePage() {
           className="flex items-center gap-1 text-[13.5px] font-bold text-ink-2"
         >
           <Icon name="chevronLeft" className="h-4 w-4" strokeWidth={2.4} />
-          Orqaga
+          {t('common:back')}
         </button>
       </div>
 
@@ -86,11 +88,13 @@ export function RealtorShowcasePage() {
         />
 
         <section>
-          <h2 className="mb-3 text-[15px] font-extrabold tracking-tight">Faol e'lonlar</h2>
+          <h2 className="mb-3 text-[15px] font-extrabold tracking-tight">
+            {t('activeListings')}
+          </h2>
 
           {data.listings.length === 0 ? (
             <p className="rounded-card border border-line/60 bg-card px-4 py-8 text-center text-[13.5px] font-semibold text-ink-3">
-              Hozircha faol e'lonlar yo'q.
+              {t('noActiveListings')}
             </p>
           ) : (
             <div className="flex flex-col gap-4">
@@ -105,7 +109,7 @@ export function RealtorShowcasePage() {
             sold/rented history — an empty heading with nothing under it helps no one. */}
         {data.sold.length > 0 && (
           <section>
-            <h2 className="mb-3 text-[15px] font-extrabold tracking-tight">Sotilgan obyektlar</h2>
+            <h2 className="mb-3 text-[15px] font-extrabold tracking-tight">{t('soldObjects')}</h2>
             <div className="flex flex-col gap-4">
               {data.sold.map((listing) => (
                 <div key={listing.id} className="relative">

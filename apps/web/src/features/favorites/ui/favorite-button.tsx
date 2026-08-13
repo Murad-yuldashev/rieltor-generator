@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
 import { useFavorite } from '../model/use-favorite';
@@ -8,13 +9,14 @@ interface Props {
 }
 
 export function FavoriteButton({ id, className }: Props) {
+  const { t } = useTranslation('feed');
   const { isFavorite, toggle } = useFavorite(id);
 
   return (
     <button
       type="button"
       aria-pressed={isFavorite}
-      aria-label={isFavorite ? 'Sevimlilardan olib tashlash' : 'Sevimlilarga qo’shish'}
+      aria-label={isFavorite ? t('removeFromFavorites') : t('addToFavorites')}
       onClick={(e) => {
         // The whole card is a <Link> — this tap must not navigate to the listing.
         e.preventDefault();

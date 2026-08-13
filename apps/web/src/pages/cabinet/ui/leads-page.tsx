@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useMe } from '@/features/auth';
 import { myLeadsQuery } from '@/features/leads';
 import { myListingsQuery } from '@/features/listing-form';
@@ -15,6 +16,7 @@ import { LeadRow } from './lead-row';
  * on the cabinet page.
  */
 export function LeadsPage() {
+  const { t } = useTranslation('cabinet');
   const { realtor, isLoading: meLoading } = useMe();
   // Deferred until sign-in state is known, same reasoning as StatsPage/EditListingPage.
   const enabled = !meLoading && Boolean(realtor);
@@ -34,7 +36,7 @@ export function LeadsPage() {
   if (meLoading) {
     return (
       <main className="px-4 py-6">
-        <p className="text-[14px] font-semibold text-ink-3">Yuklanmoqda…</p>
+        <p className="text-[14px] font-semibold text-ink-3">{t('common:loading')}</p>
       </main>
     );
   }
@@ -46,7 +48,7 @@ export function LeadsPage() {
   if (isPending) {
     return (
       <main className="px-4 py-6">
-        <p className="text-[14px] font-semibold text-ink-3">Yuklanmoqda…</p>
+        <p className="text-[14px] font-semibold text-ink-3">{t('common:loading')}</p>
       </main>
     );
   }
@@ -54,9 +56,9 @@ export function LeadsPage() {
   if (error) {
     return (
       <main className="px-4 py-10 text-center">
-        <p className="text-[14px] font-semibold text-ink-2">Lidlarni yuklab bo'lmadi.</p>
+        <p className="text-[14px] font-semibold text-ink-2">{t('leadsLoadFailed')}</p>
         <Link to="/cabinet" className="mt-3 inline-block text-[13.5px] font-bold text-accent">
-          Kabinetga qaytish
+          {t('backToCabinet')}
         </Link>
       </main>
     );
@@ -69,16 +71,16 @@ export function LeadsPage() {
         className="mt-3.5 ml-4 inline-flex items-center gap-1 text-[13.5px] font-bold text-accent"
       >
         <Icon name="chevronLeft" className="h-4 w-4" strokeWidth={2.4} />
-        Kabinet
+        {t('backLink')}
       </Link>
 
-      <PageHeading title="Lidlar" subtitle="Obyekt sahifasidan qoldirilgan so'rovlar" />
+      <PageHeading title={t('leadsTitle')} subtitle={t('leadsSubtitle')} />
 
       <div className="px-4">
         {leads.length === 0 ? (
           <SectionCard>
             <p className="py-2 text-center text-[13.5px] font-semibold text-ink-3">
-              Hali lid yo'q.
+              {t('leadsEmpty')}
             </p>
           </SectionCard>
         ) : (

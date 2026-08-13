@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { trackEvent } from '@/features/event-tracking';
 import { LeadFormButton } from '@/features/lead-form';
 import { Icon } from '@/shared/ui/icon';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function StickyCTA({ phone, telegram, listingId, shareCode }: Props) {
+  const { t } = useTranslation('listing');
   const username = telegram.replace(/^@/, '');
 
   function track(type: 'CALL_CLICK' | 'TG_CLICK') {
@@ -35,7 +37,7 @@ export function StickyCTA({ phone, telegram, listingId, shareCode }: Props) {
           className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35"
         >
           <Icon name="phone" className="h-[17px] w-[17px]" strokeWidth={2.2} />
-          Qo'ng'iroq
+          {t('stickyCta.call')}
         </a>
         <a
           href={`https://t.me/${username}`}
@@ -45,7 +47,7 @@ export function StickyCTA({ phone, telegram, listingId, shareCode }: Props) {
           className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-telegram bg-card py-3.5 text-[15px] font-extrabold text-telegram"
         >
           <Icon name="telegram" className="h-[17px] w-[17px]" />
-          Telegram
+          {t('stickyCta.telegram')}
         </a>
       </div>
 
@@ -58,7 +60,7 @@ export function StickyCTA({ phone, telegram, listingId, shareCode }: Props) {
           className="flex items-center justify-center gap-1.5 py-1 text-[13px] font-bold text-accent"
         >
           <Icon name="message" className="h-3.5 w-3.5" strokeWidth={2.2} />
-          Raqamimni qoldiraman
+          {t('stickyCta.leaveNumber')}
         </LeadFormButton>
       )}
     </div>
