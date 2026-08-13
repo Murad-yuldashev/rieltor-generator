@@ -6,7 +6,9 @@ import { envSchema } from './config/env';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { AuthDevModule } from './auth-dev/auth-dev.module';
+import { BotModule } from './bot/bot.module';
 import { HealthModule } from './health/health.module';
+import { LeadsModule } from './leads/leads.module';
 import { ListingsModule } from './listings/listings.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { MediaModule } from './media/media.module';
@@ -44,6 +46,8 @@ const RAW_NODE_ENV = process.env.NODE_ENV;
     ShareModule,
     AnalyticsModule,
     MaintenanceModule,
+    BotModule,
+    LeadsModule,
     // A positive allowlist rather than `!== 'production'`: NODE_ENV is not reliably
     // set on every deploy path (Netlify's build environment is the exception, not
     // the rule), so an unset NODE_ENV must fail closed instead of defaulting this

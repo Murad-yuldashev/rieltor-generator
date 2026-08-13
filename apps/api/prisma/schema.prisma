@@ -41,6 +41,16 @@ enum EventType {
   TG_CLICK
 }
 
+/// Forward-only lifecycle: NEW → CONTACTED → MEETING → CLOSED, or straight to
+/// CLOSED from any status. @rieltor/shared's nextLeadStatuses() is the single
+/// source of truth for which moves are legal (stage 5, spec §8.4).
+enum LeadStatus {
+  NEW
+  CONTACTED
+  MEETING
+  CLOSED
+}
+
 model Agent {
   id       String    @id @default(cuid())
   name     String
@@ -102,6 +112,7 @@ model Listing {
   priceHistory     PriceHistory[]
   shareLinks       ShareLink[]
   events           Event[]
+  leads            Lead[]
 
   @@index([type])
   @@index([deal])
@@ -190,6 +201,26 @@ model Event {
 
   @@index([listingId, createdAt])
   @@index([ipHash, listingId, type, createdAt])
+}
+
+/// A visitor's "leave your number" submission on a listing page (stage 5, spec
+/// §8.4). ipHash powers both the 1-per-hour anti-spam window and, together with
+/// notifiedAt, the 24-hour "still NEW" reminder the daily cron sends once.
+model Lead {
+  id         String     @id @default(cuid())
+  listingId  String
+  listing    Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  name       String
+  phone      String
+  status     LeadStatus @default(NEW)
+  /// Raw IP is never stored — only a hash salted with the UTC day (spec §8.2), same as Event.
+  ipHash     String
+  /// Stamped once the 24h-stale reminder is sent, so the cron never repeats it.
+  notifiedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([listingId, createdAt])
+  @@index([ipHash, listingId, createdAt])
 }
 
 /// The price a listing carried right before a change — written by

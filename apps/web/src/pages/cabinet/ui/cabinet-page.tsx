@@ -102,6 +102,13 @@ export function CabinetPage() {
         )}
 
         <SectionCard className="mt-5 py-1">
+          <Link
+            to="/cabinet/leads"
+            className="flex items-center gap-3 border-b border-line/60 py-3.5"
+          >
+            <span className="min-w-0 flex-1 text-[14.5px] font-bold">Lidlar</span>
+            <Icon name="chevronRight" className="h-4 w-4 text-ink-3" strokeWidth={2.4} />
+          </Link>
           <Link to="/cabinet/profile" className="flex items-center gap-3 py-3.5">
             <span className="min-w-0 flex-1 text-[14.5px] font-bold">Profilni tahrirlash</span>
             <Icon name="chevronRight" className="h-4 w-4 text-ink-3" strokeWidth={2.4} />

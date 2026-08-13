@@ -10,8 +10,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { listingInclude, toListingDetail, toListingSummary } from './mapper';
 import { toOwnerListingDetail, toOwnerListingSummary } from './owner-mapper';
 
-/** A listing detail page stays open for these — SOLD/RENTED are kept as a trust signal. */
-const PUBLIC_DETAIL_STATUSES: ListingStatus[] = ['ACTIVE', 'RESERVED', 'SOLD', 'RENTED'];
+/**
+ * A listing detail page stays open for these — SOLD/RENTED are kept as a trust
+ * signal. Exported so LeadsService can apply the exact same "is this listing
+ * publicly visible" rule to POST /api/leads (design spec §8.4).
+ */
+export const PUBLIC_DETAIL_STATUSES: ListingStatus[] = ['ACTIVE', 'RESERVED', 'SOLD', 'RENTED'];
 
 @Injectable()
 export class ListingsService {

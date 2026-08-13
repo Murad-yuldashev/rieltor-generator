@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router';
 import {
   CabinetPage,
   EditListingPage,
+  LeadsPage,
   NewListingPage,
   ProfilePage,
   StatsPage,
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
       { path: '/cabinet/new', element: <NewListingPage /> },
       { path: '/cabinet/obj/:id/edit', element: <EditListingPage /> },
       { path: '/cabinet/obj/:id/stats', element: <StatsPage /> },
+      { path: '/cabinet/leads', element: <LeadsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

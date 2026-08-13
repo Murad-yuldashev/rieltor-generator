@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { BotService } from '../bot/bot.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { fetchCbuUsdRate } from './cbu-fx';
 
@@ -7,16 +8,19 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPIRY_WARNING_MS = 3 * DAY_MS;
 /** Event rows older than this are pruned (design spec §7.5, §8.2). */
 const EVENT_RETENTION_MS = 90 * DAY_MS;
+/** A lead still NEW this long after arriving gets the realtor a reminder (stage 5, spec §8.4). */
+const LEAD_REMINDER_MS = DAY_MS;
 
 export interface CronSummary {
   archived: number;
   expiryNotified: number;
   fxRateUpdated: boolean;
   eventsDeleted: number;
+  leadsReminded: number;
 }
 
 /**
- * The four daily maintenance tasks from design spec §7.5, run by
+ * The daily maintenance tasks from design spec §7.5, run by
  * POST /api/internal/cron/daily. Every Listing-mutating query here filters on
  * `realtorId: { not: null }` — the seed's 18 listings have no owner and must never
  * be touched by a cron job the realtor cabinet introduced.
@@ -25,7 +29,10 @@ export interface CronSummary {
 export class MaintenanceService {
   private readonly logger = new Logger(MaintenanceService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly bot: BotService,
+  ) {}
 
   async runDaily(now: Date = new Date()): Promise<CronSummary> {
     // Sequential, not Promise.all: archiving first means the "expiring soon" step
@@ -34,8 +41,9 @@ export class MaintenanceService {
     const expiryNotified = await this.flagExpiringSoon(now);
     const fxRateUpdated = await this.refreshFxRate(now);
     const eventsDeleted = await this.pruneOldEvents(now);
+    const leadsReminded = await this.remindStaleLeads(now);
 
-    return { archived, expiryNotified, fxRateUpdated, eventsDeleted };
+    return { archived, expiryNotified, fxRateUpdated, eventsDeleted, leadsReminded };
   }
 
   /** Task 1: expired ACTIVE/RESERVED listings owned by a real realtor → ARCHIVED. */
@@ -96,5 +104,52 @@ export class MaintenanceService {
     const cutoff = new Date(now.getTime() - EVENT_RETENTION_MS);
     const result = await this.prisma.event.deleteMany({ where: { createdAt: { lt: cutoff } } });
     return result.count;
+  }
+
+  /**
+   * Task 5 (stage 5, spec §8.4): a lead still NEW 24h after arriving gets its
+   * realtor a Telegram reminder, then notifiedAt is stamped for the whole batch so
+   * the next run never repeats it — same "stamp once" shape as flagExpiringSoon.
+   */
+  private async remindStaleLeads(now: Date): Promise<number> {
+    const cutoff = new Date(now.getTime() - LEAD_REMINDER_MS);
+    const stale = await this.prisma.lead.findMany({
+      where: { status: 'NEW', notifiedAt: null, createdAt: { lte: cutoff } },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        listing: { select: { title: true, realtorId: true } },
+      },
+    });
+    if (stale.length === 0) return 0;
+
+    for (const lead of stale) {
+      await this.notifyStaleLead(lead);
+    }
+
+    const result = await this.prisma.lead.updateMany({
+      where: { id: { in: stale.map((lead) => lead.id) } },
+      data: { notifiedAt: now },
+    });
+    return result.count;
+  }
+
+  /** realtorId is null for a seed listing — nobody to notify, so this just no-ops. */
+  private async notifyStaleLead(lead: {
+    name: string;
+    phone: string;
+    listing: { title: string; realtorId: string | null };
+  }): Promise<void> {
+    if (!lead.listing.realtorId) return;
+    const realtor = await this.prisma.realtor.findUnique({
+      where: { id: lead.listing.realtorId },
+      select: { tgId: true },
+    });
+    if (!realtor) return;
+    await this.bot.sendMessage(
+      realtor.tgId,
+      `Eslatma: ${lead.name}, ${lead.phone} (${lead.listing.title}) hali bog'lanilmagan`,
+    );
   }
 }

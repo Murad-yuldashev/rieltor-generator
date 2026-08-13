@@ -65,8 +65,11 @@ body {
 }
 
 :root {
-  /* Height of the bottom layers, so page content never ends up hidden underneath. */
-  --cta-height: 4.5rem;
+  /* Height of the bottom layers, so page content never ends up hidden underneath.
+     StickyCTA grew a second, lighter-weight row for the "Raqamimni qoldiraman" lead
+     CTA (design spec §8.4); measured in a real browser at 360px width (111px
+     rendered with zero safe-area-inset), rounded up slightly for a safety margin. */
+  --cta-height: 7rem;
   --bottom-nav-height: 4.25rem;
 }
 
