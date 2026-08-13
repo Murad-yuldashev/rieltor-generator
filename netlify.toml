@@ -53,6 +53,13 @@
   to = "/.netlify/functions/api"
   status = 200
 
+# The realtor showcase (/r/:username) is SSR with OG-inject, like /obj/* — send it to
+# the function so the meta tags render and the page returns 200.
+[[redirects]]
+  from = "/r/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
 # --- SPA shell routes ---------------------------------------------------------------
 # SsrController answers these with the plain shell and a 200. Keep in sync with
 # SPA_ROUTES in apps/api/src/ssr/routes.ts — a path missing here falls through to the
@@ -85,6 +92,13 @@
 
 [[redirects]]
   from = "/cabinet/profile"
+  to = "/index.html"
+  status = 200
+
+# The rest of the cabinet (/new, /obj/:id/edit, /obj/:id/stats, /leads) — SPA-only,
+# no OG. One splat keeps it in sync with SPA_ROUTES without listing each.
+[[redirects]]
+  from = "/cabinet/*"
   to = "/index.html"
   status = 200
 
