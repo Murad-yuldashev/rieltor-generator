@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiCreatedResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { CurrentRealtor } from '../auth/current-realtor.decorator';
 import { RealtorGuard } from '../auth/realtor.guard';
@@ -36,5 +36,10 @@ export class ListingsWriteController {
     @Body() body: ListingStatusChangeDto,
   ) {
     return this.write.changeStatus(realtorId, id, body.to);
+  }
+
+  @Delete(':id')
+  remove(@CurrentRealtor() realtorId: string, @Param('id') id: string) {
+    return this.write.remove(realtorId, id);
   }
 }

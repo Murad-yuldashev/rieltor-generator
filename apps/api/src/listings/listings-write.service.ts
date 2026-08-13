@@ -61,6 +61,13 @@ export class ListingsWriteService {
     private readonly realtors: RealtorsService,
   ) {}
 
+  /** Permanently deletes the realtor's own listing (images, leads, etc. cascade). */
+  async remove(realtorId: string, id: string): Promise<{ id: string }> {
+    await this.assertOwner(realtorId, id);
+    await this.prisma.listing.delete({ where: { id } });
+    return { id };
+  }
+
   /**
    * A new listing starts as a DRAFT owned by the realtor. syncAgent runs first
    * because Listing.agentId is NOT NULL — the Agent mirror must exist before the row
