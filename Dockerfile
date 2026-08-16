@@ -39,6 +39,10 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=prod-deps /app/packages/shared ./packages/shared
 
 COPY --from=build /app/apps/api/dist ./apps/api/dist
+# The boot CMD seeds via `tsx prisma/seed.ts`, and prisma/images.ts imports
+# ../src/media/variants — so the .ts source must ship alongside dist, or the seed
+# dies with MODULE_NOT_FOUND before the server starts.
+COPY --from=build /app/apps/api/src ./apps/api/src
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/web/dist ./apps/web/dist
