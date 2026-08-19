@@ -24,6 +24,9 @@ services:
       SEED_AGENT_TEL: ${SEED_AGENT_TEL}
       SEED_AGENT_TG: ${SEED_AGENT_TG}
       PORT: 3000
+      # Demo rejim: kabinet login'siz ochiladi — har so'rov bitta umumiy "demo" rieltor
+      # sifatida kiradi. Faqat namoyish uchun; real auth kerak bo'lsa "false" qiling.
+      DEMO_MODE: ${DEMO_MODE:-true}
     ports: ['3000:3000']
 
 volumes:

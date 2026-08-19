@@ -6,6 +6,9 @@
 [build.environment]
   NODE_VERSION = "22"
   NODE_ENV = "production"
+  # Opens the cabinet as a login-free demo — every request is one shared demo realtor.
+  # Remove (or set to any value other than "true") to restore real Telegram auth.
+  DEMO_MODE = "true"
 
 [functions]
   # nft copies the traced files instead of bundling them into one module. NestJS resolves

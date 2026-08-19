@@ -23,6 +23,16 @@ export const envSchema = z.object({
   ADMIN_TOKEN: z.string().min(16).optional(),
   /** Enables POST /api/auth/dev — ignored when NODE_ENV is production. */
   DEV_LOGIN_SECRET: z.string().min(8).optional(),
+  /**
+   * Turns the cabinet into an open, login-free demo: every request behind RealtorGuard
+   * is authenticated as one shared demo realtor, and the login screen never shows. Off
+   * by default — set DEMO_MODE=true only on a throwaway demo deploy, since it removes
+   * the login wall entirely (unlike DEV_LOGIN_SECRET this is honoured in production too).
+   */
+  DEMO_MODE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   /** Guards POST /api/internal/cron/daily (stage 4, spec §7.5). 503 if unset. */
   CRON_SECRET: z.string().min(16).optional(),
   /**

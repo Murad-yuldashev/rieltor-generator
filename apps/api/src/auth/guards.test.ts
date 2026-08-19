@@ -12,6 +12,9 @@ import { signSession } from './session-token';
 
 const SECRET = 'guard-test-secret-16+';
 
+/** DEMO_MODE is off in every RealtorGuard case here, so the guard never touches Prisma. */
+const fakePrisma = {} as never;
+
 /** Only the two properties the guards read — not a full express Request. */
 interface FakeRequest {
   headers: Record<string, string>;
@@ -30,32 +33,34 @@ function contextFor(request: FakeRequest) {
 }
 
 describe('RealtorGuard', () => {
-  it('accepts a valid session cookie and exposes the realtor id', () => {
+  it('accepts a valid session cookie and exposes the realtor id', async () => {
     const token = signSession('rlt_1', SECRET, Math.floor(Date.now() / 1000));
     const request: FakeRequest = { headers: { cookie: `${SESSION_COOKIE}=${token}` } };
-    const guard = new RealtorGuard(fakeConfig({ JWT_SECRET: SECRET }));
+    const guard = new RealtorGuard(fakeConfig({ JWT_SECRET: SECRET }), fakePrisma);
 
-    expect(guard.canActivate(contextFor(request))).toBe(true);
+    expect(await guard.canActivate(contextFor(request))).toBe(true);
     expect(request.realtorId).toBe('rlt_1');
   });
 
-  it('rejects a request without a cookie', () => {
-    const guard = new RealtorGuard(fakeConfig({ JWT_SECRET: SECRET }));
-    expect(() => guard.canActivate(contextFor({ headers: {} }))).toThrow(UnauthorizedException);
+  it('rejects a request without a cookie', async () => {
+    const guard = new RealtorGuard(fakeConfig({ JWT_SECRET: SECRET }), fakePrisma);
+    await expect(guard.canActivate(contextFor({ headers: {} }))).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
-  it('rejects a cookie signed with another secret', () => {
+  it('rejects a cookie signed with another secret', async () => {
     const token = signSession('rlt_1', 'boshqa-sir-16-belgidan', Math.floor(Date.now() / 1000));
-    const guard = new RealtorGuard(fakeConfig({ JWT_SECRET: SECRET }));
+    const guard = new RealtorGuard(fakeConfig({ JWT_SECRET: SECRET }), fakePrisma);
 
-    expect(() =>
+    await expect(
       guard.canActivate(contextFor({ headers: { cookie: `${SESSION_COOKIE}=${token}` } })),
-    ).toThrow(UnauthorizedException);
+    ).rejects.toThrow(UnauthorizedException);
   });
 
-  it('answers 503 when the cabinet is not configured', () => {
-    const guard = new RealtorGuard(fakeConfig({}));
-    expect(() => guard.canActivate(contextFor({ headers: {} }))).toThrow(
+  it('answers 503 when the cabinet is not configured', async () => {
+    const guard = new RealtorGuard(fakeConfig({}), fakePrisma);
+    await expect(guard.canActivate(contextFor({ headers: {} }))).rejects.toThrow(
       ServiceUnavailableException,
     );
   });
