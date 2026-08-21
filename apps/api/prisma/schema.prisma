@@ -58,9 +58,13 @@ model Listing {
   agentId     String
   agent       Agent       @relation(fields: [agentId], references: [id])
   images      Image[]
+  /// Null for the seeded demo rows, which predate accounts.
+  ownerId     String?
+  owner       User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
   @@index([type])
   @@index([deal])
+  @@index([ownerId])
 }
 
 model Image {
@@ -76,4 +80,50 @@ model Image {
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([listingId, position])
+}
+
+enum UserRole {
+  USER
+  REALTOR
+  MODERATOR
+  ADMIN
+}
+
+model User {
+  id         String    @id @default(cuid())
+  /// E.164 without the plus: "998901234567". Unique across the platform.
+  phone      String    @unique
+  name       String?
+  /// Telegram numeric id, present only when the account was created via Telegram Login.
+  telegramId String?   @unique
+  photoUrl   String?
+  role       UserRole  @default(USER)
+  createdAt  DateTime  @default(now())
+  sessions   Session[]
+  listings   Listing[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the refresh token. The raw token never touches the database.
+  refreshHash  String   @unique
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([userId])
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  /// SHA-256 of the six digits, same reasoning as Session.refreshHash.
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone])
 }
