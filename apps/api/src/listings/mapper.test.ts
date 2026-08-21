@@ -20,6 +20,9 @@ const row = {
   listedAt: new Date('2026-07-22T00:00:00.000Z'),
   agentId: 'agent-1',
   ownerId: null,
+  status: 'PUBLISHED' as const,
+  rejectionReason: null,
+  publishedAt: null,
   agent: {
     id: 'agent-1',
     name: 'Rieltor',

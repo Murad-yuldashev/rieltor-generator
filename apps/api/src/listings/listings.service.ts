@@ -11,6 +11,7 @@ export class ListingsService {
 
   async findAll(): Promise<ListingSummary[]> {
     const rows = await this.prisma.listing.findMany({
+      where: { status: 'PUBLISHED' },
       include: FULL_INCLUDE,
       orderBy: { id: 'asc' },
     });
@@ -18,7 +19,10 @@ export class ListingsService {
   }
 
   async findOne(id: string): Promise<ListingDetail> {
-    const row = await this.prisma.listing.findUnique({ where: { id }, include: FULL_INCLUDE });
+    const row = await this.prisma.listing.findFirst({
+      where: { id, status: 'PUBLISHED' },
+      include: FULL_INCLUDE,
+    });
     if (!row) {
       throw new NotFoundException(`Obyekt topilmadi: ${id}`);
     }
