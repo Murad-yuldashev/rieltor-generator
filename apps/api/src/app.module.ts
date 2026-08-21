@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { AuthModule } from './auth/auth.module';
 import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
@@ -17,6 +18,7 @@ import { ViewsModule } from './views/views.module';
       validate: (raw) => envSchema.parse(raw),
     }),
     PrismaModule,
+    AuthModule,
     HealthModule,
     ListingsModule,
     ViewsModule,

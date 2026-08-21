@@ -12,6 +12,8 @@ export const envSchema = z.object({
   PUBLIC_BASE_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
   /** Output of the Vite build. Tests and Docker may point this elsewhere. */
   WEB_DIST: z.string().optional(),
+  /** Signs access tokens (see auth/token.service.ts). */
+  JWT_SECRET: z.string().min(32),
 });
 
 export type Env = z.infer<typeof envSchema>;

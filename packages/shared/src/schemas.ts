@@ -64,6 +64,32 @@ export const ListingDetailSchema = ListingSummarySchema.omit({
 
 export const ViewsSchema = z.object({ views: z.number().int() });
 
+/** Uzbek mobile numbers, E.164 without the plus. */
+export const PhoneSchema = z
+  .string()
+  .regex(/^998\d{9}$/, 'Telefon raqami 998 bilan boshlanishi va 12 raqamdan iborat bo‘lishi kerak');
+
+export const OtpRequestSchema = z.object({ phone: PhoneSchema });
+
+export const OtpVerifySchema = z.object({
+  phone: PhoneSchema,
+  code: z.string().regex(/^\d{6}$/),
+});
+
+export const AuthUserSchema = z.object({
+  id: z.string(),
+  phone: z.string(),
+  name: z.string().nullable(),
+  photoUrl: z.string().nullable(),
+  role: z.enum(['USER', 'REALTOR', 'MODERATOR', 'ADMIN']),
+});
+
+export const AuthTokensSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+  user: AuthUserSchema,
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -71,3 +97,5 @@ export type Deal = z.infer<typeof DealSchema>;
 export type ListingSummary = z.infer<typeof ListingSummarySchema>;
 export type ListingDetail = z.infer<typeof ListingDetailSchema>;
 export type Views = z.infer<typeof ViewsSchema>;
+export type AuthUser = z.infer<typeof AuthUserSchema>;
+export type AuthTokens = z.infer<typeof AuthTokensSchema>;

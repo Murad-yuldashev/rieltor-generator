@@ -4,6 +4,7 @@ import { envSchema } from './env';
 const fullEnv = {
   DATABASE_URL: 'postgresql://rieltor:rieltor@localhost:5432/rieltor',
   PUBLIC_BASE_URL: 'http://localhost:3000',
+  JWT_SECRET: 'test-only-secret-at-least-32-characters-long',
 };
 
 describe('envSchema', () => {
