@@ -27,3 +27,11 @@ netlify/publish/
 !.yarn/releases
 !.yarn/versions
 .pnp.*
+
+# Research and verification artifacts (not part of the codebase)
+.playwright-mcp/
+uysot-screenshots/
+competitor-screenshots/
+cian-screenshots/
+verify-screenshots/
+.superpowers/

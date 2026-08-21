@@ -27,12 +27,12 @@ export function FavoritesPage() {
       />
 
       {!isEmpty && (
-        <p className="mx-4 mt-3 rounded-card bg-accent-soft px-4 py-3.5 text-[13.5px] leading-snug font-bold text-accent">
+        <p className="mx-4 mt-3 rounded-card bg-accent-soft px-4 py-3.5 text-[13.5px] leading-snug font-bold text-accent desk:mx-0 desk:mt-5">
           🔔 Saqlangan obyektlar narxi o'zgarsa yoki e'lon yopilsa — sizga darhol xabar beramiz.
         </p>
       )}
 
-      <div className="mt-3.5 flex flex-col gap-2.5 px-4">
+      <div className="mt-3.5 flex flex-col gap-2.5 px-4 desk:grid desk:grid-cols-2 desk:gap-3.5 desk:px-0">
         {isPending &&
           ids.map((id) => (
             <div key={id} className="h-[110px] animate-pulse rounded-card bg-card" />

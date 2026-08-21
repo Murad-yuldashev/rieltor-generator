@@ -11,7 +11,7 @@ export function OfferPage() {
           link the user would have no cue about where they are. */}
       <Link
         to="/contact"
-        className="mt-3.5 ml-4 inline-flex items-center gap-1 text-[13.5px] font-bold text-accent"
+        className="mt-3.5 ml-4 inline-flex items-center gap-1 text-[13.5px] font-bold text-accent desk:mt-0 desk:ml-0"
       >
         <Icon name="chevronLeft" className="h-4 w-4" strokeWidth={2.4} />
         Aloqa
@@ -19,7 +19,7 @@ export function OfferPage() {
 
       <PageHeading title="Ommaviy oferta" subtitle={`Oxirgi tahrir: ${OFFER_UPDATED_AT}`} />
 
-      <div className="flex flex-col gap-3.5 p-4">
+      <div className="flex flex-col gap-3.5 p-4 desk:max-w-3xl desk:px-0">
         <SectionCard>
           <p className="text-[14.5px] leading-relaxed text-ink-2">{OFFER_INTRO}</p>
         </SectionCard>

@@ -72,7 +72,7 @@ export function SearchPage() {
       <PageHeading title="Qidiruv" subtitle="Filtrlar orqali o'zingizga mosini toping" />
 
       <form
-        className="px-4 pt-3.5"
+        className="px-4 pt-3.5 desk:max-w-2xl desk:px-0 desk:pt-5"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -91,7 +91,7 @@ export function SearchPage() {
         </label>
       </form>
 
-      <div className="flex flex-col gap-3.5 p-4">
+      <div className="flex flex-col gap-3.5 p-4 desk:grid desk:grid-cols-[22rem_1fr] desk:items-start desk:gap-7 desk:px-0 desk:pt-5">
         {recent.length > 0 && (
           <SectionCard
             title="So'nggi qidiruvlar"
@@ -173,7 +173,10 @@ export function SearchPage() {
         </SectionCard>
 
         {submitted && (
-          <div ref={resultsRef} className="scroll-mt-16">
+          <div
+            ref={resultsRef}
+            className="scroll-mt-16 desk:col-start-2 desk:row-start-1 desk:row-end-[99]"
+          >
             <div className="flex items-center justify-between pt-1 pb-3">
               <p className="text-[15px] font-extrabold">Natijalar · {matches.length} ta</p>
               {matches.length > 0 && (
@@ -187,7 +190,7 @@ export function SearchPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 desk:grid desk:grid-cols-3 desk:gap-5">
               {shown.map((listing) => (
                 <ListingCard
                   key={listing.id}

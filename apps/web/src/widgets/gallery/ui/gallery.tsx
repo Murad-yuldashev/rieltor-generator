@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
-import type { Image, ListingType } from '@rieltor/shared';
+import { IMAGE_SIZES_GALLERY, type Image, type ListingType } from '@rieltor/shared';
 import { TypeBadge } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
 import { Icon } from '@/shared/ui/icon';
@@ -96,6 +96,7 @@ export function Gallery({ images, alt, type, id }: Props) {
               // repeat one sentence five times. These photos are rooms, not decoration.
               alt={`${alt} — ${i + 1}/${images.length}`}
               isFirst={i === 0}
+              sizes={IMAGE_SIZES_GALLERY}
               className="aspect-[4/3] w-full"
             />
           </div>

@@ -34,6 +34,12 @@
      Naming this `--spacing-content` would stop `max-w-content` being generated at
      all, and the 480px desktop constraint would silently do nothing. */
   --container-content: 30rem; /* 480px */
+
+  /* The single desktop breakpoint. Below it the phone column is what everyone
+     sees — a 1280px laptop included — so every desktop rule is written as
+     `desk:` and nothing can leak downwards. */
+  --breakpoint-desk: 90rem; /* 1440px */
+  --container-desk: 90rem; /* the widest the desktop content ever gets */
 }
 
 html {
@@ -46,6 +52,14 @@ body {
   background-color: #e9e9ee;
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+}
+
+/* From 1440px the layout stops pretending to be a phone: the content fills the
+   window, so the darker frame around the column has nothing left to frame. */
+@media (width >= 90rem) {
+  body {
+    background-color: var(--color-surface);
+  }
 }
 
 /* Stop Android/iOS painting a blue-grey rectangle on tap. */
@@ -92,6 +106,19 @@ body {
     background-color: var(--color-ink-3);
     border-radius: 3px;
   }
+
+  /* On a real desktop a 3px scrollbar is just a hard-to-grab scrollbar — the
+     reason for shrinking it (the 480px column) no longer applies. */
+  @media (width >= 90rem) {
+    * {
+      scrollbar-width: auto;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+  }
 }
 
 /* Hide the scrollbar on the chip row and the gallery strip. */
@@ -99,5 +126,35 @@ body {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Room for the fixed bottom tab bar. It is a utility rather than an inline style
+   because the bar disappears at 1440px and an inline `paddingBottom` cannot carry
+   a media query. */
+@utility pb-bottom-nav {
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+
+  @media (width >= 90rem) {
+    padding-bottom: 0;
+  }
+}
+
+/* Same idea for the listing page's fixed call/Telegram bar. */
+@utility pb-cta {
+  padding-bottom: calc(var(--cta-height) + env(safe-area-inset-bottom));
+
+  @media (width >= 90rem) {
+    padding-bottom: 0;
+  }
+}
+
+/* The call/Telegram bar's own bottom padding: clears the iOS home indicator
+   while it is fixed, plain card padding once it becomes a sidebar block. */
+@utility pb-cta-safe {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+
+  @media (width >= 90rem) {
+    padding-bottom: 1rem;
   }
 }

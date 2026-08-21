@@ -14,6 +14,7 @@ import { ApiError } from '@/shared/api/client';
 import { SectionCard } from '@/shared/ui/section-card';
 import { Gallery } from '@/widgets/gallery';
 import { NotFoundView } from '@/widgets/not-found';
+import { SiteHeader } from '@/widgets/site-header';
 import { StickyCTA } from '@/widgets/sticky-cta';
 
 function PageSkeleton() {
@@ -42,52 +43,74 @@ export function ListingPage() {
   }
 
   return (
-    <div
-      className="mx-auto min-h-dvh max-w-content bg-surface"
-      // Keeps the sticky CTA from covering the end of the page.
-      style={{ paddingBottom: 'calc(var(--cta-height) + env(safe-area-inset-bottom))' }}
-    >
-      <Gallery images={data.images} alt={data.title} type={data.type} id={data.id} />
+    <div className="mx-auto min-h-dvh max-w-content bg-surface pb-cta desk:max-w-none">
+      {/* The phone version of this page deliberately has no header — the gallery
+          runs to the top edge. A desktop window with no header at all just reads
+          as broken, so the header joins in at 1440px only. */}
+      <div className="hidden desk:block">
+        <SiteHeader />
+      </div>
 
-      <main className="flex flex-col gap-3.5 p-4">
-        <SectionCard>
-          <PriceBlock
-            priceSom={data.priceSom}
-            priceUsd={data.priceUsd}
-            areaM2={data.areaM2}
-            deal={data.deal}
-          />
-          <h1 className="mt-2.5 text-[17px] leading-[1.35] font-bold">{data.title}</h1>
-          <ListingMeta
-            listedAt={data.listedAt}
-            id={data.id}
-            viewSlot={<ViewCounter id={data.id} />}
-          />
-        </SectionCard>
+      <div className="desk:mx-auto desk:w-full desk:max-w-desk desk:px-8 desk:py-7">
+        {/* Two wrappers that are `display: contents` on a phone, so their children
+            are direct items of this flex column and keep the original mobile
+            order via `order-*`. At 1440px the wrappers turn into real columns. */}
+        <main className="flex flex-col gap-3.5 pb-4 desk:grid desk:grid-cols-[1fr_23rem] desk:items-start desk:gap-7 desk:pb-0">
+          <div className="contents desk:flex desk:flex-col desk:gap-3.5">
+            <div className="order-1 desk:overflow-hidden desk:rounded-card">
+              <Gallery images={data.images} alt={data.title} type={data.type} id={data.id} />
+            </div>
 
-        <SectionCard>
-          <ParamsRow
-            rooms={data.rooms}
-            areaM2={data.areaM2}
-            floor={data.floor}
-            district={data.district}
-          />
-        </SectionCard>
+            <SectionCard title="Tavsif" className="order-4 mx-4 desk:mx-0">
+              <Description text={data.description} />
+            </SectionCard>
 
-        <SectionCard title="Tavsif">
-          <Description text={data.description} />
-        </SectionCard>
+            <SectionCard title="Joylashuv" className="order-5 mx-4 desk:mx-0">
+              <Location landmark={data.landmark} address={data.address} />
+            </SectionCard>
+          </div>
 
-        <SectionCard title="Joylashuv">
-          <Location landmark={data.landmark} address={data.address} />
-        </SectionCard>
+          <aside className="contents desk:sticky desk:top-24 desk:flex desk:flex-col desk:gap-3.5">
+            {/* `p-4` on the old wrapper put 16px between the gallery and this card;
+                the flex gap is 14px, so 2px come back here. */}
+            <SectionCard className="order-2 mx-4 mt-0.5 desk:mx-0 desk:mt-0">
+              <PriceBlock
+                priceSom={data.priceSom}
+                priceUsd={data.priceUsd}
+                areaM2={data.areaM2}
+                deal={data.deal}
+              />
+              <h1 className="mt-2.5 text-[17px] leading-[1.35] font-bold">{data.title}</h1>
+              <ListingMeta
+                listedAt={data.listedAt}
+                id={data.id}
+                viewSlot={<ViewCounter id={data.id} />}
+              />
+            </SectionCard>
 
-        <SectionCard>
-          <AgentCard agent={data.agent} />
-        </SectionCard>
-      </main>
+            <SectionCard className="order-3 mx-4 desk:mx-0">
+              <ParamsRow
+                rooms={data.rooms}
+                areaM2={data.areaM2}
+                floor={data.floor}
+                district={data.district}
+              />
+            </SectionCard>
 
-      <StickyCTA phone={data.agent.phone} telegram={data.agent.telegram} />
+            <SectionCard className="order-6 mx-4 desk:mx-0">
+              <AgentCard agent={data.agent} />
+            </SectionCard>
+
+            {/* Fixed on a phone, so `order` is inert there; in the desktop sidebar
+                it has to sit after the agent card rather than before the price. */}
+            <StickyCTA
+              phone={data.agent.phone}
+              telegram={data.agent.telegram}
+              className="order-7"
+            />
+          </aside>
+        </main>
+      </div>
     </div>
   );
 }

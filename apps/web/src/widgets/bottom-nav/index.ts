@@ -1,1 +1,1 @@
-export { BottomNav, NAV_TABS } from './ui/bottom-nav';
+export { BottomNav } from './ui/bottom-nav';

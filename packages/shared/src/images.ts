@@ -9,8 +9,20 @@ export const IMAGE_WIDTHS = [360, 720, 1200] as const;
 /** Width of the largest variant — the JPG fallback and the CLS dimensions come from it. */
 export const IMAGE_MAX_WIDTH: number = Math.max(...IMAGE_WIDTHS);
 
-/** Content is capped at 480px on desktop (spec §10). */
-export const IMAGE_SIZES = '(max-width: 480px) 100vw, 480px';
+/**
+ * Slot width of a card image.
+ * Below 1440px the layout is the 480px phone column. From 1440px the home and
+ * search grids put three cards inside a ~1076px track, so each one lands near
+ * 345px and the 360w variant is the right download — not the 480px one the old
+ * single-branch string would have asked for.
+ */
+export const IMAGE_SIZES = '(max-width: 480px) 100vw, (max-width: 1439px) 480px, 360px';
+
+/**
+ * Slot width of the listing gallery, which is far wider than a card: it fills
+ * the left column of the desktop layout (~980px), so it needs the 1200w variant.
+ */
+export const IMAGE_SIZES_GALLERY = '(max-width: 480px) 100vw, (max-width: 1439px) 480px, 1000px';
 
 /** Telegram OG image size — the pipeline cover-crops to exactly this (spec §8). */
 export const OG_IMAGE_WIDTH = 1200;

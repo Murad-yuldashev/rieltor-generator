@@ -57,7 +57,10 @@ describe('Gallery', () => {
       'srcset',
       expect.stringContaining('/images/bx-001/01-720.webp 720w'),
     );
-    expect(img).toHaveAttribute('sizes', '(max-width: 480px) 100vw, 480px');
+    expect(img).toHaveAttribute(
+      'sizes',
+      '(max-width: 480px) 100vw, (max-width: 1439px) 480px, 1000px',
+    );
   });
 
   it('sets width/height to prevent CLS', () => {

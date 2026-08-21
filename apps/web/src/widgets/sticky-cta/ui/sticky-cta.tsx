@@ -1,18 +1,25 @@
+import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
 
 interface Props {
   phone: string;
   telegram: string;
+  /** Lets the listing page order this block inside its desktop sidebar. */
+  className?: string;
 }
 
-export function StickyCTA({ phone, telegram }: Props) {
+export function StickyCTA({ phone, telegram, className }: Props) {
   const username = telegram.replace(/^@/, '');
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-content gap-2.5 border-t border-line bg-white/96 px-4 pt-3 backdrop-blur-xl"
-      // Keeps the iOS home indicator from covering the buttons (spec §9.7).
-      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+      // Pinned to the bottom of the phone screen; on desktop it stops being a bar
+      // and becomes the last block of the sticky sidebar, so every positioning
+      // class is undone at 1440px.
+      className={cn(
+        'fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-content gap-2.5 border-t border-line bg-white/96 px-4 pt-3 pb-cta-safe backdrop-blur-xl desk:static desk:inset-x-auto desk:mx-0 desk:max-w-none desk:rounded-card desk:border desk:border-line/60 desk:bg-card desk:p-4 desk:shadow-card desk:backdrop-blur-none',
+        className,
+      )}
     >
       <a
         href={`tel:${phone}`}

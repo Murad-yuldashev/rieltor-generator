@@ -6,15 +6,23 @@ interface Props {
   alt: string;
   /** The first image is the LCP candidate: eager + fetchpriority=high (spec §7). */
   isFirst?: boolean;
+  /** Defaults to the card slot; the gallery passes its own, much wider, string. */
+  sizes?: string;
   className?: string;
 }
 
-export function ResponsiveImage({ image, alt, isFirst = false, className }: Props) {
+export function ResponsiveImage({
+  image,
+  alt,
+  isFirst = false,
+  sizes = IMAGE_SIZES,
+  className,
+}: Props) {
   return (
     <img
       src={imageFallbackSrc(image.base)}
       srcSet={imageSrcSet(image.base)}
-      sizes={IMAGE_SIZES}
+      sizes={sizes}
       width={image.width}
       height={image.height}
       alt={alt}

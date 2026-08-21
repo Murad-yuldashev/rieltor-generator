@@ -1,8 +1,6 @@
-import { Link } from 'react-router';
 import type { Deal } from '@rieltor/shared';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
 import { cn } from '@/shared/lib/cn';
-import { Icon } from '@/shared/ui/icon';
 import type { TypeFilter } from '../model/criteria';
 
 interface Props {
@@ -10,8 +8,6 @@ interface Props {
   onDealChange: (deal: Deal) => void;
   type: TypeFilter;
   onTypeChange: (type: TypeFilter) => void;
-  search: string;
-  onSearchChange: (search: string) => void;
 }
 
 const DEALS: { value: Deal; label: string }[] = [
@@ -24,53 +20,19 @@ const CHIPS: { value: TypeFilter; label: string }[] = [
   ...LISTING_TYPES.map((t) => ({ value: t as TypeFilter, label: LISTING_TYPE_META[t].chipLabel })),
 ];
 
-export function ListingFilters({
-  deal,
-  onDealChange,
-  type,
-  onTypeChange,
-  search,
-  onSearchChange,
-}: Props) {
+/**
+ * Deal segment and the property-type chips.
+ *
+ * On a phone the chips are one scrollable row. In the desktop sidebar there is
+ * no room to scroll sideways, so they wrap instead.
+ */
+export function ListingFacets({ deal, onDealChange, type, onTypeChange }: Props) {
   return (
     <>
-      <section className="px-4 pt-[18px]">
-        <h1 className="text-[22px] leading-[1.25] font-extrabold tracking-tight">
-          O'zingizga mos uyni toping 🏡
-        </h1>
-        <p className="mt-1 text-[13.5px] text-ink-2">
-          Toshkent bo'ylab tekshirilgan e'lonlar — har kuni yangilanadi
-        </p>
-
-        <div className="mt-3.5 flex gap-2.5">
-          <label className="flex flex-1 items-center gap-2.5 rounded-[14px] border border-line bg-card px-3.5 py-3 shadow-card">
-            <Icon name="search" className="h-[17px] w-[17px] text-ink-3" strokeWidth={2.2} />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Tuman, majmua yoki ko'cha qidiring..."
-              aria-label="Obyektlar bo'yicha qidiruv"
-              className="w-full bg-transparent text-[14.5px] outline-none placeholder:text-ink-3"
-            />
-          </label>
-
-          {/* The full filter panel (price range, room count, area) lives on the
-              search page, so this button just takes the user there. */}
-          <Link
-            to="/search"
-            aria-label="Kengaytirilgan filtrlar"
-            className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark text-white shadow-lg shadow-accent/35"
-          >
-            <Icon name="filter" className="h-[19px] w-[19px]" strokeWidth={2.2} />
-          </Link>
-        </div>
-      </section>
-
       <div
         role="tablist"
         aria-label="Bitim turi"
-        className="mx-4 mt-3.5 flex rounded-xl bg-[#e8e8ee] p-1"
+        className="mx-4 mt-3.5 flex rounded-xl bg-[#e8e8ee] p-1 desk:mx-0 desk:mt-0"
       >
         {DEALS.map(({ value, label }) => (
           <button
@@ -89,10 +51,14 @@ export function ListingFilters({
         ))}
       </div>
 
+      <p className="hidden text-[13px] font-bold text-ink-2 desk:mt-6 desk:mb-2.5 desk:block">
+        Obyekt turi
+      </p>
+
       <div
         role="tablist"
         aria-label="Obyekt turi"
-        className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3.5 pb-1"
+        className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3.5 pb-1 desk:flex-wrap desk:overflow-visible desk:px-0 desk:pt-0 desk:pb-0"
       >
         {CHIPS.map(({ value, label }) => (
           <button

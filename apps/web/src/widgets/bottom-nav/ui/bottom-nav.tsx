@@ -1,19 +1,14 @@
 import { NavLink } from 'react-router';
-import { Icon, type IconName } from '@/shared/ui/icon';
-
-/** Single source: both the layout and the router are built from this list. */
-export const NAV_TABS: { to: string; icon: IconName; label: string }[] = [
-  { to: '/', icon: 'home', label: 'Bosh sahifa' },
-  { to: '/search', icon: 'search', label: 'Qidiruv' },
-  { to: '/favorites', icon: 'heart', label: 'Sevimlilar' },
-  { to: '/contact', icon: 'phone', label: 'Aloqa' },
-];
+import { NAV_TABS } from '@/shared/config/nav';
+import { Icon } from '@/shared/ui/icon';
 
 export function BottomNav() {
   return (
     <nav
       aria-label="Asosiy menyu"
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-content border-t border-line bg-white/95 px-1.5 pt-2 backdrop-blur-xl"
+      // Desktop puts these same four links in the header, so the bar goes away
+      // entirely at 1440px rather than floating over a wide layout.
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-content border-t border-line bg-white/95 px-1.5 pt-2 backdrop-blur-xl desk:hidden"
       style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
     >
       {NAV_TABS.map(({ to, icon, label }) => (

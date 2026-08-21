@@ -14,6 +14,6 @@ describe('image helpers', () => {
 
   it('the widths and the sizes value are pinned', () => {
     expect(IMAGE_WIDTHS).toEqual([360, 720, 1200]);
-    expect(IMAGE_SIZES).toBe('(max-width: 480px) 100vw, 480px');
+    expect(IMAGE_SIZES).toBe('(max-width: 480px) 100vw, (max-width: 1439px) 480px, 360px');
   });
 });
