@@ -101,6 +101,40 @@ export const TelegramAuthSchema = z.object({
   hash: z.string(),
 });
 
+/**
+ * Everything the six-step wizard collects. Every field is optional because a
+ * draft is saved after each step; the submit endpoint is what enforces
+ * completeness.
+ */
+export const ListingDraftSchema = z.object({
+  deal: DealSchema.optional(),
+  type: ListingTypeSchema.optional(),
+  district: z.string().min(2).optional(),
+  address: z.string().min(4).optional(),
+  landmark: z.string().min(2).optional(),
+  rooms: z.number().int().min(0).max(20).nullable().optional(),
+  areaM2: z.number().positive().max(10_000).optional(),
+  floor: z.string().nullable().optional(),
+  title: z.string().min(10).max(120).optional(),
+  description: z.string().min(20).max(4000).optional(),
+  priceSom: z.string().regex(/^\d+$/).optional(),
+  priceUsd: z.number().int().positive().optional(),
+});
+
+/** Fields that must be present before a draft may go to moderation. */
+export const LISTING_REQUIRED_FIELDS = [
+  'deal',
+  'type',
+  'district',
+  'address',
+  'landmark',
+  'areaM2',
+  'title',
+  'description',
+  'priceSom',
+  'priceUsd',
+] as const;
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -111,3 +145,4 @@ export type Views = z.infer<typeof ViewsSchema>;
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 export type TelegramAuth = z.infer<typeof TelegramAuthSchema>;
+export type ListingDraft = z.infer<typeof ListingDraftSchema>;
