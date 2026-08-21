@@ -12,6 +12,12 @@ function imageDto(r: Pick<Image, keyof ImageDto>): ImageDto {
   return { base: r.base, ogUrl: r.ogUrl, width: r.width, height: r.height, position: r.position };
 }
 
+/** "+998 90 123 45 67" → "+998 90 ••• •• 67": enough to look real, not enough to dial. */
+function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  return `+${digits.slice(0, 5)} ${digits.slice(5, 7)} ••• •• ${digits.slice(-2)}`;
+}
+
 export function toListingDetail(row: ListingRow): ListingDetail {
   return {
     id: row.id,
@@ -37,6 +43,8 @@ export function toListingDetail(row: ListingRow): ListingDetail {
       agency: row.agent.agency,
       photoUrl: row.agent.photoUrl,
       phone: row.agent.phone,
+      // Shown on the public page; the real number is revealed via GET /objects/:id/contact.
+      phoneMasked: maskPhone(row.agent.phone),
       telegram: row.agent.telegram,
     },
   };

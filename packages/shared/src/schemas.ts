@@ -6,6 +6,8 @@ export const AgentSchema = z.object({
   agency: z.string(),
   photoUrl: z.string(),
   phone: z.string(),
+  /** Displayed on the public listing page; the real number is behind GET /api/objects/:id/contact. */
+  phoneMasked: z.string(),
   telegram: z.string(),
 });
 

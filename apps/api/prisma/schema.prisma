@@ -140,3 +140,15 @@ model OtpCode {
 
   @@index([phone])
 }
+
+/// One row per phone reveal — the reveal event itself is the lead, not a form submission.
+model ContactReveal {
+  id        String   @id @default(cuid())
+  listingId String
+  /// Null for anonymous visitors — most reveals will be anonymous.
+  userId    String?
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([listingId, createdAt])
+}

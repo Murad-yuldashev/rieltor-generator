@@ -35,6 +35,20 @@ export class ListingsService {
     return toListingDetail(row);
   }
 
+  /** Called when the visitor taps the masked number — this event *is* the lead. */
+  async revealContact(listingId: string, ip: string) {
+    const listing = await this.prisma.listing.findFirst({
+      where: { id: listingId, status: 'PUBLISHED' },
+      select: { agent: { select: { phone: true, telegram: true } } },
+    });
+
+    if (!listing) throw new NotFoundException();
+
+    await this.prisma.contactReveal.create({ data: { listingId, ip } });
+
+    return listing.agent;
+  }
+
   async createDraft(ownerId: string) {
     const listing = await this.prisma.listing.create({
       data: {

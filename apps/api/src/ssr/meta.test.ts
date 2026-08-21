@@ -32,6 +32,7 @@ const listing = {
     agency: 'Agentlik',
     photoUrl: '/images/agents/agent-1.jpg',
     phone: '+998901234567',
+    phoneMasked: '+99890 ••• •• 67',
     telegram: 'username',
   },
 };
