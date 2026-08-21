@@ -8,6 +8,7 @@ const agent = {
   agency: 'Buxoro Uy',
   photoUrl: '/images/agents/agent-1.jpg',
   phone: '+998901234567',
+  phoneMasked: '+99890 12 ••• •• 67',
   telegram: 'murod',
 };
 
