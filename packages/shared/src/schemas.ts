@@ -90,6 +90,17 @@ export const AuthTokensSchema = z.object({
   user: AuthUserSchema,
 });
 
+/** The payload the Telegram Login widget hands back, verbatim. */
+export const TelegramAuthSchema = z.object({
+  id: z.number().int(),
+  first_name: z.string(),
+  last_name: z.string().optional(),
+  username: z.string().optional(),
+  photo_url: z.string().optional(),
+  auth_date: z.number().int(),
+  hash: z.string(),
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -99,3 +110,4 @@ export type ListingDetail = z.infer<typeof ListingDetailSchema>;
 export type Views = z.infer<typeof ViewsSchema>;
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
+export type TelegramAuth = z.infer<typeof TelegramAuthSchema>;

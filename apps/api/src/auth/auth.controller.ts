@@ -1,5 +1,5 @@
 import { Body, Controller, Headers, Post } from '@nestjs/common';
-import { OtpRequestSchema, OtpVerifySchema } from '@rieltor/shared';
+import { OtpRequestSchema, OtpVerifySchema, TelegramAuthSchema } from '@rieltor/shared';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -16,5 +16,11 @@ export class AuthController {
   verifyOtp(@Body() body: unknown, @Headers('user-agent') userAgent?: string) {
     const { phone, code } = OtpVerifySchema.parse(body);
     return this.auth.verifyOtp(phone, code, userAgent);
+  }
+
+  @Post('telegram')
+  loginWithTelegram(@Body() body: unknown, @Headers('user-agent') userAgent?: string) {
+    const payload = TelegramAuthSchema.parse(body);
+    return this.auth.loginWithTelegram(payload, userAgent);
   }
 }

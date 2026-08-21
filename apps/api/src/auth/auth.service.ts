@@ -1,4 +1,4 @@
-import { createHash, randomInt } from 'node:crypto';
+import { createHash, createHmac, randomInt } from 'node:crypto';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenService } from './token.service';
@@ -68,6 +68,67 @@ export class AuthService {
       where: { phone },
       update: {},
       create: { phone },
+    });
+
+    const tokens = await this.tokens.issue(user.id, userAgent);
+
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        phone: user.phone,
+        name: user.name,
+        photoUrl: user.photoUrl,
+        role: user.role,
+      },
+    };
+  }
+
+  /**
+   * Telegram signs the payload with HMAC-SHA256 where the key is SHA-256 of the
+   * bot token. Without this check anyone could POST an arbitrary telegram id and
+   * take over an account.
+   */
+  async loginWithTelegram(payload: Record<string, string | number>, userAgent?: string) {
+    const { hash: providedHash, ...fields } = payload;
+
+    const checkString = Object.keys(fields)
+      .sort()
+      .map((key) => `${key}=${fields[key]}`)
+      .join('\n');
+
+    const secret = createHash('sha256')
+      .update(process.env.TELEGRAM_BOT_TOKEN ?? '')
+      .digest();
+    const expected = createHmac('sha256', secret).update(checkString).digest('hex');
+
+    if (expected !== providedHash) {
+      throw new BadRequestException('Telegram imzosi noto‘g‘ri');
+    }
+
+    // Telegram recommends rejecting payloads older than a day.
+    const ageSec = Date.now() / 1000 - Number(fields.auth_date);
+    if (ageSec > 86_400) {
+      throw new BadRequestException('Telegram sessiyasi eskirgan');
+    }
+
+    const telegramId = String(fields.id);
+
+    const user = await this.prisma.user.upsert({
+      where: { telegramId },
+      update: {
+        name: String(fields.first_name),
+        photoUrl: fields.photo_url ? String(fields.photo_url) : null,
+      },
+      create: {
+        telegramId,
+        // Telegram never gives us a phone through the login widget. The account
+        // is usable immediately; the phone is collected when the user first
+        // publishes a listing.
+        phone: `tg:${telegramId}`,
+        name: String(fields.first_name),
+        photoUrl: fields.photo_url ? String(fields.photo_url) : null,
+      },
     });
 
     const tokens = await this.tokens.issue(user.id, userAgent);
