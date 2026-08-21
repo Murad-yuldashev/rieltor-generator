@@ -86,7 +86,7 @@ export class ListingsService {
 
     const missing = LISTING_REQUIRED_FIELDS.filter((field) => {
       const value = listing[field as keyof typeof listing];
-      return value === null || value === undefined || value === '' || value === 0;
+      return value === null || value === undefined || value === '' || value === 0 || value === 0n;
     });
 
     if (missing.length > 0) {
