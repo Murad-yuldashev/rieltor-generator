@@ -19,6 +19,14 @@ export class AuthService {
     private readonly tokens: TokenService,
   ) {}
 
+  async findById(id: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, phone: true, name: true, photoUrl: true, role: true },
+    });
+    return user;
+  }
+
   async requestOtp(phone: string) {
     // One live code per phone: issuing a new one invalidates the previous.
     await this.prisma.otpCode.deleteMany({ where: { phone } });
