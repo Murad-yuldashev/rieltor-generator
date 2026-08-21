@@ -3,10 +3,11 @@ import { AuthModule } from '../auth/auth.module';
 import { ListingDraftController } from './listing-draft.controller';
 import { ListingsController } from './listings.controller';
 import { ListingsService } from './listings.service';
+import { ModerationController } from './moderation.controller';
 
 @Module({
   imports: [AuthModule],
-  controllers: [ListingsController, ListingDraftController],
+  controllers: [ListingsController, ListingDraftController, ModerationController],
   providers: [ListingsService],
   exports: [ListingsService],
 })

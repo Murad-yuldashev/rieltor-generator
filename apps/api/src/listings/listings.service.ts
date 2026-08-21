@@ -119,4 +119,29 @@ export class ListingsService {
     // BigInt is not JSON-serialisable and may not fit in a number.
     return rows.map((row) => ({ ...row, priceSom: row.priceSom.toString() }));
   }
+
+  async listForModeration() {
+    const rows = await this.prisma.listing.findMany({
+      where: { status: 'MODERATION' },
+      orderBy: { listedAt: 'asc' },
+      include: { images: { orderBy: { position: 'asc' }, take: 1 } },
+    });
+
+    // BigInt is not JSON-serialisable and may not fit in a number.
+    return rows.map((row) => ({ ...row, priceSom: row.priceSom.toString() }));
+  }
+
+  async approve(id: string) {
+    await this.prisma.listing.update({
+      where: { id },
+      data: { status: 'PUBLISHED', publishedAt: new Date(), rejectionReason: null },
+    });
+  }
+
+  async reject(id: string, reason: string) {
+    await this.prisma.listing.update({
+      where: { id },
+      data: { status: 'REJECTED', rejectionReason: reason },
+    });
+  }
 }
