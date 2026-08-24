@@ -71,33 +71,45 @@ async function readErrorMessage(response: Response, method: Method, path: string
   return `${method} ${path} → ${response.status}`;
 }
 
+/**
+ * Attaches the bearer token and performs the fetch, retrying exactly once —
+ * with a freshly refreshed token — on a 401. Shared by every call shape this
+ * client makes (JSON via `request()`, multipart via `apiUpload()`) so the
+ * retry logic can't drift between the two.
+ */
+async function fetchWithAuth(path: string, init: RequestInit, isRetry = false): Promise<Response> {
+  const headers = new Headers(init.headers);
+  const stored = readTokens();
+  if (stored) headers.set('authorization', `Bearer ${stored.accessToken}`);
+
+  const response = await fetch(path, { ...init, headers });
+
+  // One refresh-and-retry per request: a 401 that survives a freshly-issued
+  // access token is a real auth failure, not a merely stale one.
+  if (response.status === 401 && !isRetry) {
+    if (await refreshTokens()) return fetchWithAuth(path, init, true);
+    clearTokens();
+  }
+
+  return response;
+}
+
 async function request<T>(
   path: string,
   method: Method,
   schema: ZodType<T> | undefined,
   body?: unknown,
-  isRetry = false,
 ): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' };
   if (body !== undefined) headers['content-type'] = 'application/json';
 
-  const stored = readTokens();
-  if (stored) headers.authorization = `Bearer ${stored.accessToken}`;
-
-  const response = await fetch(path, {
+  const response = await fetchWithAuth(path, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   if (!response.ok) {
-    // One refresh-and-retry per request: a 401 that survives a freshly-issued
-    // access token is a real auth failure, not a merely stale one.
-    if (response.status === 401 && !isRetry) {
-      if (await refreshTokens()) return request(path, method, schema, body, true);
-      clearTokens();
-    }
-
     throw new ApiError(response.status, await readErrorMessage(response, method, path));
   }
 
@@ -128,4 +140,30 @@ export function apiPatch<T = void>(path: string, schema?: ZodType<T>, body?: unk
 /** Image delete (`DELETE /api/my/listings/:id/images/:imageId`) — no body, no response. */
 export function apiDelete<T = void>(path: string, schema?: ZodType<T>): Promise<T> {
   return request(path, 'DELETE', schema);
+}
+
+/**
+ * Multipart upload (`POST /api/my/listings/:id/images`) — `FormData` bodies go through
+ * `fetchWithAuth` directly rather than `request()`: no `content-type` header is set here
+ * (the browser fills in the multipart boundary itself), and there is nothing to
+ * JSON.stringify. Still gets the same bearer-token attach and refresh-once-on-401 retry
+ * as every other call.
+ */
+export async function apiUpload<T = unknown>(
+  path: string,
+  formData: FormData,
+  schema?: ZodType<T>,
+): Promise<T> {
+  const response = await fetchWithAuth(path, {
+    method: 'POST',
+    headers: { accept: 'application/json' },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await readErrorMessage(response, 'POST', path));
+  }
+
+  const data: unknown = await response.json();
+  return schema ? schema.parse(data) : (data as T);
 }

@@ -19,6 +19,11 @@ const PUBLIC_DIR = resolve(__dirname, '..', '..', 'public');
 
 const MAX_IMAGES_PER_LISTING = 10;
 
+// Approximate 2026 UZS/USD rate — exact value is non-critical, this only needs
+// to produce a plausible non-zero $ figure when the wizard's USD field is left
+// blank (see submitForModeration).
+const SOM_PER_USD = 12650;
+
 @Injectable()
 export class ListingsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -160,9 +165,20 @@ export class ListingsService {
   }
 
   async submitForModeration(id: string, ownerId: string) {
-    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    let listing = await this.prisma.listing.findUnique({ where: { id } });
 
     if (!listing || listing.ownerId !== ownerId) throw new NotFoundException();
+
+    // The wizard's USD field is optional ("ixtiyoriy") — the price step only
+    // requires `priceSom`. `priceUsd` is still in LISTING_REQUIRED_FIELDS
+    // (every published listing shows a "≈ $N" figure), so a blank field is
+    // filled in here from the som price rather than rejected at submit time.
+    if (!listing.priceUsd && listing.priceSom > 0n) {
+      listing = await this.prisma.listing.update({
+        where: { id },
+        data: { priceUsd: Math.round(Number(listing.priceSom) / SOM_PER_USD) },
+      });
+    }
 
     const missing = LISTING_REQUIRED_FIELDS.filter((field) => {
       const value = listing[field as keyof typeof listing];

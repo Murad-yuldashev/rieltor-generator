@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as z from 'zod';
 import { ListingDraftSchema, type Image, type ListingDraft } from '@rieltor/shared';
-import { apiDelete, apiPatch, apiPost, ApiError } from '@/shared/api/client';
-import { readTokens } from '@/shared/api/auth-storage';
+import { apiDelete, apiPatch, apiPost, apiUpload, ApiError } from '@/shared/api/client';
 
 export const STEP_COUNT = 6;
 
@@ -32,44 +31,24 @@ function toDraftImage(uploaded: z.infer<typeof UploadedImageSchema>): DraftImage
   return { ...uploaded, ogUrl: null };
 }
 
-/** Every exception filter in the API answers with a JSON body carrying a `message`. */
-async function readUploadErrorMessage(response: Response): Promise<string> {
-  try {
-    const body: unknown = await response.json();
-    if (
-      body &&
-      typeof body === 'object' &&
-      'message' in body &&
-      typeof body.message === 'string' &&
-      body.message
-    ) {
-      return body.message;
-    }
-  } catch {
-    // No JSON body — fall through to the generic message.
-  }
-  return "Rasmni yuklab bo'lmadi";
-}
-
 /**
  * Multipart upload — deliberately NOT going through `apiPost` (JSON-only).
- * A direct `fetch` with `FormData`, carrying the same bearer token the JSON
- * client attaches, and throwing a plain `Error` with the server's message on
- * a non-2xx response so the photo step can show it inline.
+ * `apiUpload` sends the `FormData` body itself (no `content-type` override, so
+ * the browser fills in the multipart boundary) but shares the same bearer-token
+ * attach and refresh-once-on-401 retry as every other call — a long photo
+ * session outlasting the 15-minute access token no longer 401s on upload while
+ * every other step self-heals.
  */
 async function uploadDraftImage(draftId: string, file: File): Promise<DraftImage> {
-  const body = new FormData();
-  body.append('file', file);
+  const formData = new FormData();
+  formData.append('file', file);
 
-  const response = await fetch(`/api/my/listings/${draftId}/images`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${readTokens()?.accessToken ?? ''}` },
-    body,
-  });
-
-  if (!response.ok) throw new Error(await readUploadErrorMessage(response));
-
-  return toDraftImage(UploadedImageSchema.parse(await response.json()));
+  const uploaded = await apiUpload(
+    `/api/my/listings/${draftId}/images`,
+    formData,
+    UploadedImageSchema,
+  );
+  return toDraftImage(uploaded);
 }
 
 /**
