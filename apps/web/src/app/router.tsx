@@ -4,6 +4,7 @@ import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
 import { ListingPage } from '@/pages/listing';
 import { ListingCreatePage } from '@/pages/listing-create';
+import { MyListingsPage } from '@/pages/my-listings';
 import { NotFoundPage } from '@/pages/not-found';
 import { OfferPage } from '@/pages/offer';
 import { SearchPage } from '@/pages/search';
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
           { path: '/', element: <HomePage /> },
           { path: '/search', element: <SearchPage /> },
           { path: '/favorites', element: <FavoritesPage /> },
+          { path: '/my/listings', element: <MyListingsPage /> },
           { path: '/contact', element: <ContactPage /> },
           // Not in the bottom nav — reached from the link on the contact page.
           { path: '/offer', element: <OfferPage /> },

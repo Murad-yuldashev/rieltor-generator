@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router';
 import type { ListingSummary } from '@rieltor/shared';
 import { ListingCard, ListingResultRow, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
@@ -7,6 +8,7 @@ import {
   EMPTY_CRITERIA,
   FilterPanel,
   filterListings,
+  parseSearchQuery,
   type Criteria,
 } from '@/features/listing-filters';
 import { useSearchHistory } from '@/features/search-history';
@@ -34,14 +36,23 @@ function countByDistrict(listings: ListingSummary[] | undefined) {
 export function SearchPage() {
   const { data } = useQuery(listingsQuery());
   const { recent, remember, clear: clearHistory } = useSearchHistory();
+  // A saved search opened from /my/listings ("Ochish") arrives as
+  // ?deal=...&type=...&search=... — read once on mount, same as any other
+  // deep link. Editing the filters afterwards no longer touches the URL.
+  const [searchParams] = useSearchParams();
 
-  const [criteria, setCriteria] = useState<Criteria>(EMPTY_CRITERIA);
+  const [criteria, setCriteria] = useState<Criteria>(() => ({
+    ...EMPTY_CRITERIA,
+    ...parseSearchQuery(searchParams.toString()),
+  }));
   // Uncontrolled <input>s hold the price/area text, so "clear" rebuilds the
   // panel under a fresh key instead of tracking every raw string in state.
   const [panelKey, setPanelKey] = useState(0);
   // Results stay hidden until the user asks for them — the page opens as a
-  // filter form, not as a listing feed.
-  const [submitted, setSubmitted] = useState(false);
+  // filter form, not as a listing feed. A restored saved search is the one
+  // exception: it should show results right away, same as if the user had
+  // just pressed "Natijalarni ko'rsatish".
+  const [submitted, setSubmitted] = useState(() => searchParams.toString().length > 0);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const resultsRef = useRef<HTMLDivElement>(null);
 

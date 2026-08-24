@@ -1,14 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ListingCard, listingsQuery } from '@/entities/listing';
+import { useSession } from '@/entities/session';
+import { LoginModal } from '@/features/auth';
 import { FavoriteButton } from '@/features/favorites';
 import {
   FilterBar,
   ListingFacets,
   ListingHero,
   SortSelect,
+  serializeSearchQuery,
   useListingFilters,
 } from '@/features/listing-filters';
+import { useCreateSavedSearch } from '@/features/saved-search';
 
 /** How many cards fill the first screen — the rest arrive via "Ko'proq". */
 const PAGE_SIZE = 6;
@@ -30,6 +34,16 @@ export function HomePage() {
   const { data, isPending, isError } = useQuery(listingsQuery());
   const filters = useListingFilters(data);
   const [limit, setLimit] = useState(PAGE_SIZE);
+  const { isAuthenticated } = useSession();
+  const { create: createSavedSearch } = useCreateSavedSearch();
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+
+  useEffect(() => {
+    if (!justSaved) return;
+    const timer = setTimeout(() => setJustSaved(false), 2500);
+    return () => clearTimeout(timer);
+  }, [justSaved]);
 
   const shown = filters.visible.slice(0, limit);
   const hasMore = filters.visible.length > shown.length;
@@ -41,6 +55,28 @@ export function HomePage() {
       apply(value);
       setLimit(PAGE_SIZE);
     };
+  }
+
+  async function handleSaveSearch() {
+    // Logged out: the save can't be attributed to anyone yet — ask first,
+    // same pattern the wizard uses for its own auth gate.
+    if (!isAuthenticated) {
+      setLoginOpen(true);
+      return;
+    }
+
+    const query = serializeSearchQuery({
+      deal: filters.deal,
+      type: filters.type,
+      search: filters.search,
+    });
+
+    try {
+      await createSavedSearch({ name: filters.search.trim() || 'Saqlangan qidiruv', query });
+      setJustSaved(true);
+    } catch {
+      // Nothing surfaces a toast in this app yet — a silent no-op beats a crash.
+    }
   }
 
   return (
@@ -57,7 +93,16 @@ export function HomePage() {
         onTypeChange={resetPaging(filters.setType)}
         search={filters.search}
         onSearchChange={resetPaging(filters.setSearch)}
+        onSaveSearch={handleSaveSearch}
       />
+
+      {justSaved && (
+        <p className="hidden text-[12.5px] font-bold text-brand-green desk:block desk:pt-2">
+          Qidiruv saqlandi ✓ — "Mening e'lonlarim" sahifasida ko'rishingiz mumkin.
+        </p>
+      )}
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
 
       {/* One DOM order serves both layouts: on a phone these two blocks simply
           stack; at 1440px the facets block is dropped (FilterBar replaces it)
