@@ -1,5 +1,5 @@
 import { Body, Controller, Post, ServiceUnavailableException, UseGuards } from '@nestjs/common';
-import { AiDescriptionRequestSchema } from '@rieltor/shared';
+import { AiDescriptionRequestSchema, type AiDescriptionResult } from '@rieltor/shared';
 import { JwtGuard } from '../auth/jwt.guard';
 import { GeminiService } from './gemini.service';
 
@@ -11,7 +11,7 @@ export class AiController {
   constructor(private readonly gemini: GeminiService) {}
 
   @Post('description')
-  async description(@Body() body: unknown): Promise<{ description: string }> {
+  async description(@Body() body: unknown): Promise<AiDescriptionResult> {
     const req = AiDescriptionRequestSchema.parse(body);
 
     const roomsPart = req.rooms != null ? `${req.rooms} xonali` : "xonalar soni ko'rsatilmagan";

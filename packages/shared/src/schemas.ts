@@ -179,7 +179,6 @@ export const ValuationResultSchema = z.object({
   estimateSom: z.string(), // BigInt-as-string, like priceSom
   lowSom: z.string(),
   highSom: z.string(),
-  perM2Som: z.string(),
   /** How many PUBLISHED listings backed the median — drives a confidence hint. */
   comparablesCount: z.number().int(),
   explanation: z.string(),
@@ -195,6 +194,9 @@ export const AiDescriptionRequestSchema = z.object({
   floor: z.string().nullable().optional(),
   landmark: z.string().optional(),
 });
+
+/** Response of `POST /api/ai/description` — one generated field, kept in shared so web and API agree. */
+export const AiDescriptionResultSchema = z.object({ description: z.string() });
 
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
@@ -213,3 +215,4 @@ export type SavedSearch = z.infer<typeof SavedSearchSchema>;
 export type ValuationRequest = z.infer<typeof ValuationRequestSchema>;
 export type ValuationResult = z.infer<typeof ValuationResultSchema>;
 export type AiDescriptionRequest = z.infer<typeof AiDescriptionRequestSchema>;
+export type AiDescriptionResult = z.infer<typeof AiDescriptionResultSchema>;

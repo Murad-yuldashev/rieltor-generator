@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as z from 'zod';
 import {
   AiDescriptionRequestSchema,
+  AiDescriptionResultSchema,
   ListingDraftSchema,
   type Image,
   type ListingDraft,
@@ -11,8 +12,6 @@ import { apiDelete, apiPatch, apiPost, apiUpload, ApiError } from '@/shared/api/
 export const STEP_COUNT = 6;
 
 const CreatedDraftSchema = z.object({ id: z.string() });
-
-const AiDescriptionResponseSchema = z.object({ description: z.string() });
 
 /**
  * What `POST /api/my/listings/:id/images` returns. Not the public `Image`
@@ -157,11 +156,7 @@ export function useListingDraft() {
         floor: fields.floor,
         landmark: fields.landmark,
       });
-      const { description } = await apiPost(
-        '/api/ai/description',
-        AiDescriptionResponseSchema,
-        body,
-      );
+      const { description } = await apiPost('/api/ai/description', AiDescriptionResultSchema, body);
       patch({ description });
     } catch (error) {
       setDescriptionError(

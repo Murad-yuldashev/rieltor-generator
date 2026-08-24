@@ -98,21 +98,44 @@ function StepFooter({ onBack, onNext, nextLabel, nextDisabled, isBusy }: StepFoo
   );
 }
 
-/** How many PUBLISHED listings actually backed the median — a thin sample gets a softer, hedged line. */
+/**
+ * How many PUBLISHED listings actually backed the median — a thin sample gets a
+ * softer, hedged line. Only rendered when `count > 0`; the zero case has its own
+ * empty state upstream and never reaches here.
+ */
 function ConfidenceLine({ count }: { count: number }) {
-  if (count === 0) {
-    return (
-      <p className="text-[13px] font-semibold text-brand-amber">
-        Bu parametrlar bo'yicha aniq e'lon topilmadi — umumiy bozor tendensiyasiga asoslangan taxmin
-      </p>
-    );
-  }
-
   const isThin = count < THIN_COMPARABLES;
   return (
     <p className={cn('text-[13px] font-semibold', isThin ? 'text-brand-amber' : 'text-ink-2')}>
       {count} ta o'xshash sotuv e'loniga asoslangan{isThin && ' — taxminiy'}
     </p>
+  );
+}
+
+/** The two calls to action shown under any result — list a property, or talk to a realtor. */
+function ResultActions({ onRestart }: { onRestart: () => void }) {
+  return (
+    <div className="mt-6 flex flex-col gap-2.5">
+      <Link
+        to="/my/listings/new"
+        className="rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-5 py-3.5 text-[14.5px] font-extrabold text-white shadow-lg shadow-accent/35"
+      >
+        E'lon joylash
+      </Link>
+      <Link
+        to="/contact"
+        className="rounded-[14px] border border-line px-5 py-3.5 text-[14.5px] font-bold text-ink-2 transition-colors hover:bg-surface"
+      >
+        Rieltor bilan bog'lanish
+      </Link>
+      <button
+        type="button"
+        onClick={onRestart}
+        className="mt-1 text-[13px] font-bold text-ink-3 hover:text-ink-2"
+      >
+        Boshqa parametr bilan hisoblash
+      </button>
+    </div>
   );
 }
 
@@ -313,7 +336,25 @@ export function ValuationPage() {
             </div>
           )}
 
-          {step === 2 && result && (
+          {/* With no PUBLISHED sale listings for this type at all, the median is 0 —
+              showing "0 so'm" reads as broken, so the zero-comparables case gets its
+              own honest empty state instead of a bogus figure. Expected early in a new
+              region, where the closed loop is only just filling up. */}
+          {step === 2 && result && result.comparablesCount === 0 && (
+            <div className="text-center">
+              <p className="text-[40px]">🔍</p>
+              <p className="mt-2 text-[18px] font-extrabold tracking-tight">
+                Hozircha aniq baho yo'q
+              </p>
+              <p className="mx-auto mt-2 max-w-[420px] text-[14px] leading-relaxed text-ink-2">
+                Bu tur va tuman bo'yicha bozorimizda hali sotuvdagi o'xshash e'lonlar yo'q. Boshqa
+                parametr bilan urinib ko'ring yoki rieltorimiz aniq baho bersin.
+              </p>
+              <ResultActions onRestart={handleRestart} />
+            </div>
+          )}
+
+          {step === 2 && result && result.comparablesCount > 0 && (
             <div className="text-center">
               <p className="text-[13.5px] font-bold text-ink-2">Taxminiy narx</p>
               <p className="mt-1.5 text-[clamp(26px,7vw,34px)] leading-tight font-extrabold tracking-tight text-accent-dark">
@@ -342,27 +383,7 @@ export function ValuationPage() {
                 {result.explanation}
               </p>
 
-              <div className="mt-6 flex flex-col gap-2.5">
-                <Link
-                  to="/my/listings/new"
-                  className="rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-5 py-3.5 text-[14.5px] font-extrabold text-white shadow-lg shadow-accent/35"
-                >
-                  E'lon joylash
-                </Link>
-                <Link
-                  to="/contact"
-                  className="rounded-[14px] border border-line px-5 py-3.5 text-[14.5px] font-bold text-ink-2 transition-colors hover:bg-surface"
-                >
-                  Rieltor bilan bog'lanish
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleRestart}
-                  className="mt-1 text-[13px] font-bold text-ink-3 hover:text-ink-2"
-                >
-                  Boshqa parametr bilan hisoblash
-                </button>
-              </div>
+              <ResultActions onRestart={handleRestart} />
             </div>
           )}
         </SectionCard>

@@ -25,7 +25,6 @@ export class ValuationService {
       estimateSom: String(estimate),
       lowSom: String(low),
       highSom: String(high),
-      perM2Som: String(Math.round(perM2)),
       comparablesCount,
       explanation: await this.explain(req, estimate),
     };
