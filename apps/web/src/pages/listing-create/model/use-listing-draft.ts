@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as z from 'zod';
-import { ListingDraftSchema, type Image, type ListingDraft } from '@rieltor/shared';
+import {
+  AiDescriptionRequestSchema,
+  AiDescriptionResultSchema,
+  ListingDraftSchema,
+  type Image,
+  type ListingDraft,
+} from '@rieltor/shared';
 import { apiDelete, apiPatch, apiPost, apiUpload, ApiError } from '@/shared/api/client';
 
 export const STEP_COUNT = 6;
@@ -72,6 +78,9 @@ export function useListingDraft() {
 
   const [images, setImages] = useState<DraftImage[]>([]);
 
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [descriptionError, setDescriptionError] = useState<string | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -126,6 +135,40 @@ export function useListingDraft() {
     [draftId],
   );
 
+  /**
+   * `POST /api/ai/description` — Gemini drafts a description from whatever of
+   * type/deal/district/rooms/areaM2/floor/landmark the wizard has collected so
+   * far, and the result overwrites `fields.description` (still a plain
+   * controlled textarea afterwards, so the user can keep editing it). The
+   * endpoint 503s whenever Gemini isn't configured — the dev default — and that,
+   * like any other failure, surfaces as a short Uzbek notice instead of throwing.
+   */
+  const generateDescription = useCallback(async () => {
+    setDescriptionError(null);
+    setIsGeneratingDescription(true);
+    try {
+      const body = AiDescriptionRequestSchema.parse({
+        type: fields.type,
+        deal: fields.deal,
+        district: fields.district,
+        rooms: fields.rooms,
+        areaM2: fields.areaM2,
+        floor: fields.floor,
+        landmark: fields.landmark,
+      });
+      const { description } = await apiPost('/api/ai/description', AiDescriptionResultSchema, body);
+      patch({ description });
+    } catch (error) {
+      setDescriptionError(
+        error instanceof ApiError
+          ? error.message
+          : "AI hozircha mavjud emas — tavsifni qo'lda yozing",
+      );
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  }, [fields, patch]);
+
   const submit = useCallback(async () => {
     if (!draftId) return;
 
@@ -160,6 +203,9 @@ export function useListingDraft() {
     images,
     uploadImage,
     deleteImage,
+    generateDescription,
+    isGeneratingDescription,
+    descriptionError,
     submit,
     isSubmitting,
     submitError,

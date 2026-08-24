@@ -167,6 +167,37 @@ export const SavedSearchSchema = SavedSearchCreateSchema.extend({
   createdAt: z.string(),
 });
 
+/** Body of `POST /api/valuation` — the "Uyingiz qancha turadi?" seller hook. */
+export const ValuationRequestSchema = z.object({
+  district: z.string().min(2),
+  rooms: z.number().int().min(0).max(20).nullable(),
+  areaM2: z.number().positive().max(10_000),
+  type: ListingTypeSchema,
+});
+
+export const ValuationResultSchema = z.object({
+  estimateSom: z.string(), // BigInt-as-string, like priceSom
+  lowSom: z.string(),
+  highSom: z.string(),
+  /** How many PUBLISHED listings backed the median — drives a confidence hint. */
+  comparablesCount: z.number().int(),
+  explanation: z.string(),
+});
+
+/** Body of `POST /api/ai/description` — Gemini drafts a description from the wizard's fields. */
+export const AiDescriptionRequestSchema = z.object({
+  type: ListingTypeSchema,
+  deal: DealSchema,
+  district: z.string().min(2),
+  rooms: z.number().int().nullable().optional(),
+  areaM2: z.number().positive(),
+  floor: z.string().nullable().optional(),
+  landmark: z.string().optional(),
+});
+
+/** Response of `POST /api/ai/description` — one generated field, kept in shared so web and API agree. */
+export const AiDescriptionResultSchema = z.object({ description: z.string() });
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -181,3 +212,7 @@ export type ListingDraft = z.infer<typeof ListingDraftSchema>;
 export type ModerationReject = z.infer<typeof ModerationRejectSchema>;
 export type SavedSearchCreate = z.infer<typeof SavedSearchCreateSchema>;
 export type SavedSearch = z.infer<typeof SavedSearchSchema>;
+export type ValuationRequest = z.infer<typeof ValuationRequestSchema>;
+export type ValuationResult = z.infer<typeof ValuationResultSchema>;
+export type AiDescriptionRequest = z.infer<typeof AiDescriptionRequestSchema>;
+export type AiDescriptionResult = z.infer<typeof AiDescriptionResultSchema>;

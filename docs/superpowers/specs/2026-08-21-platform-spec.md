@@ -288,18 +288,18 @@ front and back.
 
 ### 6.2 Add
 
-| Concern         | Choice                                                                                           |
-| --------------- | ------------------------------------------------------------------------------------------------ |
-| Apps            | `apps/web` (marketplace), `apps/crm` (developer CRM), `apps/agent` (realtor cabinet), `apps/api` |
-| Auth            | Phone OTP + Telegram Login widget; JWT access/refresh; RBAC with granular permissions            |
-| Files           | S3-compatible object storage (MinIO in dev)                                                      |
-| Search          | Postgres full-text first; migrate to a search engine only when listing count demands it          |
-| Maps            | Yandex Maps (best UZ coverage)                                                                   |
-| Realtime        | WebSocket gateway for chat and lead notifications                                                |
-| Background jobs | BullMQ + Redis — image processing, price recalculation, monthly owner emails                     |
-| AI              | Claude API for description writing, valuation explanation, call analysis                         |
-| Payments        | Click / Payme / Uzum                                                                             |
-| SMS             | Play Mobile or Eskiz                                                                             |
+| Concern         | Choice                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
+| Apps            | `apps/web` (marketplace), `apps/crm` (developer CRM), `apps/agent` (realtor cabinet), `apps/api`        |
+| Auth            | Phone OTP + Telegram Login widget; JWT access/refresh; RBAC with granular permissions                   |
+| Files           | S3-compatible object storage (MinIO in dev)                                                             |
+| Search          | Postgres full-text first; migrate to a search engine only when listing count demands it                 |
+| Maps            | Yandex Maps (best UZ coverage)                                                                          |
+| Realtime        | WebSocket gateway for chat and lead notifications                                                       |
+| Background jobs | BullMQ + Redis — image processing, price recalculation, monthly owner emails                            |
+| AI              | **Google Gemini API** for description writing, valuation explanation, call analysis (chosen 2026-08-24) |
+| Payments        | Click / Payme / Uzum                                                                                    |
+| SMS             | Play Mobile or Eskiz                                                                                    |
 
 ### 6.3 Data model additions
 

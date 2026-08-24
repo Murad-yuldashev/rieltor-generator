@@ -45,6 +45,7 @@ const PATHS = {
   check: ['m4.5 12.5 5 5 10-11'],
   close: ['M6 6l12 12', 'M18 6 6 18'],
   money: ['M3 7h18v10H3V7Z', 'M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z', 'M6 7v10M18 7v10'],
+  mic: ['M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z', 'M6 11a6 6 0 0 0 12 0M12 19v3'],
 } as const;
 
 /** These icons are drawn as a solid shape rather than an outline. */

@@ -8,6 +8,7 @@ import { MyListingsPage } from '@/pages/my-listings';
 import { NotFoundPage } from '@/pages/not-found';
 import { OfferPage } from '@/pages/offer';
 import { SearchPage } from '@/pages/search';
+import { ValuationPage } from '@/pages/valuation';
 import { RootLayout } from './root-layout';
 import { TabLayout } from './tab-layout';
 
@@ -33,6 +34,8 @@ export const router = createBrowserRouter([
       { path: '/obj/:id', element: <ListingPage /> },
       // The wizard owns its own chrome (top bar + left rail, no bottom nav).
       { path: '/my/listings/new', element: <ListingCreatePage /> },
+      // Public seller-capture valuation hook — own light chrome, no auth, no bottom nav.
+      { path: '/valuation', element: <ValuationPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
