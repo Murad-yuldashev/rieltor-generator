@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Link, NavLink } from 'react-router';
+import { useSession } from '@/entities/session';
+import { LoginModal } from '@/features/auth';
 import { NAV_TABS } from '@/shared/config/nav';
 import { Icon } from '@/shared/ui/icon';
 
@@ -26,43 +29,100 @@ function CityLabel() {
   );
 }
 
-export function SiteHeader() {
+/** Right-hand cluster of the desktop header: post-listing CTA, then account state. */
+function AccountArea({ onOpenLogin }: { onOpenLogin: () => void }) {
+  const { user, isAuthenticated } = useSession();
+
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-white/92 backdrop-blur-xl">
-      {/* Phone header: logo on the left, city on the right. Unchanged below 1440px. */}
-      <div className="flex items-center justify-between px-4 py-3 desk:hidden">
-        <Logo />
-        <CityLabel />
-      </div>
+    <div className="ml-auto flex items-center gap-3">
+      <CityLabel />
 
-      {/* Desktop header: the four bottom-nav destinations move up here, because
-          the tab bar is hidden from 1440px. */}
-      <div className="mx-auto hidden w-full max-w-desk items-center gap-10 px-8 py-3.5 desk:flex">
-        <Logo />
+      <Link
+        to="/my/listings/new"
+        className="rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-4 py-2.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35"
+      >
+        + E'lon joylash
+      </Link>
 
-        <nav aria-label="Asosiy menyu" className="flex items-center gap-1">
-          {NAV_TABS.map(({ to, icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              // Without `end` the home tab would read as active on every route.
-              end={to === '/'}
-              className={({ isActive }) =>
-                `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
-                  isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
-                }`
-              }
-            >
-              <Icon name={icon} className="h-[17px] w-[17px]" strokeWidth={2.1} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
+      {isAuthenticated && user ? (
+        <div className="flex items-center gap-2.5 pl-1">
+          {user.photoUrl ? (
+            <img
+              src={user.photoUrl}
+              alt={user.name ?? user.phone}
+              width={34}
+              height={34}
+              className="h-[34px] w-[34px] shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-accent-soft text-[13px] font-extrabold text-accent">
+              {(user.name ?? user.phone).slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <span className="max-w-[140px] truncate text-[14px] font-bold text-ink">
+            {user.name ?? user.phone}
+          </span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onOpenLogin}
+          className="rounded-[14px] border border-line px-4 py-2.5 text-[15px] font-extrabold text-ink transition-colors hover:bg-surface"
+        >
+          Kirish
+        </button>
+      )}
+    </div>
+  );
+}
 
-        <div className="ml-auto">
+export function SiteHeader() {
+  // Only the desktop header (≥1440px) grows an auth affordance — the phone
+  // header keeps its existing two-item layout untouched.
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  return (
+    <>
+      {/* `backdrop-blur-xl` below makes <header> a containing block for
+          `position: fixed` descendants, so the modal must live outside it —
+          otherwise its "fixed inset-0" sizes to the header's own box instead
+          of the viewport. */}
+      <header className="sticky top-0 z-50 border-b border-line bg-white/92 backdrop-blur-xl">
+        {/* Phone header: logo on the left, city on the right. Unchanged below 1440px. */}
+        <div className="flex items-center justify-between px-4 py-3 desk:hidden">
+          <Logo />
           <CityLabel />
         </div>
-      </div>
-    </header>
+
+        {/* Desktop header: the four bottom-nav destinations move up here, because
+            the tab bar is hidden from 1440px. */}
+        <div className="mx-auto hidden w-full max-w-desk items-center gap-10 px-8 py-3.5 desk:flex">
+          <Logo />
+
+          <nav aria-label="Asosiy menyu" className="flex items-center gap-1">
+            {NAV_TABS.map(({ to, icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                // Without `end` the home tab would read as active on every route.
+                end={to === '/'}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
+                    isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
+                  }`
+                }
+              >
+                <Icon name={icon} className="h-[17px] w-[17px]" strokeWidth={2.1} />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <AccountArea onOpenLogin={() => setLoginOpen(true)} />
+        </div>
+      </header>
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </>
   );
 }
