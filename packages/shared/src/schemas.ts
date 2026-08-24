@@ -185,6 +185,17 @@ export const ValuationResultSchema = z.object({
   explanation: z.string(),
 });
 
+/** Body of `POST /api/ai/description` — Gemini drafts a description from the wizard's fields. */
+export const AiDescriptionRequestSchema = z.object({
+  type: ListingTypeSchema,
+  deal: DealSchema,
+  district: z.string().min(2),
+  rooms: z.number().int().nullable().optional(),
+  areaM2: z.number().positive(),
+  floor: z.string().nullable().optional(),
+  landmark: z.string().optional(),
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -201,3 +212,4 @@ export type SavedSearchCreate = z.infer<typeof SavedSearchCreateSchema>;
 export type SavedSearch = z.infer<typeof SavedSearchSchema>;
 export type ValuationRequest = z.infer<typeof ValuationRequestSchema>;
 export type ValuationResult = z.infer<typeof ValuationResultSchema>;
+export type AiDescriptionRequest = z.infer<typeof AiDescriptionRequestSchema>;
