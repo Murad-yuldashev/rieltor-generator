@@ -10,6 +10,7 @@ import { ListingsModule } from './listings/listings.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SavedSearchModule } from './saved-search/saved-search.module';
 import { SsrModule } from './ssr/ssr.module';
+import { ValuationModule } from './valuation/valuation.module';
 import { ViewsModule } from './views/views.module';
 
 @Module({
@@ -25,6 +26,7 @@ import { ViewsModule } from './views/views.module';
     HealthModule,
     ListingsModule,
     SavedSearchModule,
+    ValuationModule,
     ViewsModule,
     SsrModule,
   ],
