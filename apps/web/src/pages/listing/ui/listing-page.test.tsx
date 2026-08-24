@@ -34,7 +34,6 @@ const listing = {
     name: 'Murod',
     agency: 'Buxoro Uy',
     photoUrl: '/images/agents/agent-1.jpg',
-    phone: '+998901234567',
     phoneMasked: '+998 90 ••• •• 67',
     telegram: 'murod',
   },
@@ -100,10 +99,9 @@ describe('ListingPage', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('link', { name: /Qo'ng'iroq/ })).toHaveAttribute(
-      'href',
-      'tel:+998901234567',
-    );
+    // The number is masked until tapped (reveal-on-tap, Task 8b) — no static
+    // tel: href to assert on anymore, so this only checks the button renders.
+    expect(await screen.findByRole('button', { name: /Qo'ng'iroq/ })).toBeInTheDocument();
   });
 
   it('renders the not-found page on 404', async () => {

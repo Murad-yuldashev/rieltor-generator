@@ -1,15 +1,17 @@
+import { useContactReveal } from '@/features/contact-reveal';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
 
 interface Props {
-  phone: string;
+  listingId: string;
   telegram: string;
   /** Lets the listing page order this block inside its desktop sidebar. */
   className?: string;
 }
 
-export function StickyCTA({ phone, telegram, className }: Props) {
+export function StickyCTA({ listingId, telegram, className }: Props) {
   const username = telegram.replace(/^@/, '');
+  const { callSeller } = useContactReveal(listingId);
 
   return (
     <div
@@ -21,13 +23,16 @@ export function StickyCTA({ phone, telegram, className }: Props) {
         className,
       )}
     >
-      <a
-        href={`tel:${phone}`}
+      <button
+        type="button"
+        // No static tel: href here — the number is masked until this tap reveals
+        // (and tracks) it, then dials in the same action.
+        onClick={() => void callSeller()}
         className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35"
       >
         <Icon name="phone" className="h-[17px] w-[17px]" strokeWidth={2.2} />
         Qo'ng'iroq
-      </a>
+      </button>
       <a
         href={`https://t.me/${username}`}
         target="_blank"

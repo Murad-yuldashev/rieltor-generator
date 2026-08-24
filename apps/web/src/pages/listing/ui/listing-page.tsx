@@ -103,11 +103,7 @@ export function ListingPage() {
 
             {/* Fixed on a phone, so `order` is inert there; in the desktop sidebar
                 it has to sit after the agent card rather than before the price. */}
-            <StickyCTA
-              phone={data.agent.phone}
-              telegram={data.agent.telegram}
-              className="order-7"
-            />
+            <StickyCTA listingId={data.id} telegram={data.agent.telegram} className="order-7" />
           </aside>
         </main>
       </div>

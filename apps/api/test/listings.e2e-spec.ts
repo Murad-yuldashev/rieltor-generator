@@ -35,7 +35,9 @@ describe('Objects (e2e)', () => {
     const listing = ListingDetailSchema.parse(res.body);
     expect(listing.type).toBe('SECONDARY');
     expect(listing.images.length).toBeGreaterThan(0);
-    expect(listing.agent.phone).toMatch(/^\+998/);
+    // The raw number is deliberately not part of the public payload (Task 8b) —
+    // only the masked form is; the real one comes from GET /objects/:id/contact.
+    expect(listing.agent.phoneMasked).toMatch(/^\+998 \d{2} ••• •• \d{2}$/);
   });
 
   it('hovlida qavat null', async () => {

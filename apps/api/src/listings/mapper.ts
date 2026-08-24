@@ -15,7 +15,7 @@ function imageDto(r: Pick<Image, keyof ImageDto>): ImageDto {
 /** "+998 90 123 45 67" → "+998 90 ••• •• 67": enough to look real, not enough to dial. */
 function maskPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
-  return `+${digits.slice(0, 5)} ${digits.slice(5, 7)} ••• •• ${digits.slice(-2)}`;
+  return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ••• •• ${digits.slice(-2)}`;
 }
 
 export function toListingDetail(row: ListingRow): ListingDetail {
@@ -42,8 +42,8 @@ export function toListingDetail(row: ListingRow): ListingDetail {
       name: row.agent.name,
       agency: row.agent.agency,
       photoUrl: row.agent.photoUrl,
-      phone: row.agent.phone,
-      // Shown on the public page; the real number is revealed via GET /objects/:id/contact.
+      // The raw number is intentionally NOT part of the public payload — the real
+      // number is revealed (and tracked as a ContactReveal) via GET /objects/:id/contact.
       phoneMasked: maskPhone(row.agent.phone),
       telegram: row.agent.telegram,
     },

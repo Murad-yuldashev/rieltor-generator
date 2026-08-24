@@ -1,11 +1,5 @@
 import type { Agent } from '@rieltor/shared';
 
-/** +998901234567 → "+998 90 123 45 67". Any other shape is returned untouched. */
-export function formatPhone(phone: string): string {
-  const m = /^\+998(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(phone);
-  return m ? `+998 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : phone;
-}
-
 export function AgentCard({ agent }: { agent: Agent }) {
   return (
     <div className="flex items-center gap-3">
@@ -26,9 +20,8 @@ export function AgentCard({ agent }: { agent: Agent }) {
           </span>
         </p>
         <p className="mt-0.5 text-[12.5px] font-semibold text-ink-3">{agent.agency}</p>
-        <a href={`tel:${agent.phone}`} className="mt-0.5 block text-[13.5px] font-bold text-accent">
-          {formatPhone(agent.phone)}
-        </a>
+        {/* Masked here — the real number only appears via the StickyCTA's tracked reveal. */}
+        <p className="mt-0.5 text-[13.5px] font-bold text-accent">{agent.phoneMasked}</p>
       </div>
     </div>
   );
