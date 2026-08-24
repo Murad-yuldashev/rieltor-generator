@@ -12,7 +12,7 @@ export class ApiError extends Error {
   }
 }
 
-type Method = 'GET' | 'POST';
+type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 /**
  * `POST /api/auth/refresh` only rotates the token pair (TokenService.issue on the
@@ -46,6 +46,31 @@ async function refreshTokens(): Promise<boolean> {
   }
 }
 
+/**
+ * Every exception filter in this API (ZodExceptionFilter, Nest's own
+ * `BadRequestException(text)` calls in ListingsService, ...) responds with a
+ * JSON body carrying a `message` string — e.g. the wizard's submit endpoint
+ * returns the Uzbek list of missing fields this way. Falls back to a generic
+ * description when the body is missing, empty, or not JSON.
+ */
+async function readErrorMessage(response: Response, method: Method, path: string): Promise<string> {
+  try {
+    const body: unknown = await response.json();
+    if (
+      body &&
+      typeof body === 'object' &&
+      'message' in body &&
+      typeof body.message === 'string' &&
+      body.message
+    ) {
+      return body.message;
+    }
+  } catch {
+    // No JSON body — fall through to the generic message.
+  }
+  return `${method} ${path} → ${response.status}`;
+}
+
 async function request<T>(
   path: string,
   method: Method,
@@ -66,8 +91,6 @@ async function request<T>(
   });
 
   if (!response.ok) {
-    const error = new ApiError(response.status, `${method} ${path} → ${response.status}`);
-
     // One refresh-and-retry per request: a 401 that survives a freshly-issued
     // access token is a real auth failure, not a merely stale one.
     if (response.status === 401 && !isRetry) {
@@ -75,7 +98,7 @@ async function request<T>(
       clearTokens();
     }
 
-    throw error;
+    throw new ApiError(response.status, await readErrorMessage(response, method, path));
   }
 
   if (!schema) return undefined as T;
@@ -88,6 +111,21 @@ export function apiGet<T>(path: string, schema: ZodType<T>): Promise<T> {
   return request(path, 'GET', schema);
 }
 
-export function apiPost<T>(path: string, schema: ZodType<T>, body?: unknown): Promise<T> {
+// `schema` is optional because several endpoints (submit, patch, delete-image) return
+// no body at all — `request()` resolves to `undefined` when none is given, typed as
+// `void` by the `T = void` default so a caller that skips the schema gets `Promise<void>`
+// rather than `Promise<unknown>`. Callers that do pass a schema are unaffected: T is
+// then inferred from it, same as before.
+export function apiPost<T = void>(path: string, schema?: ZodType<T>, body?: unknown): Promise<T> {
   return request(path, 'POST', schema, body);
+}
+
+/** Draft update (`PATCH /api/my/listings/:id`) and friends — same no-body shape as apiPost. */
+export function apiPatch<T = void>(path: string, schema?: ZodType<T>, body?: unknown): Promise<T> {
+  return request(path, 'PATCH', schema, body);
+}
+
+/** Image delete (`DELETE /api/my/listings/:id/images/:imageId`) — no body, no response. */
+export function apiDelete<T = void>(path: string, schema?: ZodType<T>): Promise<T> {
+  return request(path, 'DELETE', schema);
 }

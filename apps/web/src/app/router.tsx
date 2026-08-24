@@ -3,6 +3,7 @@ import { ContactPage } from '@/pages/contact';
 import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
 import { ListingPage } from '@/pages/listing';
+import { ListingCreatePage } from '@/pages/listing-create';
 import { NotFoundPage } from '@/pages/not-found';
 import { OfferPage } from '@/pages/offer';
 import { SearchPage } from '@/pages/search';
@@ -28,6 +29,8 @@ export const router = createBrowserRouter([
       },
       // The listing page sits outside TabLayout: full-bleed gallery and its own sticky CTA.
       { path: '/obj/:id', element: <ListingPage /> },
+      // The wizard owns its own chrome (top bar + left rail, no bottom nav).
+      { path: '/my/listings/new', element: <ListingCreatePage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

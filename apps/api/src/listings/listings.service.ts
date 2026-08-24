@@ -135,7 +135,10 @@ export class ListingsService {
         height: result.height,
         position,
       },
-      select: { base: true, position: true, width: true, height: true },
+      // `id` is not part of the public `Image` shape (spec §-level payloads never
+      // expose it), but the wizard's delete button needs it to call
+      // DELETE /api/my/listings/:id/images/:imageId — there is no other handle.
+      select: { id: true, base: true, position: true, width: true, height: true },
     });
   }
 
