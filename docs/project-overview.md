@@ -1,6 +1,6 @@
 # RieltorApp — loyiha haqida qisqacha
 
-_Holat: 2026-yil 5-avgust_
+_Holat: 2026-yil 24-avgust_
 
 ## 1. Loyiha nimaga xizmat qiladi
 
@@ -127,12 +127,46 @@ reja: `docs/superpowers/plans/2026-08-21-phase-1-marketplace-foundation.md`.
 Yangi Prisma modellari: `User`, `Session`, `OtpCode`, `SavedSearch`, `ContactReveal` +
 `Listing.{status,ownerId,rejectionReason,publishedAt}`. Global `ZodError → 400` filtri.
 
+## 4c. Phase 2.1 — AI poydevori (2026-08-24)
+
+Sotuvchini ushlash bosqichining birinchi rejasi. Spec: `docs/superpowers/specs/2026-08-21-platform-spec.md`,
+reja: `docs/superpowers/plans/2026-08-24-phase-2.1-ai-foundation.md`.
+
+### AI provayder
+
+- **Google Gemini** (`@google/generative-ai`, model `gemini-1.5-flash`). Yagona `GeminiService.generate()`
+  — kalit bo'lmasa yoki xato bo'lsa **hech qachon otmaydi**, `null` qaytaradi; chaqiruvchi shablon
+  matnga tushadi. `GEMINI_API_KEY` ixtiyoriy: bo'lmasa ilova to'liq ishlaydi (**degradatsiya**).
+
+### "Uyingiz qancha turadi?" — baholash
+
+- **Public sahifa (`/valuation`)** — 3 qadamli oqim (tur+tuman → xona+maydon → natija), login talab qilmaydi.
+  Bosh sahifada "Uyingiz qancha turadi?" banneri.
+- **Gibrid hisob** — tuman+xona+maydon bo'yicha **median m² narx** (faqat `SALE`, `PUBLISHED` e'lonlardan;
+  yetarli comparables bo'lmasa tuman→tur bo'yicha kaskad), ustiga Gemini o'zbekcha tushuntirish.
+  Kalit bo'lmasa median raqamlar + shablon izoh qaytadi. Pul qiymatlari string sifatida.
+
+### AI tavsif va ovozli kiritish (e'lon sehrgarida)
+
+- **AI tavsif tugmasi** — parametrlar qadamida obyekt ma'lumotidan avtomatik tavsif yozadi.
+  Gemini mavjud bo'lmasa endpoint toza **503** (`AI hozircha mavjud emas, tavsifni qo'lda yozing`) qaytaradi,
+  maydon qo'lda tahrirlanaveradi.
+- **Ovozli kiritish** — sarlavha va tavsif yonida mikrofon tugmasi (Web Speech API, `uz-UZ`).
+  Brauzer qo'llab-quvvatlamasa tugma **umuman render bo'lmaydi** (feature-detect), hech narsa buzilmaydi.
+
+### Yangi API endpointlari
+
+`POST /api/valuation` (public) · `POST /api/ai/description` (JWT bilan himoyalangan).
+Yangi env: `GEMINI_API_KEY` (ixtiyoriy) · `GEMINI_MODEL` (default `gemini-1.5-flash`).
+**Telefon (<1440px) ko'rinishi o'zgarmagan** — baholash sahifasi va sehrgar tugmalari mobil-first.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
 - **Front:** React 19 · Vite 6 · TypeScript · Tailwind v4 · React Router 7 · TanStack Query 5 ·
   Feature-Sliced Design (ESLint `boundaries` plagini qatlam qoidalarini majburlaydi)
 - **Back:** NestJS 11 · Node 22 · Prisma 6 · PostgreSQL 16 · Zod (env + DTO + Swagger)
+- **AI:** Google Gemini (`@google/generative-ai`) — baholash izohi va e'lon tavsifi, degradatsiya bilan
 - **Umumiy:** `@rieltor/shared` — Zod sxemalar, narx formatteri, rasm nomlash qoidasi
   front va back uchun **yagona manba**
 - **Test:** Vitest (unit) · supertest (API e2e) · Playwright (360px viewport)
