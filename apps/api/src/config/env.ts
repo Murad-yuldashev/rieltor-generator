@@ -19,6 +19,10 @@ export const envSchema = z.object({
    * non-empty — an empty token makes the HMAC secret forgeable
    */
   TELEGRAM_BOT_TOKEN: z.string().min(1),
+  /** Optional: without it, AI features degrade to non-AI fallbacks. */
+  GEMINI_API_KEY: z.string().optional(),
+  /** Overridable so we can move to a newer model without a code change. */
+  GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
 });
 
 export type Env = z.infer<typeof envSchema>;
