@@ -96,8 +96,8 @@ export class ListingsService {
     });
 
     if (!listing || listing.ownerId !== ownerId) throw new NotFoundException();
-    if (listing.status === 'PUBLISHED') {
-      throw new BadRequestException('E’lon tahrirlash uchun avval arxivlanishi kerak');
+    if (listing.status !== 'DRAFT' && listing.status !== 'REJECTED') {
+      throw new BadRequestException('E’lon tekshiruvda yoki chop etilgan — tahrirlab bo‘lmaydi');
     }
 
     const data = { ...patch };
@@ -113,8 +113,8 @@ export class ListingsService {
     });
 
     if (!listing || listing.ownerId !== ownerId) throw new NotFoundException();
-    if (listing.status === 'PUBLISHED') {
-      throw new BadRequestException('E’lon tahrirlash uchun avval arxivlanishi kerak');
+    if (listing.status !== 'DRAFT' && listing.status !== 'REJECTED') {
+      throw new BadRequestException('E’lon tekshiruvda yoki chop etilgan — tahrirlab bo‘lmaydi');
     }
 
     const count = await this.prisma.image.count({ where: { listingId } });

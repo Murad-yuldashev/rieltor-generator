@@ -14,8 +14,11 @@ export const envSchema = z.object({
   WEB_DIST: z.string().optional(),
   /** Signs access tokens (see auth/token.service.ts). */
   JWT_SECRET: z.string().min(32),
-  /** Verifies the Telegram Login widget's HMAC signature (see auth/auth.service.ts). */
-  TELEGRAM_BOT_TOKEN: z.string(),
+  /**
+   * Verifies the Telegram Login widget's HMAC signature (see auth/auth.service.ts).
+   * non-empty — an empty token makes the HMAC secret forgeable
+   */
+  TELEGRAM_BOT_TOKEN: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { ModerationRejectSchema } from '@rieltor/shared';
 import { Roles, RolesGuard } from '../auth/roles.guard';
 import { JwtGuard } from '../auth/jwt.guard';
 import { ListingsService } from './listings.service';
@@ -21,7 +22,8 @@ export class ModerationController {
   }
 
   @Post(':id/reject')
-  reject(@Param('id') id: string, @Body() body: { reason: string }) {
-    return this.listings.reject(id, body.reason);
+  reject(@Param('id') id: string, @Body() body: unknown) {
+    const { reason } = ModerationRejectSchema.parse(body);
+    return this.listings.reject(id, reason);
   }
 }

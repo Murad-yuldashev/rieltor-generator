@@ -150,6 +150,11 @@ export const LISTING_REQUIRED_FIELDS = [
   'priceUsd',
 ] as const;
 
+/** Body of `POST /api/moderation/listings/:id/reject`. */
+export const ModerationRejectSchema = z.object({
+  reason: z.string().min(1),
+});
+
 /** Body of `POST /api/my/saved-searches`. */
 export const SavedSearchCreateSchema = z.object({
   name: z.string().min(1).max(80),
@@ -173,5 +178,6 @@ export type AuthUser = z.infer<typeof AuthUserSchema>;
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 export type TelegramAuth = z.infer<typeof TelegramAuthSchema>;
 export type ListingDraft = z.infer<typeof ListingDraftSchema>;
+export type ModerationReject = z.infer<typeof ModerationRejectSchema>;
 export type SavedSearchCreate = z.infer<typeof SavedSearchCreateSchema>;
 export type SavedSearch = z.infer<typeof SavedSearchSchema>;
