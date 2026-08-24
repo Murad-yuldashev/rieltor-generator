@@ -69,5 +69,12 @@ export function toListingSummary(row: ListingRow): ListingSummary {
     // The list response carries only the first image, but the card's "1/8" counter
     // needs the total — cheaper than sending the whole array.
     imageCount: row.images.length,
+    descriptionShort:
+      row.description.length > 240
+        ? row.description.slice(0, 240).trimEnd() + '…'
+        : row.description,
+    agentName: row.agent.name,
+    agencyName: row.agent.agency,
+    agentPhoneMasked: maskPhone(row.agent.phone),
   };
 }

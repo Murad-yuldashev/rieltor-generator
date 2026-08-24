@@ -51,11 +51,25 @@ export const ListingSummarySchema = z.object({
   image: ImageSchema.nullable(),
   /** Powers the "1/8" counter on a card — just the count, not the whole array. */
   imageCount: z.number().int(),
+  /** First ~240 chars of the description, truncated server-side so the list payload stays small. The frontend clamps visually; this bounds the bytes. */
+  descriptionShort: z.string(),
+  /** Seller display name for the result-row seller panel. */
+  agentName: z.string(),
+  /** Seller agency/subtitle. */
+  agencyName: z.string(),
+  /** Masked phone for the seller panel — same masking as the detail payload. */
+  agentPhoneMasked: z.string(),
 });
 
 export const ListingDetailSchema = ListingSummarySchema.omit({
   image: true,
   imageCount: true,
+  // Superseded by the full `description` and nested `agent` object below —
+  // these summary-only fields exist to keep the list payload small.
+  descriptionShort: true,
+  agentName: true,
+  agencyName: true,
+  agentPhoneMasked: true,
 }).extend({
   address: z.string(),
   description: z.string(),
