@@ -35,6 +35,7 @@ const listing = {
     agency: 'Buxoro Uy',
     photoUrl: '/images/agents/agent-1.jpg',
     phone: '+998901234567',
+    phoneMasked: '+998 90 ••• •• 67',
     telegram: 'murod',
   },
 };

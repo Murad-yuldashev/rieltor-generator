@@ -20,6 +20,10 @@ const listings = [
     listedAt: '2026-07-22',
     image: { base: '/images/bx-001/01', ogUrl: null, width: 1200, height: 900, position: 1 },
     imageCount: 4,
+    descriptionShort: 'Qisqa tavsif.',
+    agentName: 'Murod',
+    agencyName: 'Rieltor',
+    agentPhoneMasked: '+998 90 ••• •• 67',
   },
 ];
 
