@@ -1,15 +1,23 @@
 import { randomBytes } from 'node:crypto';
+import { resolve } from 'node:path';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { LISTING_REQUIRED_FIELDS } from '@rieltor/shared';
 import type { ListingDetail, ListingSummary } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { toListingDetail, toListingSummary } from './mapper';
+import { processImage } from './process-image';
 
 const FULL_INCLUDE = { agent: true, images: { orderBy: { position: 'asc' } } } as const;
 
 // Seeded agency agent id — user listings are attributed to their own account
 // in Phase 3, when the realtor profile exists.
 const DEFAULT_AGENT_ID = 'agent-1';
+
+// Same directory bootstrap.ts serves '/images' from — resolved the same way
+// (relative to the API root, not this file's location after compilation).
+const PUBLIC_DIR = resolve(__dirname, '..', '..', 'public');
+
+const MAX_IMAGES_PER_LISTING = 10;
 
 @Injectable()
 export class ListingsService {
@@ -91,6 +99,61 @@ export class ListingsService {
     if (typeof data.priceSom === 'string') data.priceSom = BigInt(data.priceSom);
 
     await this.prisma.listing.update({ where: { id }, data });
+  }
+
+  async addImage(listingId: string, ownerId: string, file: Express.Multer.File) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { ownerId: true, status: true },
+    });
+
+    if (!listing || listing.ownerId !== ownerId) throw new NotFoundException();
+    if (listing.status === 'PUBLISHED') {
+      throw new BadRequestException('E’lon tahrirlash uchun avval arxivlanishi kerak');
+    }
+
+    const count = await this.prisma.image.count({ where: { listingId } });
+    if (count >= MAX_IMAGES_PER_LISTING) {
+      throw new BadRequestException('Ko‘pi bilan 10 ta rasm');
+    }
+
+    const position = count + 1;
+    const result = await processImage({
+      source: file.buffer,
+      outputRoot: PUBLIC_DIR,
+      listingId,
+      position,
+      makeOg: position === 1,
+    });
+
+    return this.prisma.image.create({
+      data: {
+        listingId,
+        base: result.base,
+        ogUrl: result.ogUrl,
+        width: result.width,
+        height: result.height,
+        position,
+      },
+      select: { base: true, position: true, width: true, height: true },
+    });
+  }
+
+  async removeImage(listingId: string, imageId: string, ownerId: string) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { ownerId: true },
+    });
+
+    if (!listing || listing.ownerId !== ownerId) throw new NotFoundException();
+
+    // Scope the delete to the listing so an imageId from a different listing
+    // can't be used to delete this listing's row.
+    const { count } = await this.prisma.image.deleteMany({
+      where: { id: imageId, listingId },
+    });
+
+    if (count === 0) throw new NotFoundException();
   }
 
   async submitForModeration(id: string, ownerId: string) {

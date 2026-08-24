@@ -1877,6 +1877,7 @@ __metadata:
     "@swc/core": "npm:^1.10.0"
     "@types/compression": "npm:^1"
     "@types/express": "npm:^5.0.0"
+    "@types/multer": "npm:^2.2.0"
     "@types/node": "npm:^22.10.0"
     "@types/supertest": "npm:^6.0.2"
     compression: "npm:^1.8.1"
@@ -2791,6 +2792,15 @@ __metadata:
   version: 2.1.0
   resolution: "@types/ms@npm:2.1.0"
   checksum: 10c0/5ce692ffe1549e1b827d99ef8ff71187457e0eb44adbae38fdf7b9a74bae8d20642ee963c14516db1d35fa2652e65f47680fdf679dcbde52bbfadd021f497225
+  languageName: node
+  linkType: hard
+
+"@types/multer@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "@types/multer@npm:2.2.0"
+  dependencies:
+    "@types/express": "npm:*"
+  checksum: 10c0/72472c2da0a9afe86e2d64cfec53f4564727affcb691f78fcbdef495978857903f03326e4ecf58f6d1c3c4c89bb39e5d94fb97d4722a1f448f777c4fa690754b
   languageName: node
   linkType: hard
 

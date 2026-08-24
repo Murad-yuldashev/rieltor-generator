@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { ContactController } from './contact.controller';
 import { ListingDraftController } from './listing-draft.controller';
+import { ListingImageController } from './listing-image.controller';
 import { ListingsController } from './listings.controller';
 import { ListingsService } from './listings.service';
 import { ModerationController } from './moderation.controller';
@@ -12,6 +13,7 @@ import { ModerationController } from './moderation.controller';
     ListingsController,
     ContactController,
     ListingDraftController,
+    ListingImageController,
     ModerationController,
   ],
   providers: [ListingsService],
