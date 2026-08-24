@@ -1,4 +1,5 @@
 import { cn } from '@/shared/lib/cn';
+import { VoiceButton } from '@/features/voice-input';
 import type { ListingDraftState } from '../../model/use-listing-draft';
 import { WizardNav } from '../wizard-nav';
 
@@ -6,6 +7,13 @@ const inputClass =
   'w-full rounded-[14px] border border-line bg-surface px-3.5 py-3 text-[14.5px] font-medium outline-none placeholder:text-ink-3 focus:border-accent';
 
 const ROOM_OPTIONS = [1, 2, 3, 4, 5, 6];
+
+/** Dictation replaces nothing already typed — the transcript is appended after it. */
+function appendTranscript(existing: string | undefined, transcript: string): string {
+  const trimmed = transcript.trim();
+  if (!existing) return trimmed;
+  return `${existing.trimEnd()} ${trimmed}`;
+}
 
 interface Props {
   draft: ListingDraftState;
@@ -107,13 +115,18 @@ export function ParamsStep({ draft }: Props) {
 
       <label className="block">
         <span className="mb-1.5 block text-[13.5px] font-bold text-ink-2">Sarlavha</span>
-        <input
-          value={fields.title ?? ''}
-          onChange={(e) => patch({ title: e.target.value })}
-          placeholder="Masalan: Yunusobodda 3 xonali, yevroremont"
-          maxLength={120}
-          className={inputClass}
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={fields.title ?? ''}
+            onChange={(e) => patch({ title: e.target.value })}
+            placeholder="Masalan: Yunusobodda 3 xonali, yevroremont"
+            maxLength={120}
+            className={cn(inputClass, 'flex-1')}
+          />
+          <VoiceButton
+            onResult={(text) => patch({ title: appendTranscript(fields.title, text) })}
+          />
+        </div>
       </label>
 
       <div>
@@ -125,20 +138,27 @@ export function ParamsStep({ draft }: Props) {
           <label htmlFor="listing-description" className="text-[13.5px] font-bold text-ink-2">
             Tavsif
           </label>
-          <button
-            type="button"
-            onClick={() => void generateDescription()}
-            disabled={!canGenerateDescription || isGeneratingDescription}
-            className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft px-3 py-1.5 text-[12.5px] font-bold text-accent transition-colors hover:bg-accent-soft/80 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isGeneratingDescription && (
-              <span
-                aria-hidden="true"
-                className="h-3 w-3 animate-spin rounded-full border-2 border-accent/30 border-t-accent"
-              />
-            )}
-            {isGeneratingDescription ? 'Yozilmoqda...' : 'Menga tavsif yozib ber ✨'}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <VoiceButton
+              onResult={(text) =>
+                patch({ description: appendTranscript(fields.description, text) })
+              }
+            />
+            <button
+              type="button"
+              onClick={() => void generateDescription()}
+              disabled={!canGenerateDescription || isGeneratingDescription}
+              className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft px-3 py-1.5 text-[12.5px] font-bold text-accent transition-colors hover:bg-accent-soft/80 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isGeneratingDescription && (
+                <span
+                  aria-hidden="true"
+                  className="h-3 w-3 animate-spin rounded-full border-2 border-accent/30 border-t-accent"
+                />
+              )}
+              {isGeneratingDescription ? 'Yozilmoqda...' : 'Menga tavsif yozib ber ✨'}
+            </button>
+          </div>
         </div>
         <textarea
           id="listing-description"
