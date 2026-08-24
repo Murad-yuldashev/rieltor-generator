@@ -7,6 +7,7 @@ import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SavedSearchModule } from './saved-search/saved-search.module';
 import { SsrModule } from './ssr/ssr.module';
 import { ViewsModule } from './views/views.module';
 
@@ -21,6 +22,7 @@ import { ViewsModule } from './views/views.module';
     AuthModule,
     HealthModule,
     ListingsModule,
+    SavedSearchModule,
     ViewsModule,
     SsrModule,
   ],

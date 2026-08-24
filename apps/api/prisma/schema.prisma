@@ -103,17 +103,18 @@ enum UserRole {
 }
 
 model User {
-  id         String    @id @default(cuid())
+  id            String        @id @default(cuid())
   /// E.164 without the plus: "998901234567". Unique across the platform.
-  phone      String    @unique
-  name       String?
+  phone         String        @unique
+  name          String?
   /// Telegram numeric id, present only when the account was created via Telegram Login.
-  telegramId String?   @unique
-  photoUrl   String?
-  role       UserRole  @default(USER)
-  createdAt  DateTime  @default(now())
-  sessions   Session[]
-  listings   Listing[]
+  telegramId    String?       @unique
+  photoUrl      String?
+  role          UserRole      @default(USER)
+  createdAt     DateTime      @default(now())
+  sessions      Session[]
+  listings      Listing[]
+  savedSearches SavedSearch[]
 }
 
 model Session {
@@ -151,4 +152,16 @@ model ContactReveal {
   createdAt DateTime @default(now())
 
   @@index([listingId, createdAt])
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  /// The search page's query string, replayed verbatim when the user opens it.
+  query     String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

@@ -151,6 +151,18 @@ export const LISTING_REQUIRED_FIELDS = [
   'priceUsd',
 ] as const;
 
+/** Body of `POST /api/my/saved-searches`. */
+export const SavedSearchCreateSchema = z.object({
+  name: z.string().min(1).max(80),
+  /** The search page's query string (no leading "?"), replayed verbatim on open. */
+  query: z.string(),
+});
+
+export const SavedSearchSchema = SavedSearchCreateSchema.extend({
+  id: z.string(),
+  createdAt: z.string(),
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -162,3 +174,5 @@ export type AuthUser = z.infer<typeof AuthUserSchema>;
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 export type TelegramAuth = z.infer<typeof TelegramAuthSchema>;
 export type ListingDraft = z.infer<typeof ListingDraftSchema>;
+export type SavedSearchCreate = z.infer<typeof SavedSearchCreateSchema>;
+export type SavedSearch = z.infer<typeof SavedSearchSchema>;
