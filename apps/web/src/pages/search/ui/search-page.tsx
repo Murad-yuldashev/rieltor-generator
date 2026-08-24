@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { ListingSummary } from '@rieltor/shared';
-import { ListingCard, listingsQuery } from '@/entities/listing';
+import { ListingCard, ListingResultRow, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
 import {
   EMPTY_CRITERIA,
@@ -190,9 +190,22 @@ export function SearchPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-4 desk:grid desk:grid-cols-3 desk:gap-5">
+            {/* Below `desk:` (1440px) this is a card grid; from `desk:` it becomes
+                the CIAN-style three-column row list (spec §2.2) — only one of the
+                two ever renders, CSS just picks which. */}
+            <div className="flex flex-col gap-4 desk:hidden">
               {shown.map((listing) => (
                 <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  favoriteSlot={<FavoriteButton id={listing.id} />}
+                />
+              ))}
+            </div>
+
+            <div className="hidden desk:flex desk:flex-col desk:gap-5">
+              {shown.map((listing) => (
+                <ListingResultRow
                   key={listing.id}
                   listing={listing}
                   favoriteSlot={<FavoriteButton id={listing.id} />}

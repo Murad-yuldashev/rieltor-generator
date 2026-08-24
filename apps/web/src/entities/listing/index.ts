@@ -3,6 +3,7 @@ export { LISTING_TYPES, LISTING_TYPE_META } from './lib/type-meta';
 export { Description } from './ui/description';
 export { ListingCard } from './ui/listing-card';
 export { ListingMeta } from './ui/listing-meta';
+export { ListingResultRow } from './ui/listing-result-row';
 export { ListingRow } from './ui/listing-row';
 export { Location } from './ui/location';
 export { ParamsRow } from './ui/params-row';
