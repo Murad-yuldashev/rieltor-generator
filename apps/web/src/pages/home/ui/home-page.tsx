@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ListingCard, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
 import {
+  FilterBar,
   ListingFacets,
   ListingHero,
   SortSelect,
@@ -46,10 +47,23 @@ export function HomePage() {
     <main>
       <ListingHero search={filters.search} onSearchChange={resetPaging(filters.setSearch)} />
 
+      {/* Desktop swaps the phone's sidebar for this sticky row above a
+          full-width grid (CIAN-style — spec §2.1); ListingFacets keeps doing
+          the same job below 1440px. */}
+      <FilterBar
+        deal={filters.deal}
+        onDealChange={resetPaging(filters.setDeal)}
+        type={filters.type}
+        onTypeChange={resetPaging(filters.setType)}
+        search={filters.search}
+        onSearchChange={resetPaging(filters.setSearch)}
+      />
+
       {/* One DOM order serves both layouts: on a phone these two blocks simply
-          stack, and at 1440px the first becomes a sticky sidebar beside the grid. */}
-      <div className="desk:mt-7 desk:grid desk:grid-cols-[17rem_1fr] desk:items-start desk:gap-7">
-        <div className="desk:sticky desk:top-24 desk:rounded-card desk:border desk:border-line/60 desk:bg-card desk:p-5 desk:shadow-card">
+          stack; at 1440px the facets block is dropped (FilterBar replaces it)
+          and the results run full width. */}
+      <div className="desk:mt-7">
+        <div className="desk:hidden">
           <ListingFacets
             deal={filters.deal}
             onDealChange={resetPaging(filters.setDeal)}
@@ -67,7 +81,7 @@ export function HomePage() {
             <SortSelect value={filters.sort} onChange={resetPaging(filters.setSort)} />
           </div>
 
-          <div className="flex flex-col gap-4 px-4 desk:grid desk:grid-cols-3 desk:gap-5 desk:px-0">
+          <div className="flex flex-col gap-4 px-4 desk:grid desk:grid-cols-4 desk:gap-5 desk:px-0">
             {isPending && Array.from({ length: 3 }, (_, i) => <CardSkeleton key={i} />)}
 
             {shown.map((listing, i) => (

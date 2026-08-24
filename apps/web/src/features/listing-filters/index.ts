@@ -8,6 +8,7 @@ export {
 export type { Criteria, Sort, TypeFilter } from './model/criteria';
 export { parseNumberInput, parsePriceInput } from './model/parse';
 export { useListingFilters } from './model/use-listing-filters';
+export { FilterBar } from './ui/filter-bar';
 export { FilterPanel } from './ui/filter-panel';
 export { ListingFacets } from './ui/listing-facets';
 export { ListingHero } from './ui/listing-hero';
