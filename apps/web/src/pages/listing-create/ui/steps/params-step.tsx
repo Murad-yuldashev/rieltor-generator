@@ -13,7 +13,16 @@ interface Props {
 
 /** Step 3: rooms/area/floor plus the title and description — the wizard's only slot for the two, and both are required for submission (LISTING_REQUIRED_FIELDS). */
 export function ParamsStep({ draft }: Props) {
-  const { fields, patch, next, back, isSaving } = draft;
+  const {
+    fields,
+    patch,
+    next,
+    back,
+    isSaving,
+    generateDescription,
+    isGeneratingDescription,
+    descriptionError,
+  } = draft;
 
   // Mirrors ParamsRow (entities/listing): commercial premises have no room count, houses have no floor.
   const showRooms = fields.type !== 'COMMERCIAL';
@@ -24,6 +33,12 @@ export function ParamsStep({ draft }: Props) {
     fields.areaM2 > 0 &&
     (fields.title?.length ?? 0) >= 10 &&
     (fields.description?.length ?? 0) >= 20,
+  );
+
+  // `AiDescriptionRequestSchema` requires type/deal/district/areaM2 — everything else
+  // it accepts is optional, so the button only needs to gate on those four.
+  const canGenerateDescription = Boolean(
+    fields.type && fields.deal && (fields.district?.length ?? 0) >= 2 && (fields.areaM2 ?? 0) > 0,
   );
 
   return (
@@ -101,9 +116,32 @@ export function ParamsStep({ draft }: Props) {
         />
       </label>
 
-      <label className="block">
-        <span className="mb-1.5 block text-[13.5px] font-bold text-ink-2">Tavsif</span>
+      <div>
+        {/* Explicit htmlFor/id rather than the usual implicit label-wraps-input pattern:
+            a <button> is itself labelable, so wrapping it in the same <label> as the
+            textarea would make the label bind to the button (the first labelable
+            descendant) instead of the textarea it's meant to describe. */}
+        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+          <label htmlFor="listing-description" className="text-[13.5px] font-bold text-ink-2">
+            Tavsif
+          </label>
+          <button
+            type="button"
+            onClick={() => void generateDescription()}
+            disabled={!canGenerateDescription || isGeneratingDescription}
+            className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft px-3 py-1.5 text-[12.5px] font-bold text-accent transition-colors hover:bg-accent-soft/80 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isGeneratingDescription && (
+              <span
+                aria-hidden="true"
+                className="h-3 w-3 animate-spin rounded-full border-2 border-accent/30 border-t-accent"
+              />
+            )}
+            {isGeneratingDescription ? 'Yozilmoqda...' : 'Menga tavsif yozib ber ✨'}
+          </button>
+        </div>
         <textarea
+          id="listing-description"
           value={fields.description ?? ''}
           onChange={(e) => patch({ description: e.target.value })}
           placeholder="Uy haqida batafsil yozing: holati, infratuzilma, qulayliklar..."
@@ -111,7 +149,12 @@ export function ParamsStep({ draft }: Props) {
           maxLength={4000}
           className={cn(inputClass, 'resize-none')}
         />
-      </label>
+        {descriptionError && (
+          <span className="mt-1.5 block text-[12.5px] font-semibold text-brand-rose">
+            {descriptionError}
+          </span>
+        )}
+      </div>
 
       <WizardNav
         onBack={back}
