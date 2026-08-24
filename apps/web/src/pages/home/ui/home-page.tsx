@@ -13,6 +13,7 @@ import {
   useListingFilters,
 } from '@/features/listing-filters';
 import { useCreateSavedSearch } from '@/features/saved-search';
+import { ValuationBanner } from './valuation-banner';
 
 /** How many cards fill the first screen — the rest arrive via "Ko'proq". */
 const PAGE_SIZE = 6;
@@ -82,6 +83,8 @@ export function HomePage() {
   return (
     <main>
       <ListingHero search={filters.search} onSearchChange={resetPaging(filters.setSearch)} />
+
+      <ValuationBanner />
 
       {/* Desktop swaps the phone's sidebar for this sticky row above a
           full-width grid (CIAN-style — spec §2.1); ListingFacets keeps doing

@@ -116,6 +116,20 @@ export function SiteHeader() {
                 {label}
               </NavLink>
             ))}
+
+            {/* Not in NAV_TABS: that list is shared with the phone bottom nav, and the
+                valuation entry point is desktop-only — the phone header stays untouched. */}
+            <NavLink
+              to="/valuation"
+              className={({ isActive }) =>
+                `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
+                  isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
+                }`
+              }
+            >
+              <Icon name="money" className="h-[17px] w-[17px]" strokeWidth={2.1} />
+              Baholash
+            </NavLink>
           </nav>
 
           <AccountArea onOpenLogin={() => setLoginOpen(true)} />
