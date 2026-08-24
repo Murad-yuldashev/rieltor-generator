@@ -52,7 +52,7 @@ export function FilterBar({
   onSaveSearch,
 }: Props) {
   return (
-    <div className="hidden desk:sticky desk:top-[7.5rem] desk:z-40 desk:flex desk:items-center desk:gap-2.5 desk:border-b desk:border-line desk:bg-white desk:py-3">
+    <div className="hidden desk:sticky desk:top-24 desk:z-40 desk:flex desk:items-center desk:gap-2.5 desk:border-b desk:border-line desk:bg-white desk:py-3">
       <div role="tablist" aria-label="Bitim turi" className="flex shrink-0 gap-2">
         {DEALS.map(({ value, label }) => (
           <button

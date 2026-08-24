@@ -5,7 +5,6 @@ import { ListingCard, ListingResultRow, listingsQuery } from '@/entities/listing
 import { FavoriteButton } from '@/features/favorites';
 import {
   EMPTY_CRITERIA,
-  FilterBar,
   FilterPanel,
   filterListings,
   type Criteria,
@@ -71,18 +70,6 @@ export function SearchPage() {
   return (
     <main>
       <PageHeading title="Qidiruv" subtitle="Filtrlar orqali o'zingizga mosini toping" />
-
-      {/* Desktop gets the same sticky bar as the home list, for visual
-          consistency between the two list pages (spec §2.1). The filter form
-          below stays untouched — this task only adds the bar. */}
-      <FilterBar
-        deal={criteria.deal}
-        onDealChange={(deal) => setCriteria({ ...criteria, deal })}
-        type={criteria.type}
-        onTypeChange={(type) => setCriteria({ ...criteria, type })}
-        search={criteria.search}
-        onSearchChange={(search) => setCriteria({ ...criteria, search })}
-      />
 
       <form
         className="px-4 pt-3.5 desk:max-w-2xl desk:px-0 desk:pt-5"
