@@ -81,6 +81,52 @@ Qo'shimcha server funksiyalari:
 - **Bitta jarayon** — NestJS API, build qilingan SPA va rasmlarni birga xizmat qiladi
   (gzip/brotli siqish, hashli assetlarga uzoq kesh).
 
+## 4b. Phase 1 — Marketplace poydevori (2026-08-21+)
+
+Demo ustiga real marketplace qatlami qo'shildi. Spec: `docs/superpowers/specs/2026-08-21-platform-spec.md`,
+reja: `docs/superpowers/plans/2026-08-21-phase-1-marketplace-foundation.md`.
+
+### Foydalanuvchi va autentifikatsiya
+
+- **Kirish** — telefon OTP (SMS kodi) yoki **Telegram Login** (HMAC imzo tekshiruvi bilan).
+  JWT access (15 daq) + aylanuvchi refresh (30 kun) token; `localStorage`da saqlanadi,
+  401 da avtomatik yangilanadi.
+- **Login modal** — telefon → 6 xonali kod (120s taymer, qayta yuborish), o'zbekcha.
+  Desktop header'da "Kirish" / akkaunt holati / "+ E'lon joylash" tugmasi (faqat ≥1440px).
+
+### E'lon joylash va moderatsiya
+
+- **6 qadamli sehrgar (`/my/listings/new`)** — bitim+tur → manzil → parametrlar →
+  **rasm yuklash** (sharp quvuri, ≤10 ta) → narx → kontaktlar. Draft har qadamda saqlanadi.
+- **Hayot sikli** — DRAFT → MODERATION → PUBLISHED / REJECTED / ARCHIVED. Public API faqat
+  PUBLISHED ko'rsatadi. `priceUsd` submit'da so'mdan hosil qilinadi.
+- **Moderatsiya navbati** — MODERATOR/ADMIN roli (RolesGuard) approve/reject qiladi.
+- **Kabinet (`/my/listings`)** — foydalanuvchi e'lonlari (rangli status-chip) + saqlangan qidiruvlar.
+
+### Marketplace funksiyalari
+
+- **Yashirin telefon + reveal kuzatuvi (A8)** — public payloadda faqat maskalangan raqam
+  (`+998 90 ••• •• 67`); "Qo'ng'iroq" bosilganda `/api/objects/:id/contact` orqali ochiladi
+  va `ContactReveal` yozuvi tushadi (lead hodisasi).
+- **Saqlangan qidiruvlar** — bosh sahifa filtr panelidagi "Qidiruvni saqlash".
+
+### Desktop dizayn (CIAN uslubi, ≥1440px, `desk:`)
+
+- Gorizontal menyuli header, yopishqoq filtr paneli, to'liq kenglikli grid.
+- **3 ustunli natija qatori** (`/search`) — foto + kontent + sotuvchi paneli (maskalangan raqam,
+  ✓ TEKSHIRILGAN, Batafsil).
+- Obyekt sahifasi: chapda galereya, o'ngda yopishqoq narx+CTA ustuni.
+- **Telefon (<1440px) ko'rinishi butunlay o'zgarmagan** — barcha desktop uslub `desk:` ostida.
+
+### Yangi API endpointlari (global `api` prefiks)
+
+`POST /api/auth/otp/{request,verify}` · `POST /api/auth/telegram` · `GET /api/auth/me` ·
+`POST /api/auth/{refresh,logout}` · `GET/POST/PATCH/POST :id/submit /api/my/listings` ·
+`POST/DELETE /api/my/listings/:id/images` · `GET/POST/DELETE /api/moderation/listings/...` ·
+`GET /api/objects/:id/contact` · `GET/POST/DELETE /api/my/saved-searches`.
+Yangi Prisma modellari: `User`, `Session`, `OtpCode`, `SavedSearch`, `ContactReveal` +
+`Listing.{status,ownerId,rejectionReason,publishedAt}`. Global `ZodError → 400` filtri.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
