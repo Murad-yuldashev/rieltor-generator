@@ -38,7 +38,10 @@ export class ValuationService {
    * whole type. `comparablesCount` reflects whichever level was actually used.
    */
   private async loadComparables(req: ValuationRequest) {
-    const base = { status: 'PUBLISHED', type: req.type } as const;
+    // A valuation request has no `deal` param — it's implicitly asking "what
+    // would this sell for", so RENT listings (monthly price, a different
+    // scale entirely) must never enter the sale-price median.
+    const base = { status: 'PUBLISHED', type: req.type, deal: 'SALE' } as const;
 
     if (req.rooms !== null) {
       const roomBucket = await this.prisma.listing.findMany({
