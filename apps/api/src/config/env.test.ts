@@ -5,6 +5,7 @@ const fullEnv = {
   DATABASE_URL: 'postgresql://rieltor:rieltor@localhost:5432/rieltor',
   PUBLIC_BASE_URL: 'http://localhost:3000',
   JWT_SECRET: 'test-only-secret-at-least-32-characters-long',
+  TELEGRAM_BOT_TOKEN: 'test-bot-token',
 };
 
 describe('envSchema', () => {
