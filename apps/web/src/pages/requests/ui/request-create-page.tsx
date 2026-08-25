@@ -85,7 +85,7 @@ export function RequestCreatePage() {
         subtitle="Qanday uy qidiryapsiz? Faqat bitim turi majburiy."
       />
 
-      <div className="px-4 pt-3.5 desk:max-w-2xl desk:px-0 desk:pt-5">
+      <div className="px-4 pt-3.5 md:mx-auto md:max-w-2xl desk:max-w-2xl desk:px-0 desk:pt-5">
         <SectionCard>
           <div className="flex flex-col gap-5">
             <div>

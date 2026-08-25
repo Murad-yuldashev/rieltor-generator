@@ -8,7 +8,7 @@ import { PropertyCard } from './property-card';
 
 function CardSkeleton() {
   return (
-    <div className="flex flex-col gap-3 desk:grid desk:grid-cols-2">
+    <div className="flex flex-col gap-3 md:grid md:grid-cols-2 desk:grid desk:grid-cols-2">
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="h-[132px] animate-pulse rounded-card bg-card" />
       ))}
@@ -80,7 +80,7 @@ export function MyPropertiesPage() {
         {!isLoading && count === 0 && <EmptyState />}
 
         {!isLoading && count > 0 && (
-          <div className="flex flex-col gap-3 desk:grid desk:grid-cols-2">
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-2 desk:grid desk:grid-cols-2">
             {properties?.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}

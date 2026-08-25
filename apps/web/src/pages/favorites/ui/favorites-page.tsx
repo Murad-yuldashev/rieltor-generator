@@ -32,7 +32,7 @@ export function FavoritesPage() {
         </p>
       )}
 
-      <div className="mt-3.5 flex flex-col gap-2.5 px-4 desk:grid desk:grid-cols-2 desk:gap-3.5 desk:px-0">
+      <div className="mt-3.5 flex flex-col gap-2.5 px-4 md:grid md:grid-cols-2 md:gap-3.5 desk:grid desk:grid-cols-2 desk:gap-3.5 desk:px-0">
         {isPending &&
           ids.map((id) => (
             <div key={id} className="h-[110px] animate-pulse rounded-card bg-card" />

@@ -33,12 +33,17 @@
   /* max-w-* utilities come from the `--container-*` namespace, NOT `--spacing-*`.
      Naming this `--spacing-content` would stop `max-w-content` being generated at
      all, and the 480px desktop constraint would silently do nothing. */
-  --container-content: 30rem; /* 480px */
+  --container-content: 30rem; /* 480px — phone/base content cap */
+  --container-tablet: 45rem; /* 720px — md (768) content cap */
+  --container-laptop: 65rem; /* 1040px — lg (1024) content cap */
 
-  /* The single desktop breakpoint. Below it the phone column is what everyone
-     sees — a 1280px laptop included — so every desktop rule is written as
-     `desk:` and nothing can leak downwards. */
-  --breakpoint-desk: 90rem; /* 1440px */
+  /* Three responsive tiers layered under the CIAN desktop. `md`/`lg` match
+     Tailwind's defaults but are declared explicitly so the tablet/laptop tiers
+     are intentional and visible; `desk` (1440) stays the CIAN breakpoint.
+     Phone (<768) and CIAN (>=1440) rules are frozen — new work is md:/lg: only. */
+  --breakpoint-md: 48rem; /* 768px — tablet tier */
+  --breakpoint-lg: 64rem; /* 1024px — laptop tier */
+  --breakpoint-desk: 90rem; /* 1440px — CIAN desktop */
   --container-desk: 90rem; /* the widest the desktop content ever gets */
 }
 

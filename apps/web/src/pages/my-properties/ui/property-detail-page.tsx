@@ -54,7 +54,7 @@ export function PropertyDetailPage() {
 
   if (isPending) {
     return (
-      <main className="px-4 pt-4 desk:max-w-2xl desk:px-0 desk:pt-5">
+      <main className="px-4 pt-4 md:mx-auto md:max-w-2xl desk:max-w-2xl desk:px-0 desk:pt-5">
         <BackLink />
         <div className="mt-4 h-[120px] animate-pulse rounded-card bg-card" />
         <div className="mt-3 h-[220px] animate-pulse rounded-card bg-card" />
@@ -64,7 +64,7 @@ export function PropertyDetailPage() {
 
   if (isError || !data) {
     return (
-      <main className="px-4 pt-4 desk:max-w-2xl desk:px-0 desk:pt-5">
+      <main className="px-4 pt-4 md:mx-auto md:max-w-2xl desk:max-w-2xl desk:px-0 desk:pt-5">
         <BackLink />
         <div className="mt-4 rounded-card border border-line/60 bg-card p-8 text-center shadow-card">
           <p className="text-[16px] font-extrabold tracking-tight">Uy topilmadi</p>
@@ -82,7 +82,7 @@ export function PropertyDetailPage() {
   const up = deltaPct >= 0;
 
   return (
-    <main className="px-4 pt-4 pb-4 desk:max-w-2xl desk:px-0 desk:pt-5">
+    <main className="px-4 pt-4 pb-4 md:mx-auto md:max-w-2xl desk:max-w-2xl desk:px-0 desk:pt-5">
       <BackLink />
 
       <section className="mt-4 rounded-card border border-line/60 bg-card p-5 shadow-card">

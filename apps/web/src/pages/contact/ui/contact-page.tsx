@@ -34,7 +34,7 @@ export function ContactPage() {
     <main>
       <PageHeading title="Aloqa" subtitle="Savollaringiz bo'lsa — bemalol yozing" />
 
-      <div className="flex flex-col gap-3.5 p-4 desk:mt-6 desk:max-w-2xl desk:px-0 desk:pt-0">
+      <div className="flex flex-col gap-3.5 p-4 md:mx-auto md:max-w-2xl desk:mt-6 desk:max-w-2xl desk:px-0 desk:pt-0">
         <SectionCard className="py-6 text-center">
           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-violet-600 to-accent-dark text-white">
             <Icon name="homeSolid" className="h-8 w-8" strokeWidth={2} />

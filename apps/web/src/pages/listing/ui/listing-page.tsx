@@ -43,37 +43,37 @@ export function ListingPage() {
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-content bg-surface pb-cta desk:max-w-none">
+    <div className="mx-auto min-h-dvh max-w-content bg-surface pb-cta md:max-w-none desk:max-w-none">
       {/* The phone version of this page deliberately has no header — the gallery
-          runs to the top edge. A desktop window with no header at all just reads
-          as broken, so the header joins in at 1440px only. */}
-      <div className="hidden desk:block">
+          runs to the top edge. A window with no header at all just reads as broken,
+          so the top nav joins in from 768px. */}
+      <div className="hidden md:block">
         <SiteHeader />
       </div>
 
-      <div className="desk:mx-auto desk:w-full desk:max-w-desk desk:px-8 desk:py-7">
+      <div className="lg:px-8 lg:py-7 desk:mx-auto desk:w-full desk:max-w-desk desk:px-8 desk:py-7">
         {/* Two wrappers that are `display: contents` on a phone, so their children
             are direct items of this flex column and keep the original mobile
             order via `order-*`. At 1440px the wrappers turn into real columns. */}
-        <main className="flex flex-col gap-3.5 pb-4 desk:grid desk:grid-cols-[1fr_23rem] desk:items-start desk:gap-7 desk:pb-0">
-          <div className="contents desk:flex desk:flex-col desk:gap-3.5">
-            <div className="order-1 desk:overflow-hidden desk:rounded-card">
+        <main className="flex flex-col gap-3.5 pb-4 lg:grid lg:grid-cols-[1fr_21rem] lg:items-start lg:gap-6 lg:pb-0 desk:grid desk:grid-cols-[1fr_23rem] desk:items-start desk:gap-7 desk:pb-0">
+          <div className="contents lg:flex lg:flex-col lg:gap-3.5 desk:flex desk:flex-col desk:gap-3.5">
+            <div className="order-1 lg:overflow-hidden lg:rounded-card desk:overflow-hidden desk:rounded-card">
               <Gallery images={data.images} alt={data.title} type={data.type} id={data.id} />
             </div>
 
-            <SectionCard title="Tavsif" className="order-4 mx-4 desk:mx-0">
+            <SectionCard title="Tavsif" className="order-4 mx-4 lg:mx-0 desk:mx-0">
               <Description text={data.description} />
             </SectionCard>
 
-            <SectionCard title="Joylashuv" className="order-5 mx-4 desk:mx-0">
+            <SectionCard title="Joylashuv" className="order-5 mx-4 lg:mx-0 desk:mx-0">
               <Location landmark={data.landmark} address={data.address} />
             </SectionCard>
           </div>
 
-          <aside className="contents desk:sticky desk:top-24 desk:flex desk:flex-col desk:gap-3.5">
+          <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-3.5 desk:sticky desk:top-24 desk:flex desk:flex-col desk:gap-3.5">
             {/* `p-4` on the old wrapper put 16px between the gallery and this card;
                 the flex gap is 14px, so 2px come back here. */}
-            <SectionCard className="order-2 mx-4 mt-0.5 desk:mx-0 desk:mt-0">
+            <SectionCard className="order-2 mx-4 mt-0.5 lg:mx-0 desk:mx-0 desk:mt-0">
               <PriceBlock
                 priceSom={data.priceSom}
                 priceUsd={data.priceUsd}
@@ -88,7 +88,7 @@ export function ListingPage() {
               />
             </SectionCard>
 
-            <SectionCard className="order-3 mx-4 desk:mx-0">
+            <SectionCard className="order-3 mx-4 lg:mx-0 desk:mx-0">
               <ParamsRow
                 rooms={data.rooms}
                 areaM2={data.areaM2}
@@ -97,7 +97,7 @@ export function ListingPage() {
               />
             </SectionCard>
 
-            <SectionCard className="order-6 mx-4 desk:mx-0">
+            <SectionCard className="order-6 mx-4 lg:mx-0 desk:mx-0">
               <AgentCard agent={data.agent} />
             </SectionCard>
 

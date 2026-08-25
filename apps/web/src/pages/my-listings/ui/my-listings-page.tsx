@@ -126,7 +126,7 @@ export function MyListingsPage() {
         }
       />
 
-      <div className="flex flex-col gap-4 px-4 pt-3.5 desk:max-w-2xl desk:px-0 desk:pt-5">
+      <div className="flex flex-col gap-4 px-4 pt-3.5 md:mx-auto md:max-w-2xl desk:max-w-2xl desk:px-0 desk:pt-5">
         <SectionCard title="E'lonlar">
           {isListingsPending && (
             <RowSkeleton count={3} className="h-14 animate-pulse rounded-xl bg-surface" />

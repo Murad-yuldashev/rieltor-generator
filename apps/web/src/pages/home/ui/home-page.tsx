@@ -150,7 +150,7 @@ export function HomePage() {
             <SortSelect value={filters.sort} onChange={resetPaging(filters.setSort)} />
           </div>
 
-          <div className="flex flex-col gap-4 px-4 desk:grid desk:grid-cols-4 desk:gap-5 desk:px-0">
+          <div className="flex flex-col gap-4 px-4 md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3 desk:grid-cols-4 desk:gap-5 desk:px-0">
             {isPending && Array.from({ length: 3 }, (_, i) => <CardSkeleton key={i} />)}
 
             {shown.map((listing, i) => (
