@@ -22,6 +22,11 @@ jobs:
       PUBLIC_BASE_URL: http://localhost:3000
       SEED_AGENT_TEL: '+998901234567'
       SEED_AGENT_TG: 'test'
+      # Non-secret test values so the app's env validation (env.ts) passes when the
+      # e2e specs boot the Nest app. JWT_SECRET needs >=32 chars; TELEGRAM_BOT_TOKEN
+      # non-empty. Never used against real users — CI only.
+      JWT_SECRET: ci-test-jwt-secret-at-least-32-characters-long
+      TELEGRAM_BOT_TOKEN: ci-test-bot-token
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable

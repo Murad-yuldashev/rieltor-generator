@@ -24,6 +24,10 @@ services:
       SEED_AGENT_TEL: ${SEED_AGENT_TEL}
       SEED_AGENT_TG: ${SEED_AGENT_TG}
       PORT: 3000
+      # env.ts requires these; defaults let `docker compose up` and the CI e2e job
+      # boot without a real secret. Override with real values in production.
+      JWT_SECRET: ${JWT_SECRET:-dev-compose-jwt-secret-at-least-32-characters}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-dev-compose-bot-token}
     ports: ['3000:3000']
 
 volumes:
