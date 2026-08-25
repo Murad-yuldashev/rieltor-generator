@@ -8,5 +8,6 @@ import { ValuationService } from './valuation.service';
   imports: [AiModule, PrismaModule],
   controllers: [ValuationController],
   providers: [ValuationService],
+  exports: [ValuationService],
 })
 export class ValuationModule {}
