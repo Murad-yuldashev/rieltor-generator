@@ -6,7 +6,14 @@
     "typecheck": { "dependsOn": ["^build"] },
     "test": {
       "dependsOn": ["^build"],
-      "env": ["DATABASE_URL", "PUBLIC_BASE_URL", "SEED_AGENT_TEL", "SEED_AGENT_TG"]
+      "env": [
+        "DATABASE_URL",
+        "PUBLIC_BASE_URL",
+        "SEED_AGENT_TEL",
+        "SEED_AGENT_TG",
+        "JWT_SECRET",
+        "TELEGRAM_BOT_TOKEN"
+      ]
     },
     "lint": {}
   }
