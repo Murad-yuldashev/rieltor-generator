@@ -11,6 +11,7 @@ import { ListingsModule } from './listings/listings.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PropertiesModule } from './properties/properties.module';
+import { RequestsModule } from './requests/requests.module';
 import { SavedSearchModule } from './saved-search/saved-search.module';
 import { SsrModule } from './ssr/ssr.module';
 import { ValuationModule } from './valuation/valuation.module';
@@ -31,6 +32,7 @@ import { ViewsModule } from './views/views.module';
     ListingsModule,
     NotificationsModule,
     PropertiesModule,
+    RequestsModule,
     SavedSearchModule,
     ValuationModule,
     ViewsModule,
