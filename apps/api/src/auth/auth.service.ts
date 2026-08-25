@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomInt } from 'node:crypto';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenService } from './token.service';
 
@@ -17,6 +18,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokens: TokenService,
+    private readonly config: ConfigService,
   ) {}
 
   async findById(id: string) {
@@ -45,7 +47,11 @@ export class AuthService {
     // the flow is testable end to end in development.
     this.logger.log(`OTP for ${phone}: ${code}`);
 
-    return { expiresInSec: OTP_TTL_SEC };
+    // Dev convenience: with no SMS provider yet, hand the code back in the response
+    // so the login modal can show/prefill it. NEVER in production — the code is a
+    // credential, so it is only ever returned when NODE_ENV is not 'production'.
+    const isProd = this.config.get<string>('NODE_ENV') === 'production';
+    return isProd ? { expiresInSec: OTP_TTL_SEC } : { expiresInSec: OTP_TTL_SEC, devCode: code };
   }
 
   async verifyOtp(phone: string, code: string, userAgent?: string) {

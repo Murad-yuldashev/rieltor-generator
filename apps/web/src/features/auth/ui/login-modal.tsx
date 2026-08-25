@@ -40,6 +40,8 @@ export function LoginModal({ open, onClose }: Props) {
   const [secondsLeft, setSecondsLeft] = useState(CODE_TTL_SEC);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
+  // Dev-only: the code the server hands back when there is no SMS provider yet.
+  const [devCode, setDevCode] = useState<string | null>(null);
 
   // A fresh open should never resume a half-finished attempt from last time.
   useEffect(() => {
@@ -49,6 +51,7 @@ export function LoginModal({ open, onClose }: Props) {
     setCode('');
     setPhoneError(null);
     setCodeError(null);
+    setDevCode(null);
   }, [open]);
 
   // The 120s countdown only runs while the code pane is showing.
@@ -72,8 +75,11 @@ export function LoginModal({ open, onClose }: Props) {
   async function submitPhone() {
     setPhoneError(null);
     try {
-      await requestOtp(phone);
-      setCode('');
+      const result = await requestOtp(phone);
+      // Dev mode: prefill the code the server returned so the user can log in
+      // straight away without a real SMS. Empty in production.
+      setDevCode(result.devCode ?? null);
+      setCode(result.devCode ?? '');
       setCodeError(null);
       setSecondsLeft(CODE_TTL_SEC);
       setPane('code');
@@ -85,8 +91,9 @@ export function LoginModal({ open, onClose }: Props) {
   async function resend() {
     setCodeError(null);
     try {
-      await requestOtp(phone);
-      setCode('');
+      const result = await requestOtp(phone);
+      setDevCode(result.devCode ?? null);
+      setCode(result.devCode ?? '');
       setSecondsLeft(CODE_TTL_SEC);
     } catch (error) {
       setCodeError(errorMessage(error, "Kodni yuborib bo'lmadi. Qaytadan urinib ko'ring."));
@@ -206,6 +213,12 @@ export function LoginModal({ open, onClose }: Props) {
             />
             {codeError && (
               <p className="mt-2 text-[13px] font-semibold text-brand-rose">{codeError}</p>
+            )}
+
+            {devCode && !codeError && (
+              <p className="mt-2 text-[12.5px] font-semibold text-brand-green">
+                Dev rejim — kod avtomatik kiritildi ({devCode}). "Tasdiqlash" tugmasini bosing.
+              </p>
             )}
 
             <button
