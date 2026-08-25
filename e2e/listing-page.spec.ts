@@ -29,11 +29,12 @@ test.describe('Listing page (360px)', () => {
     await expect(dots.first()).toHaveAttribute('aria-selected', 'false');
   });
 
-  test('the CTA buttons have the right links', async ({ page }) => {
+  test('the CTA buttons are present with the right target', async ({ page }) => {
     await page.goto('/obj/bx-002');
 
-    const callLink = page.getByRole('link', { name: /Qo'ng'iroq/ });
-    await expect(callLink).toHaveAttribute('href', /^tel:\+998\d+$/);
+    // "Qo'ng'iroq" is a button, not a tel: link: the number is masked until this
+    // tap reveals (and tracks) it, then dials. So assert the button, not an href.
+    await expect(page.getByRole('button', { name: /Qo'ng'iroq/ })).toBeVisible();
 
     const telegram = page.getByRole('link', { name: /Telegram/ });
     await expect(telegram).toHaveAttribute('href', /^https:\/\/t\.me\/[\w_]+$/);
@@ -42,7 +43,7 @@ test.describe('Listing page (360px)', () => {
   test('the CTA stays visible on screen', async ({ page }) => {
     await page.goto('/obj/bx-002');
     await page.mouse.wheel(0, 2000);
-    await expect(page.getByRole('link', { name: /Qo'ng'iroq/ })).toBeInViewport();
+    await expect(page.getByRole('button', { name: /Qo'ng'iroq/ })).toBeInViewport();
   });
 
   test('the view counter is visible', async ({ page }) => {
