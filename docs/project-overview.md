@@ -160,12 +160,49 @@ reja: `docs/superpowers/plans/2026-08-24-phase-2.1-ai-foundation.md`.
 Yangi env: `GEMINI_API_KEY` (ixtiyoriy) · `GEMINI_MODEL` (default `gemini-1.5-flash`).
 **Telefon (<1440px) ko'rinishi o'zgarmagan** — baholash sahifasi va sehrgar tugmalari mobil-first.
 
+## 4d. Phase 2.2 — Sotuvchini ushlash (2026-08-25)
+
+Bir martalik baholashni doimiy munosabatga aylantiradi. Spec:
+`docs/superpowers/specs/2026-08-25-phase-2.2-seller-retention-design.md`,
+reja: `docs/superpowers/plans/2026-08-25-phase-2.2-seller-retention.md`.
+
+### "Mening uyim" — uy qiymatini kuzatish
+
+- **Kabinet (`/my/properties`)** — foydalanuvchi uylarini kuzatadi (baholash parametrlaridan),
+  har biriga joriy taxminiy narx, oylik o'zgarish (▲/▼) va mini-grafik. Baholash natijasidagi
+  **"Uyni kuzatishga qo'shish"** tugmasi 2.1 baholashni retensiyaga ulaydi.
+- **Tafsilot (`/my/properties/:id`)** — katta joriy baho + **narx tarixi grafigi** (Recharts,
+  alohida lazy chunk). Tarixiy narx ma'lumoti yo'qligi uchun grafik **modellashtirilgan trailing
+  egri** bilan to'ldiriladi (uzuq chiziq, aniq belgilangan); real oylik snapshotlar uni asta
+  almashtiradi. Bo'sh bozorda "Ma'lumot yetarli emas" holati ("0 so'm" o'rniga).
+
+### Oylik xabarnoma
+
+- **Ilova ichidagi inbox (`/notifications`)** + desktop header'da o'qilmagan-badge'li qo'ng'iroq.
+- **Oylik cron** (`@nestjs/schedule`, har oy 1-sana) har mulkni qayta baholaydi, `ACTUAL`
+  snapshot qo'shadi va narx o'zgargan bo'lsa `PRICE_UPDATE` xabarnoma yozadi.
+
+### "Qidiryapman" — teskari e'lonlar
+
+- **Doska (`/requests`)** — xaridorlar so'rov joylaydi (bitim, tur, tuman, xona, byudjet);
+  rieltor/egalar filtr bilan ko'radi va telefonni ochadi (maskalangan → reveal + lead log,
+  e'lon reveal patterni). `/requests/new` va `/my/requests` (yopish/o'chirish).
+
+### Yangi API va env
+
+`GET/POST/GET :id/DELETE /api/my/properties` · `GET/POST read-all/:id/read /api/my/notifications` ·
+`GET(filtr, public)/POST/GET :id/POST :id/contact/PATCH/DELETE /api/requests` · `GET /api/my/requests`.
+Yangi Prisma modellari: `TrackedProperty`, `PriceSnapshot` (MODELED/ACTUAL), `Notification`,
+`PropertyRequest`; `ContactReveal.requestId` qo'shildi. Pul qiymatlari BigInt→string.
+**Telefon (<1440px) ko'rinishi o'zgarmagan** — barcha yangi sahifalar mobil-first, desktop `desk:` bilan.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
 - **Front:** React 19 · Vite 6 · TypeScript · Tailwind v4 · React Router 7 · TanStack Query 5 ·
-  Feature-Sliced Design (ESLint `boundaries` plagini qatlam qoidalarini majburlaydi)
-- **Back:** NestJS 11 · Node 22 · Prisma 6 · PostgreSQL 16 · Zod (env + DTO + Swagger)
+  Recharts (narx tarixi grafigi, lazy) · Feature-Sliced Design (ESLint `boundaries` plagini qatlam qoidalarini majburlaydi)
+- **Back:** NestJS 11 · Node 22 · Prisma 6 · PostgreSQL 16 · Zod (env + DTO + Swagger) ·
+  `@nestjs/schedule` (oylik narx cron)
 - **AI:** Google Gemini (`@google/generative-ai`) — baholash izohi va e'lon tavsifi, degradatsiya bilan
 - **Umumiy:** `@rieltor/shared` — Zod sxemalar, narx formatteri, rasm nomlash qoidasi
   front va back uchun **yagona manba**
