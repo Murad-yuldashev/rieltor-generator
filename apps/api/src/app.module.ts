@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
@@ -21,6 +22,7 @@ import { ViewsModule } from './views/views.module';
       // A bad env stops the app from booting at all — better than a slow failure.
       validate: (raw) => envSchema.parse(raw),
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AiModule,
     AuthModule,

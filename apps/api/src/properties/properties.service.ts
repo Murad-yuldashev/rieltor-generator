@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type {
   TrackedProperty,
   TrackedPropertyCreate,
   TrackedPropertyDetail,
 } from '@rieltor/shared';
+import { formatPriceSom } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValuationService } from '../valuation/valuation.service';
 import { modeledHistory } from './price-history';
@@ -23,6 +24,8 @@ type PropertyRow = {
 
 @Injectable()
 export class PropertiesService {
+  private readonly logger = new Logger(PropertiesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly valuation: ValuationService,
@@ -99,6 +102,44 @@ export class PropertiesService {
       where: { id, ownerId: userId },
     });
     if (count === 0) throw new NotFoundException();
+  }
+
+  /** Re-value every tracked property, append an ACTUAL snapshot, notify on change. */
+  async runMonthlyValuation(): Promise<void> {
+    const today = new Date();
+    const properties = await this.prisma.trackedProperty.findMany({
+      include: { snapshots: { orderBy: { capturedAt: 'desc' }, take: 1 } },
+    });
+    for (const p of properties) {
+      try {
+        const { estimateSom } = await this.valuation.estimate({
+          type: p.type,
+          district: p.district,
+          rooms: p.rooms,
+          areaM2: p.areaM2,
+        });
+        const next = BigInt(estimateSom);
+        await this.prisma.priceSnapshot.create({
+          data: { trackedPropertyId: p.id, estimateSom: next, capturedAt: today, source: 'ACTUAL' },
+        });
+        const prev = p.snapshots[0]?.estimateSom;
+        if (prev != null && prev > 0n && prev !== next) {
+          const deltaPct = Number(((next - prev) * 10000n) / prev) / 100;
+          const dir = deltaPct >= 0 ? 'oshdi' : 'tushdi';
+          await this.prisma.notification.create({
+            data: {
+              userId: p.ownerId,
+              type: 'PRICE_UPDATE',
+              title: 'Uyingiz narxi yangilandi',
+              body: `${p.label ?? p.district} narxi ${dir}: ${formatPriceSom(String(next), 'SALE')} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%)`,
+              targetId: p.id,
+            },
+          });
+        }
+      } catch (error) {
+        this.logger.warn(`monthly valuation failed for ${p.id}: ${String(error)}`);
+      }
+    }
   }
 }
 
