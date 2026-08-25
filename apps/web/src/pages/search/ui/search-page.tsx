@@ -201,10 +201,10 @@ export function SearchPage() {
               )}
             </div>
 
-            {/* Below `desk:` (1440px) this is a card grid; from `desk:` it becomes
-                the CIAN-style three-column row list (spec §2.2) — only one of the
-                two ever renders, CSS just picks which. */}
-            <div className="flex flex-col gap-4 desk:hidden">
+            {/* Below `desk:` (1440px) this is a card grid — 1 col on phone, 2 on
+                tablet, 3 on laptop; from `desk:` it becomes the CIAN-style
+                three-column row list (spec §2.2). Only one of the two ever renders. */}
+            <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3 desk:hidden">
               {shown.map((listing) => (
                 <ListingCard
                   key={listing.id}
