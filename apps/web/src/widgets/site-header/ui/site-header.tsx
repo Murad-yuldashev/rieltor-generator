@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import { Link, NavLink } from 'react-router';
-import { useSession } from '@/entities/session';
-import { LoginModal } from '@/features/auth';
+import { openLoginModal, useSession } from '@/entities/session';
 import { NAV_TABS } from '@/shared/config/nav';
 import { Icon } from '@/shared/ui/icon';
 
@@ -77,66 +75,54 @@ function AccountArea({ onOpenLogin }: { onOpenLogin: () => void }) {
 }
 
 export function SiteHeader() {
-  // Only the desktop header (≥1440px) grows an auth affordance — the phone
-  // header keeps its existing two-item layout untouched.
-  const [loginOpen, setLoginOpen] = useState(false);
-
   return (
-    <>
-      {/* `backdrop-blur-xl` below makes <header> a containing block for
-          `position: fixed` descendants, so the modal must live outside it —
-          otherwise its "fixed inset-0" sizes to the header's own box instead
-          of the viewport. */}
-      <header className="sticky top-0 z-50 border-b border-line bg-white/92 backdrop-blur-xl">
-        {/* Phone header: logo on the left, city on the right. Unchanged below 1440px. */}
-        <div className="flex items-center justify-between px-4 py-3 desk:hidden">
-          <Logo />
-          <CityLabel />
-        </div>
+    <header className="sticky top-0 z-50 border-b border-line bg-white/92 backdrop-blur-xl">
+      {/* Phone header: logo on the left, city on the right. Unchanged below 1440px. */}
+      <div className="flex items-center justify-between px-4 py-3 desk:hidden">
+        <Logo />
+        <CityLabel />
+      </div>
 
-        {/* Desktop header: the four bottom-nav destinations move up here, because
+      {/* Desktop header: the four bottom-nav destinations move up here, because
             the tab bar is hidden from 1440px. */}
-        <div className="mx-auto hidden w-full max-w-desk items-center gap-10 px-8 py-3.5 desk:flex">
-          <Logo />
+      <div className="mx-auto hidden w-full max-w-desk items-center gap-10 px-8 py-3.5 desk:flex">
+        <Logo />
 
-          <nav aria-label="Asosiy menyu" className="flex items-center gap-1">
-            {NAV_TABS.map(({ to, icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                // Without `end` the home tab would read as active on every route.
-                end={to === '/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
-                    isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
-                  }`
-                }
-              >
-                <Icon name={icon} className="h-[17px] w-[17px]" strokeWidth={2.1} />
-                {label}
-              </NavLink>
-            ))}
-
-            {/* Not in NAV_TABS: that list is shared with the phone bottom nav, and the
-                valuation entry point is desktop-only — the phone header stays untouched. */}
+        <nav aria-label="Asosiy menyu" className="flex items-center gap-1">
+          {NAV_TABS.map(({ to, icon, label }) => (
             <NavLink
-              to="/valuation"
+              key={to}
+              to={to}
+              // Without `end` the home tab would read as active on every route.
+              end={to === '/'}
               className={({ isActive }) =>
                 `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
                   isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
                 }`
               }
             >
-              <Icon name="money" className="h-[17px] w-[17px]" strokeWidth={2.1} />
-              Baholash
+              <Icon name={icon} className="h-[17px] w-[17px]" strokeWidth={2.1} />
+              {label}
             </NavLink>
-          </nav>
+          ))}
 
-          <AccountArea onOpenLogin={() => setLoginOpen(true)} />
-        </div>
-      </header>
+          {/* Not in NAV_TABS: that list is shared with the phone bottom nav, and the
+                valuation entry point is desktop-only — the phone header stays untouched. */}
+          <NavLink
+            to="/valuation"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
+                isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
+              }`
+            }
+          >
+            <Icon name="money" className="h-[17px] w-[17px]" strokeWidth={2.1} />
+            Baholash
+          </NavLink>
+        </nav>
 
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-    </>
+        <AccountArea onOpenLogin={openLoginModal} />
+      </div>
+    </header>
   );
 }
