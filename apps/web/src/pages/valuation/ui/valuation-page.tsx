@@ -4,14 +4,15 @@ import {
   formatPricePerM2,
   formatPriceSom,
   formatPriceUsd,
+  TASHKENT_DISTRICTS,
   type ListingType,
 } from '@rieltor/shared';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
+import { TrackPropertyButton } from '@/features/track-property';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
 import { SectionCard } from '@/shared/ui/section-card';
-import { TASHKENT_DISTRICTS } from '../model/districts';
 import { useValuation } from '../model/use-valuation';
 
 /**
@@ -382,6 +383,18 @@ export function ValuationPage() {
               <p className="mt-4 text-left text-[14px] leading-relaxed text-ink-2">
                 {result.explanation}
               </p>
+
+              {/* Retention loop: save this valuation to "Mening uyim" so its modeled
+                  price history keeps updating. Only offered once we have real
+                  comparables — the zero-comparable branch has no figure worth tracking. */}
+              <TrackPropertyButton
+                params={{
+                  type: form.type!,
+                  district: form.district!,
+                  rooms: showRooms ? form.rooms : null,
+                  areaM2: form.areaM2!,
+                }}
+              />
 
               <ResultActions onRestart={handleRestart} />
             </div>

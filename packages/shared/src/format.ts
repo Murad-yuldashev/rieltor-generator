@@ -54,3 +54,9 @@ export function formatListedAt(listedAt: string): string {
   if (!m) return listedAt;
   return `${Number(m[3])}-${MONTHS[Number(m[2]) - 1]}`;
 }
+
+/** "+998 90 123 45 67" → "+998 90 ••• •• 67": enough to look real, not enough to dial. */
+export function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ••• •• ${digits.slice(-2)}`;
+}

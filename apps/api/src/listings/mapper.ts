@@ -1,5 +1,10 @@
 import type { Agent, Image, Listing } from '@prisma/client';
-import type { Image as ImageDto, ListingDetail, ListingSummary } from '@rieltor/shared';
+import {
+  maskPhone,
+  type Image as ImageDto,
+  type ListingDetail,
+  type ListingSummary,
+} from '@rieltor/shared';
 
 export type ListingRow = Listing & { agent: Agent; images: Pick<Image, keyof ImageDto>[] };
 
@@ -10,12 +15,6 @@ function dateText(date: Date): string {
 
 function imageDto(r: Pick<Image, keyof ImageDto>): ImageDto {
   return { base: r.base, ogUrl: r.ogUrl, width: r.width, height: r.height, position: r.position };
-}
-
-/** "+998 90 123 45 67" → "+998 90 ••• •• 67": enough to look real, not enough to dial. */
-function maskPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ••• •• ${digits.slice(-2)}`;
 }
 
 export function toListingDetail(row: ListingRow): ListingDetail {

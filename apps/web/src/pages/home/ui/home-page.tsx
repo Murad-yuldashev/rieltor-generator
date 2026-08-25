@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router';
 import { ListingCard, listingsQuery } from '@/entities/listing';
 import { useSession } from '@/entities/session';
 import { LoginModal } from '@/features/auth';
@@ -13,6 +14,7 @@ import {
   useListingFilters,
 } from '@/features/listing-filters';
 import { useCreateSavedSearch } from '@/features/saved-search';
+import { Icon } from '@/shared/ui/icon';
 import { ValuationBanner } from './valuation-banner';
 
 /** How many cards fill the first screen — the rest arrive via "Ko'proq". */
@@ -85,6 +87,25 @@ export function HomePage() {
       <ListingHero search={filters.search} onSearchChange={resetPaging(filters.setSearch)} />
 
       <ValuationBanner />
+
+      {/* "Qidiryapman" board entry — sits beside the valuation hook as the other
+          seller-facing way in: browse buyers' reverse requests. Renders the same
+          at every width (a plain card), like the valuation banner above it. */}
+      <Link
+        to="/requests"
+        className="mx-4 mt-3 flex items-center gap-3 rounded-card border border-line/60 bg-card p-4 shadow-card desk:mx-0 desk:mt-4"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-accent-soft text-accent">
+          <Icon name="search" className="h-5 w-5" strokeWidth={2.2} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-extrabold text-ink">Qidiryapman</p>
+          <p className="text-[12.5px] font-semibold text-ink-2">
+            Xaridorlar so'rovlari — mijoz o'zi sizni topadi
+          </p>
+        </div>
+        <Icon name="chevronRight" className="h-5 w-5 shrink-0 text-ink-3" strokeWidth={2.4} />
+      </Link>
 
       {/* Desktop swaps the phone's sidebar for this sticky row above a
           full-width grid (CIAN-style — spec §2.1); ListingFacets keeps doing
