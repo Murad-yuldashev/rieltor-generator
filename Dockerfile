@@ -40,6 +40,12 @@ COPY --from=prod-deps /app/packages/shared ./packages/shared
 
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
+# The seed runs via tsx and reaches into src (prisma/images.ts re-exports
+# ../src/listings/process-image, shared with the upload endpoint). Without src,
+# `tsx prisma/seed.ts` throws MODULE_NOT_FOUND, the CMD's && chain breaks, and the
+# server never starts. process-image only needs sharp + @rieltor/shared (both in
+# the prod deps already copied), so shipping the TS source is enough.
+COPY --from=build /app/apps/api/src ./apps/api/src
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/web/dist ./apps/web/dist
 COPY package.json ./
