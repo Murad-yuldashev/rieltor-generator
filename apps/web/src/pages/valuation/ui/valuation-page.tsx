@@ -4,6 +4,7 @@ import {
   formatPricePerM2,
   formatPriceSom,
   formatPriceUsd,
+  TASHKENT_DISTRICTS,
   type ListingType,
 } from '@rieltor/shared';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
@@ -12,7 +13,6 @@ import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
 import { SectionCard } from '@/shared/ui/section-card';
-import { TASHKENT_DISTRICTS } from '../model/districts';
 import { useValuation } from '../model/use-valuation';
 
 /**
