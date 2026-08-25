@@ -103,18 +103,21 @@ enum UserRole {
 }
 
 model User {
-  id            String        @id @default(cuid())
+  id                String            @id @default(cuid())
   /// E.164 without the plus: "998901234567". Unique across the platform.
-  phone         String        @unique
-  name          String?
+  phone             String            @unique
+  name              String?
   /// Telegram numeric id, present only when the account was created via Telegram Login.
-  telegramId    String?       @unique
-  photoUrl      String?
-  role          UserRole      @default(USER)
-  createdAt     DateTime      @default(now())
-  sessions      Session[]
-  listings      Listing[]
-  savedSearches SavedSearch[]
+  telegramId        String?           @unique
+  photoUrl          String?
+  role              UserRole          @default(USER)
+  createdAt         DateTime          @default(now())
+  sessions          Session[]
+  listings          Listing[]
+  savedSearches     SavedSearch[]
+  trackedProperties TrackedProperty[]
+  notifications     Notification[]
+  propertyRequests  PropertyRequest[]
 }
 
 model Session {
@@ -145,13 +148,15 @@ model OtpCode {
 /// One row per phone reveal — the reveal event itself is the lead, not a form submission.
 model ContactReveal {
   id        String   @id @default(cuid())
-  listingId String
+  listingId String?
+  requestId String?
   /// Null for anonymous visitors — most reveals will be anonymous.
   userId    String?
   ip        String
   createdAt DateTime @default(now())
 
   @@index([listingId, createdAt])
+  @@index([requestId, createdAt])
 }
 
 model SavedSearch {
@@ -164,4 +169,76 @@ model SavedSearch {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model TrackedProperty {
+  id        String          @id @default(cuid())
+  ownerId   String
+  owner     User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  label     String?
+  type      ListingType
+  district  String
+  rooms     Int?
+  areaM2    Float
+  floor     String?
+  createdAt DateTime        @default(now())
+  snapshots PriceSnapshot[]
+
+  @@index([ownerId])
+}
+
+enum SnapshotSource {
+  MODELED
+  ACTUAL
+}
+
+model PriceSnapshot {
+  id                String          @id @default(cuid())
+  trackedPropertyId String
+  trackedProperty   TrackedProperty @relation(fields: [trackedPropertyId], references: [id], onDelete: Cascade)
+  estimateSom       BigInt
+  capturedAt        DateTime        @db.Date
+  source            SnapshotSource
+
+  @@index([trackedPropertyId, capturedAt])
+}
+
+enum NotificationType {
+  PRICE_UPDATE
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  targetId  String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum RequestStatus {
+  OPEN
+  CLOSED
+}
+
+model PropertyRequest {
+  id          String        @id @default(cuid())
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  deal        Deal
+  type        ListingType?
+  district    String?
+  roomsMin    Int?
+  priceMaxSom BigInt?
+  areaMinM2   Float?
+  note        String?
+  status      RequestStatus @default(OPEN)
+  createdAt   DateTime      @default(now())
+
+  @@index([status, createdAt])
 }
