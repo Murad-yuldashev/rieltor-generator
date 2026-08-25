@@ -182,7 +182,7 @@ export function RequestsPage() {
           </div>
         </SectionCard>
 
-        <div className="flex flex-col gap-4 desk:grid desk:grid-cols-2 desk:gap-5">
+        <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-4 desk:grid desk:grid-cols-2 desk:gap-5">
           {isPending && Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)}
 
           {!isPending &&
