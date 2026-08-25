@@ -120,7 +120,7 @@ export function NotificationsPage() {
         }
       />
 
-      <div className="px-4 pt-3.5 pb-2 desk:max-w-3xl desk:px-0 desk:pt-5">
+      <div className="px-4 pt-3.5 pb-2 md:mx-auto md:max-w-3xl desk:max-w-3xl desk:px-0 desk:pt-5">
         {!isLoading && unreadCount > 0 && (
           <div className="mb-3 flex justify-end">
             <button

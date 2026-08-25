@@ -19,7 +19,7 @@ export function OfferPage() {
 
       <PageHeading title="Ommaviy oferta" subtitle={`Oxirgi tahrir: ${OFFER_UPDATED_AT}`} />
 
-      <div className="flex flex-col gap-3.5 p-4 desk:max-w-3xl desk:px-0">
+      <div className="flex flex-col gap-3.5 p-4 md:mx-auto md:max-w-3xl desk:max-w-3xl desk:px-0">
         <SectionCard>
           <p className="text-[14.5px] leading-relaxed text-ink-2">{OFFER_INTRO}</p>
         </SectionCard>

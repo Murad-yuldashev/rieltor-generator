@@ -102,7 +102,7 @@ export function MyRequestsPage() {
         subtitle="Joylagan so'rovlaringiz — yopishingiz yoki o'chirishingiz mumkin"
       />
 
-      <div className="flex flex-col gap-4 px-4 pt-3.5 desk:max-w-2xl desk:px-0 desk:pt-5">
+      <div className="flex flex-col gap-4 px-4 pt-3.5 md:mx-auto md:max-w-2xl desk:max-w-2xl desk:px-0 desk:pt-5">
         {isPending && Array.from({ length: 3 }, (_, i) => <RowSkeleton key={i} />)}
 
         {isError && (
