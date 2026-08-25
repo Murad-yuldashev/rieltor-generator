@@ -17,7 +17,10 @@ export function TabLayout() {
     <div className="mx-auto min-h-dvh max-w-content bg-surface pb-bottom-nav md:max-w-tablet md:pb-0 lg:max-w-laptop desk:max-w-none">
       <SiteHeader />
 
-      <div className="md:px-6 md:pt-5 md:pb-10 lg:px-8 desk:mx-auto desk:w-full desk:max-w-desk desk:px-8 desk:pt-6 desk:pb-12">
+      {/* The outer div centres the column (max-w-tablet/laptop); pages keep their
+          own px-4 through md/lg, then switch to desk:px-0 where this wrapper pads
+          at desk — the same phone→desk handoff pattern, now with two tiers between. */}
+      <div className="md:pt-4 md:pb-8 desk:mx-auto desk:w-full desk:max-w-desk desk:px-8 desk:pt-6 desk:pb-12">
         <Outlet />
       </div>
 
