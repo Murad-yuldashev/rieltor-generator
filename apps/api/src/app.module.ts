@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PropertiesModule } from './properties/properties.module';
 import { SavedSearchModule } from './saved-search/saved-search.module';
@@ -28,6 +29,7 @@ import { ViewsModule } from './views/views.module';
     AuthModule,
     HealthModule,
     ListingsModule,
+    NotificationsModule,
     PropertiesModule,
     SavedSearchModule,
     ValuationModule,
