@@ -198,6 +198,100 @@ export const AiDescriptionRequestSchema = z.object({
 /** Response of `POST /api/ai/description` — one generated field, kept in shared so web and API agree. */
 export const AiDescriptionResultSchema = z.object({ description: z.string() });
 
+/** Modeling assumption for the price-history trailing curve: ~0.8%/month (~10%/yr). */
+export const MODELED_MONTHLY_GROWTH = 0.008;
+
+/** Body of `POST /api/my/properties` — the params we value + track. */
+export const TrackedPropertyCreateSchema = z.object({
+  label: z.string().min(1).max(60).optional(),
+  type: ListingTypeSchema,
+  district: z.string().min(2),
+  rooms: z.number().int().min(0).max(20).nullable(),
+  areaM2: z.number().positive().max(10_000),
+  floor: z.string().max(20).nullable().optional(),
+});
+
+export const SnapshotSourceSchema = z.enum(['MODELED', 'ACTUAL']);
+
+export const PriceSnapshotSchema = z.object({
+  estimateSom: z.string(),
+  capturedAt: z.string(),
+  source: SnapshotSourceSchema,
+});
+
+/** Cabinet card: property + latest estimate + monthly delta + sparkline points (oldest→newest). */
+export const TrackedPropertySchema = z.object({
+  id: z.string(),
+  label: z.string().nullable(),
+  type: ListingTypeSchema,
+  district: z.string(),
+  rooms: z.number().int().nullable(),
+  areaM2: z.number(),
+  floor: z.string().nullable(),
+  createdAt: z.string(),
+  estimateSom: z.string(),
+  deltaPct: z.number(),
+  sparkline: z.array(z.string()),
+});
+
+export const TrackedPropertyDetailSchema = TrackedPropertySchema.extend({
+  snapshots: z.array(PriceSnapshotSchema),
+});
+
+export const NotificationTypeSchema = z.enum(['PRICE_UPDATE']);
+
+export const NotificationSchema = z.object({
+  id: z.string(),
+  type: NotificationTypeSchema,
+  title: z.string(),
+  body: z.string(),
+  targetId: z.string().nullable(),
+  readAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export const NotificationListSchema = z.object({
+  items: z.array(NotificationSchema),
+  unreadCount: z.number().int(),
+});
+
+/** Body of `POST /api/requests` — a "Qidiryapman" buyer request. */
+export const PropertyRequestCreateSchema = z.object({
+  deal: DealSchema,
+  type: ListingTypeSchema.nullable().optional(),
+  district: z.string().min(2).nullable().optional(),
+  roomsMin: z.number().int().min(0).max(20).nullable().optional(),
+  priceMaxSom: z.string().regex(/^\d+$/).nullable().optional(),
+  areaMinM2: z.number().positive().max(10_000).nullable().optional(),
+  note: z.string().max(500).nullable().optional(),
+});
+
+export const PropertyRequestSummarySchema = z.object({
+  id: z.string(),
+  deal: DealSchema,
+  type: ListingTypeSchema.nullable(),
+  district: z.string().nullable(),
+  roomsMin: z.number().int().nullable(),
+  priceMaxSom: z.string().nullable(),
+  areaMinM2: z.number().nullable(),
+  note: z.string().nullable(),
+  status: z.enum(['OPEN', 'CLOSED']),
+  createdAt: z.string(),
+  authorPhoneMasked: z.string(),
+});
+
+/** Query params for `GET /api/requests` (all optional). `roomsMin` arrives as a string. */
+export const PropertyRequestFilterSchema = z.object({
+  deal: DealSchema.optional(),
+  type: ListingTypeSchema.optional(),
+  district: z.string().optional(),
+  roomsMin: z.coerce.number().int().optional(),
+  priceMaxSom: z.string().regex(/^\d+$/).optional(),
+});
+
+/** Response of `POST /api/requests/:id/contact` and the listing reveal. */
+export const RevealedContactSchema = z.object({ phone: z.string() });
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -216,3 +310,12 @@ export type ValuationRequest = z.infer<typeof ValuationRequestSchema>;
 export type ValuationResult = z.infer<typeof ValuationResultSchema>;
 export type AiDescriptionRequest = z.infer<typeof AiDescriptionRequestSchema>;
 export type AiDescriptionResult = z.infer<typeof AiDescriptionResultSchema>;
+export type TrackedPropertyCreate = z.infer<typeof TrackedPropertyCreateSchema>;
+export type TrackedProperty = z.infer<typeof TrackedPropertySchema>;
+export type TrackedPropertyDetail = z.infer<typeof TrackedPropertyDetailSchema>;
+export type PriceSnapshot = z.infer<typeof PriceSnapshotSchema>;
+export type Notification = z.infer<typeof NotificationSchema>;
+export type NotificationList = z.infer<typeof NotificationListSchema>;
+export type PropertyRequestCreate = z.infer<typeof PropertyRequestCreateSchema>;
+export type PropertyRequestSummary = z.infer<typeof PropertyRequestSummarySchema>;
+export type PropertyRequestFilter = z.infer<typeof PropertyRequestFilterSchema>;
