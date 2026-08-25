@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router';
 import { openLoginModal, useSession } from '@/entities/session';
+import { NotificationBell } from '@/features/notification-bell';
 import { NAV_TABS } from '@/shared/config/nav';
 import { Icon } from '@/shared/ui/icon';
 
@@ -41,6 +42,8 @@ function AccountArea({ onOpenLogin }: { onOpenLogin: () => void }) {
       >
         + E'lon joylash
       </Link>
+
+      <NotificationBell />
 
       {isAuthenticated && user ? (
         <div className="flex items-center gap-2.5 pl-1">
