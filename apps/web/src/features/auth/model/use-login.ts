@@ -9,8 +9,15 @@ import {
 import { apiPost } from '@/shared/api/client';
 import { writeTokens } from '@/shared/api/auth-storage';
 
-/** `POST /api/auth/otp/request` only ever returns the OTP's TTL — no shared schema exists for it. */
-const OtpRequestResultSchema = z.object({ expiresInSec: z.number().int() });
+/**
+ * `POST /api/auth/otp/request` returns the OTP's TTL, plus — in dev only, until a
+ * real SMS provider exists — the code itself (`devCode`) so the modal can prefill it.
+ * The server omits `devCode` in production.
+ */
+const OtpRequestResultSchema = z.object({
+  expiresInSec: z.number().int(),
+  devCode: z.string().optional(),
+});
 
 /**
  * Both mutations end in the same place: store the tokens and make `useSession`
