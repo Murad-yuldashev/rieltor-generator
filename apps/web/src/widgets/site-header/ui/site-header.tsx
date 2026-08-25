@@ -80,10 +80,14 @@ function AccountArea({ onOpenLogin }: { onOpenLogin: () => void }) {
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white/92 backdrop-blur-xl">
-      {/* Phone header: logo on the left, city on the right. Unchanged below 1440px. */}
+      {/* Phone header: logo on the left, city + notification bell on the right.
+            The bell self-gates on session, so it only appears for logged-in users. */}
       <div className="flex items-center justify-between px-4 py-3 desk:hidden">
         <Logo />
-        <CityLabel />
+        <div className="flex items-center gap-2.5">
+          <CityLabel />
+          <NotificationBell />
+        </div>
       </div>
 
       {/* Desktop header: the four bottom-nav destinations move up here, because
