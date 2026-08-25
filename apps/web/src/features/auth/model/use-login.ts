@@ -20,15 +20,23 @@ const OtpRequestResultSchema = z.object({
 });
 
 /**
- * Both mutations end in the same place: store the tokens and make `useSession`
- * refetch. `['session']` is the exact query key `useSession` (entities/session) uses.
+ * Both mutations end in the same place: store the tokens and flip `useSession`
+ * to the authenticated state. `['session']` is the exact query key `useSession`
+ * (entities/session) uses.
+ *
+ * We `setQueryData` the user from the auth response rather than only
+ * `invalidateQueries`: `useSession`'s query is `enabled` off a synchronous
+ * `readTokens()` read, so invalidating it while it is still disabled (and before
+ * any re-render re-evaluates `enabled`) does nothing — the header would keep
+ * showing "Kirish" until a navigation. Seeding the cache notifies the observer
+ * immediately, so the header switches to the account right away.
  */
 function useAuthenticated() {
   const queryClient = useQueryClient();
 
   return (tokens: AuthTokens) => {
     writeTokens(tokens);
-    void queryClient.invalidateQueries({ queryKey: ['session'] });
+    queryClient.setQueryData(['session'], tokens.user);
   };
 }
 
