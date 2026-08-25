@@ -6,9 +6,9 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Asosiy menyu"
-      // Desktop puts these same four links in the header, so the bar goes away
-      // entirely at 1440px rather than floating over a wide layout.
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-content border-t border-line bg-white/95 px-1.5 pt-2 backdrop-blur-xl desk:hidden"
+      // The top nav takes these same four links from 768px, so the bar goes away
+      // at md rather than floating over a wide layout.
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-content border-t border-line bg-white/95 px-1.5 pt-2 backdrop-blur-xl md:hidden"
       style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
     >
       {NAV_TABS.map(({ to, icon, label }) => (

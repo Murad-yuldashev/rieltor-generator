@@ -33,14 +33,20 @@ function AccountArea({ onOpenLogin }: { onOpenLogin: () => void }) {
   const { user, isAuthenticated } = useSession();
 
   return (
-    <div className="ml-auto flex items-center gap-3">
-      <CityLabel />
+    <div className="ml-auto flex items-center gap-2 lg:gap-3">
+      {/* City label is redundant with the mobile header and eats width — only the
+          roomy CIAN header (desk) has space for it. */}
+      <div className="hidden desk:flex">
+        <CityLabel />
+      </div>
 
       <Link
         to="/my/listings/new"
-        className="rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-4 py-2.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35"
+        className="rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-3.5 py-2.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 lg:px-4"
       >
-        + E'lon joylash
+        {/* Shorter label on tablet to save width. */}
+        <span className="lg:hidden">+ E'lon</span>
+        <span className="hidden lg:inline">+ E'lon joylash</span>
       </Link>
 
       <NotificationBell />
@@ -81,8 +87,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white/92 backdrop-blur-xl">
       {/* Phone header: logo on the left, city + notification bell on the right.
-            The bell self-gates on session, so it only appears for logged-in users. */}
-      <div className="flex items-center justify-between px-4 py-3 desk:hidden">
+            The bell self-gates on session, so it only appears for logged-in users.
+            From 768px the top nav takes over (md:hidden). */}
+      <div className="flex items-center justify-between px-4 py-3 md:hidden">
         <Logo />
         <div className="flex items-center gap-2.5">
           <CityLabel />
@@ -90,9 +97,10 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* Desktop header: the four bottom-nav destinations move up here, because
-            the tab bar is hidden from 1440px. */}
-      <div className="mx-auto hidden w-full max-w-desk items-center gap-10 px-8 py-3.5 desk:flex">
+      {/* Top nav: the four bottom-nav destinations move up here from 768px, where
+            the tab bar is hidden. Fluid width + tighter spacing on tablet/laptop;
+            the roomy CIAN sizing (max-w-desk, gap-10, px-8) returns at 1440px. */}
+      <div className="mx-auto hidden w-full max-w-tablet items-center gap-4 px-4 py-3.5 md:flex lg:max-w-laptop lg:gap-8 lg:px-6 desk:max-w-desk desk:gap-10 desk:px-8">
         <Logo />
 
         <nav aria-label="Asosiy menyu" className="flex items-center gap-1">
@@ -109,7 +117,8 @@ export function SiteHeader() {
               }
             >
               <Icon name={icon} className="h-[17px] w-[17px]" strokeWidth={2.1} />
-              {label}
+              {/* Icon-only on tablet so the whole nav fits at 768; labels return at 1024. */}
+              <span className="hidden lg:inline">{label}</span>
             </NavLink>
           ))}
 
@@ -124,7 +133,7 @@ export function SiteHeader() {
             }
           >
             <Icon name="money" className="h-[17px] w-[17px]" strokeWidth={2.1} />
-            Baholash
+            <span className="hidden lg:inline">Baholash</span>
           </NavLink>
         </nav>
 
