@@ -100,7 +100,7 @@ export function SiteHeader() {
       {/* Top nav: the four bottom-nav destinations move up here from 768px, where
             the tab bar is hidden. Fluid width + tighter spacing on tablet/laptop;
             the roomy CIAN sizing (max-w-desk, gap-10, px-8) returns at 1440px. */}
-      <div className="mx-auto hidden w-full max-w-tablet items-center gap-4 px-4 py-3.5 md:flex lg:max-w-laptop lg:gap-8 lg:px-6 desk:max-w-desk desk:gap-10 desk:px-8">
+      <div className="mx-auto hidden w-full items-center gap-4 px-4 py-3.5 md:flex lg:gap-8 lg:px-6 desk:max-w-desk desk:gap-10 desk:px-8">
         <Logo />
 
         <nav aria-label="Asosiy menyu" className="flex items-center gap-1">

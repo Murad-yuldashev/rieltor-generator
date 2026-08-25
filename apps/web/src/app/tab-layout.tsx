@@ -14,7 +14,7 @@ import { SiteHeader } from '@/widgets/site-header';
  */
 export function TabLayout() {
   return (
-    <div className="mx-auto min-h-dvh max-w-content bg-surface pb-bottom-nav md:max-w-tablet md:pb-0 lg:max-w-laptop desk:max-w-none">
+    <div className="mx-auto min-h-dvh max-w-content bg-surface pb-bottom-nav md:max-w-none md:pb-0 desk:max-w-none">
       <SiteHeader />
 
       {/* The outer div centres the column (max-w-tablet/laptop); pages keep their

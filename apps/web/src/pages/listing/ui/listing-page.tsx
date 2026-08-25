@@ -43,7 +43,7 @@ export function ListingPage() {
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-content bg-surface pb-cta md:max-w-tablet lg:max-w-laptop desk:max-w-none">
+    <div className="mx-auto min-h-dvh max-w-content bg-surface pb-cta md:max-w-none desk:max-w-none">
       {/* The phone version of this page deliberately has no header — the gallery
           runs to the top edge. A window with no header at all just reads as broken,
           so the top nav joins in from 768px. */}
