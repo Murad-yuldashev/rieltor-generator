@@ -196,6 +196,23 @@ Yangi Prisma modellari: `TrackedProperty`, `PriceSnapshot` (MODELED/ACTUAL), `No
 `PropertyRequest`; `ContactReveal.requestId` qo'shildi. Pul qiymatlari BigInt→string.
 **Telefon (<1440px) ko'rinishi o'zgarmagan** — barcha yangi sahifalar mobil-first, desktop `desk:` bilan.
 
+## 4e. Responsive pog'onalar (2026-08-25)
+
+Ilova avval **2 ta qat'iy** ko'rinishga ega edi (`<1440` telefon ustuni, `≥1440` CIAN) —
+1024/1280px'da kontent 480px bo'lib, ikki yonida katta bo'sh joy qolar edi. Endi to'liq
+responsive, 3 pog'ona bilan (spec/reja: `docs/superpowers/.../2026-08-25-responsive-tiers.*`):
+
+| Kenglik           | Ko'rinish                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| `<768` telefon    | mavjud mobil ustun + pastki tab-menyu (**o'zgarmagan**)                                           |
+| `md:768` planshet | **gorizontal top-nav** (pastki menyu yashirin), kontent kenglikni to'ldiradi, karta gridi 2 ustun |
+| `lg:1024` noutbuk | top-nav (to'liq yozuvli), 3 ustun, kontent to'la                                                  |
+| `desk:1440` CIAN  | yopishqoq sidebar + 4 ustun / 3-ustunli natija qatori (**o'zgarmagan**)                           |
+
+Kontent `md`–`desk` oralig'ida **suzuvchi** (kenglikni to'ldiradi, o'lik chekka yo'q); grid
+sahifalar ustun sonini oshiradi, o'qish/forma sahifalar markazda qulay kenglikda qoladi.
+Telefon (`<768`) va CIAN (`≥1440`) piksel-bir-xil — barcha yangi qoidalar faqat `md:`/`lg:` ostida.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
