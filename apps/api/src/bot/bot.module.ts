@@ -8,6 +8,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { ValuationModule } from '../valuation/valuation.module';
 import { BotService } from './bot.service';
 import { BotUpdate } from './bot.update';
+import { ValuationScene } from './valuation.scene';
 
 @Module({
   imports: [
@@ -25,6 +26,9 @@ import { BotUpdate } from './bot.update';
       }),
     }),
   ],
-  providers: [BotService, BotUpdate],
+  // nestjs-telegraf's listeners explorer auto-collects @Scene() providers into
+  // the Stage (stage.register + bot.use(stage.middleware()) are done for us), so
+  // the scene only needs to be provided here — no manual Scenes.Stage wiring.
+  providers: [BotService, BotUpdate, ValuationScene],
 })
 export class BotModule {}
