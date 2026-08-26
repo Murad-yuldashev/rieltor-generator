@@ -21,14 +21,19 @@ export class SubscriptionService {
   async becomeRealtor(userId: string): Promise<SubscriptionView | null> {
     const existing = await this.prisma.subscription.findUnique({ where: { userId } });
     if (!existing) {
-      await this.prisma.user.update({ where: { id: userId }, data: { role: 'REALTOR' } });
-      await this.prisma.subscription.create({
-        data: {
-          userId,
-          status: 'TRIAL',
-          currentPeriodEnd: new Date(Date.now() + TRIAL_DAYS * DAY_MS),
-        },
-      });
+      // Both writes commit together: a crash between them would otherwise strand a
+      // REALTOR with no subscription — unrecoverable, since the become-realtor page
+      // is gone once role=REALTOR and activate() 404s with no row to update.
+      await this.prisma.$transaction([
+        this.prisma.user.update({ where: { id: userId }, data: { role: 'REALTOR' } }),
+        this.prisma.subscription.create({
+          data: {
+            userId,
+            status: 'TRIAL',
+            currentPeriodEnd: new Date(Date.now() + TRIAL_DAYS * DAY_MS),
+          },
+        }),
+      ]);
     }
     return this.view(userId);
   }

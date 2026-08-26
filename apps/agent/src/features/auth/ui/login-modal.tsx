@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
@@ -182,9 +181,11 @@ export function LoginModal({ open, onClose }: Props) {
 
             <p className="mt-4 text-center text-[12px] leading-relaxed text-ink-3">
               Davom etish orqali{' '}
-              <Link to="/offer" onClick={onClose} className="font-bold text-accent">
+              {/* The offer/terms page is served by the marketplace, not this SPA — a
+                  full-page same-origin navigation, not a React Router Link. */}
+              <a href="/offer" className="font-bold text-accent">
                 ommaviy oferta
-              </Link>{' '}
+              </a>{' '}
               shartlariga rozilik bildirasiz
             </p>
           </div>

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import type { CollectionDetail, CollectionSummary } from '@rieltor/shared';
 import { toListingSummary } from '../listings/mapper';
 import { PrismaService } from '../prisma/prisma.service';
@@ -91,8 +92,10 @@ export class CollectionsService {
 
   /**
    * Append a listing to the end of the collection. Idempotent: if the listing is
-   * already present, keep its existing row/position (a pre-check avoids the
-   * @@unique throw). 404 if the collection or the listing does not exist.
+   * already present, keep its existing row/position. A pre-check skips the insert
+   * in the common case; a concurrent racer that slips past it collides on
+   * @@unique([collectionId, listingId]) and is absorbed as a P2002 no-op rather
+   * than a 500. 404 if the collection or the listing does not exist.
    */
   async addItem(realtorId: string, id: string, listingId: string): Promise<CollectionDetail> {
     await this.ownedOrThrow(realtorId, id);
@@ -111,9 +114,18 @@ export class CollectionsService {
         where: { collectionId: id },
         _max: { position: true },
       });
-      await this.prisma.collectionItem.create({
-        data: { collectionId: id, listingId, position: (last._max.position ?? 0) + 1 },
-      });
+      try {
+        await this.prisma.collectionItem.create({
+          data: { collectionId: id, listingId, position: (last._max.position ?? 0) + 1 },
+        });
+      } catch (error) {
+        // A concurrent add can pass the pre-check too, then lose the race on the
+        // @@unique constraint. That P2002 means the item now exists — the desired
+        // end state — so swallow it and fall through to the same success shape.
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')) {
+          throw error;
+        }
+      }
     }
     return this.detail(realtorId, id);
   }
