@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { AgentModule } from './agent/agent.module';
 import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { BotModule } from './bot/bot.module';
@@ -27,6 +28,7 @@ import { ViewsModule } from './views/views.module';
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
+    AgentModule,
     AiModule,
     AuthModule,
     BotModule,
