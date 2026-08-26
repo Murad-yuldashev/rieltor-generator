@@ -1,5 +1,7 @@
 import { createBrowserRouter } from 'react-router';
+import { BrowsePage } from '@/pages/browse';
 import { DashboardPage } from '@/pages/dashboard';
+import { NotesPage } from '@/pages/notes';
 import { ProfilePage } from '@/pages/profile';
 import { SubscribePage } from '@/pages/subscribe';
 import { CabinetGuard } from './cabinet-guard';
@@ -22,6 +24,8 @@ export const router = createBrowserRouter(
           children: [
             { index: true, element: <DashboardPage /> },
             { path: 'profile', element: <ProfilePage /> },
+            { path: 'browse', element: <BrowsePage /> },
+            { path: 'notes', element: <NotesPage /> },
           ],
         },
         { path: 'subscribe', element: <SubscribePage /> },

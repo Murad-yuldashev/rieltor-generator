@@ -18,7 +18,7 @@ export class ApiError extends Error {
   }
 }
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /**
  * `POST /api/auth/refresh` only rotates the token pair (TokenService.issue on the
@@ -123,6 +123,10 @@ export function apiGet<T>(path: string, schema: ZodType<T>): Promise<T> {
 
 export function apiPost<T = void>(path: string, schema?: ZodType<T>, body?: unknown): Promise<T> {
   return request(path, 'POST', schema, body);
+}
+
+export function apiPut<T = void>(path: string, schema?: ZodType<T>, body?: unknown): Promise<T> {
+  return request(path, 'PUT', schema, body);
 }
 
 export function apiPatch<T = void>(path: string, schema?: ZodType<T>, body?: unknown): Promise<T> {

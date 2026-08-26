@@ -1,17 +1,9 @@
 import { Link } from 'react-router';
 import { useSession } from '@/entities/session';
+import { useNotes } from '@/features/notes';
 import { useSubscription } from '@/features/subscription';
 import { Icon, type IconName } from '@/shared/ui/icon';
 import { TrialBanner } from '@/widgets/trial-banner';
-
-/**
- * Quick counts. Real values arrive once Tasks 10–11 wire the notes/collections
- * queries; until then the tiles show an em-dash placeholder.
- */
-const STATS: { key: string; label: string; value: string }[] = [
-  { key: 'collections', label: 'To‘plamlar', value: '—' },
-  { key: 'notes', label: 'Eslatmalar', value: '—' },
-];
 
 /**
  * Cabinet navigation. Entries with a `to` are live links; the rest land in later
@@ -20,8 +12,8 @@ const STATS: { key: string; label: string; value: string }[] = [
  */
 const NAV: { key: string; label: string; icon: IconName; to?: string }[] = [
   { key: 'profile', label: 'Profil', icon: 'home', to: '/profile' },
-  { key: 'browse', label: 'E’lonlar', icon: 'search' },
-  { key: 'notes', label: 'Eslatmalar', icon: 'doc' },
+  { key: 'browse', label: 'E’lonlar', icon: 'search', to: '/browse' },
+  { key: 'notes', label: 'Eslatmalar', icon: 'doc', to: '/notes' },
   { key: 'collections', label: 'To‘plamlar', icon: 'heart' },
 ];
 
@@ -30,6 +22,15 @@ export function DashboardPage() {
   // The gate only renders this page for an active REALTOR, so a subscription is
   // guaranteed to be present in the cache by the time we get here.
   const { data: subscription } = useSubscription();
+  // The notes count is live (Task 10); collections lands in Task 11 and stays a
+  // placeholder until then.
+  const { data: notes } = useNotes();
+
+  // Quick counts — a live notes total, an em-dash for the not-yet-wired collections.
+  const stats: { key: string; label: string; value: string }[] = [
+    { key: 'collections', label: 'To‘plamlar', value: '—' },
+    { key: 'notes', label: 'Eslatmalar', value: notes ? String(notes.length) : '—' },
+  ];
 
   return (
     <main className="mx-auto min-h-dvh max-w-content bg-surface px-4 py-8">
@@ -47,7 +48,7 @@ export function DashboardPage() {
       )}
 
       <section className="mb-6 grid grid-cols-2 gap-3">
-        {STATS.map((stat) => (
+        {stats.map((stat) => (
           <div key={stat.key} className="rounded-card bg-card p-4 shadow-card">
             <p className="text-[26px] font-extrabold leading-none text-ink">{stat.value}</p>
             <p className="mt-1 text-[13px] font-medium text-ink-2">{stat.label}</p>
