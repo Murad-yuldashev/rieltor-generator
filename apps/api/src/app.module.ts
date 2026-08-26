@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
+import { BotModule } from './bot/bot.module';
 import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
@@ -28,6 +29,7 @@ import { ViewsModule } from './views/views.module';
     PrismaModule,
     AiModule,
     AuthModule,
+    BotModule,
     HealthModule,
     ListingsModule,
     NotificationsModule,

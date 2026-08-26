@@ -107,6 +107,10 @@ export class ListingsService {
   }
 
   async addImage(listingId: string, ownerId: string, file: Express.Multer.File) {
+    return this.addImageBuffer(listingId, ownerId, file.buffer);
+  }
+
+  async addImageBuffer(listingId: string, ownerId: string, buffer: Buffer) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
       select: { ownerId: true, status: true },
@@ -124,7 +128,7 @@ export class ListingsService {
 
     const position = count + 1;
     const result = await processImage({
-      source: file.buffer,
+      source: buffer,
       outputRoot: PUBLIC_DIR,
       listingId,
       position,

@@ -99,6 +99,32 @@ export class AuthService {
   }
 
   /**
+   * Find-or-create the platform user behind a Telegram id. Shared by the login
+   * widget and the bot so the two can't drift. The phone placeholder `tg:<id>`
+   * is replaced when the user first publishes a listing.
+   */
+  async ensureTelegramUser(fields: {
+    id: string | number;
+    first_name: string;
+    photo_url?: string;
+  }) {
+    const telegramId = String(fields.id);
+    return this.prisma.user.upsert({
+      where: { telegramId },
+      update: {
+        name: fields.first_name,
+        photoUrl: fields.photo_url ?? null,
+      },
+      create: {
+        telegramId,
+        phone: `tg:${telegramId}`,
+        name: fields.first_name,
+        photoUrl: fields.photo_url ?? null,
+      },
+    });
+  }
+
+  /**
    * Telegram signs the payload with HMAC-SHA256 where the key is SHA-256 of the
    * bot token. Without this check anyone could POST an arbitrary telegram id and
    * take over an account.
@@ -126,23 +152,10 @@ export class AuthService {
       throw new BadRequestException('Telegram sessiyasi eskirgan');
     }
 
-    const telegramId = String(fields.id);
-
-    const user = await this.prisma.user.upsert({
-      where: { telegramId },
-      update: {
-        name: String(fields.first_name),
-        photoUrl: fields.photo_url ? String(fields.photo_url) : null,
-      },
-      create: {
-        telegramId,
-        // Telegram never gives us a phone through the login widget. The account
-        // is usable immediately; the phone is collected when the user first
-        // publishes a listing.
-        phone: `tg:${telegramId}`,
-        name: String(fields.first_name),
-        photoUrl: fields.photo_url ? String(fields.photo_url) : null,
-      },
+    const user = await this.ensureTelegramUser({
+      id: String(fields.id),
+      first_name: String(fields.first_name),
+      photo_url: fields.photo_url ? String(fields.photo_url) : undefined,
     });
 
     const tokens = await this.tokens.issue(user.id, userAgent);
