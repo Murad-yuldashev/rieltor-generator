@@ -213,6 +213,56 @@ Kontent `md`–`desk` oralig'ida **suzuvchi** (kenglikni to'ldiradi, o'lik chekk
 sahifalar ustun sonini oshiradi, o'qish/forma sahifalar markazda qulay kenglikda qoladi.
 Telefon (`<768`) va CIAN (`≥1440`) piksel-bir-xil — barcha yangi qoidalar faqat `md:`/`lg:` ostida.
 
+## 4f. Phase 2.3 — Telegram bot (2026-08-26)
+
+Marketplace'ni Telegram ichiga olib chiqadi — foydalanuvchi brauzerni ochmasdan uy baholaydi,
+e'lon joylaydi va o'z e'lonlarini kuzatadi. Spec:
+`docs/superpowers/specs/2026-08-25-phase-2.3-telegram-bot-design.md`,
+reja: `docs/superpowers/plans/2026-08-25-phase-2.3-telegram-bot.md`.
+`/start` inline menyu uch stsenariyni ochadi (baholash / e'lon joylash / mening e'lonlarim).
+Har uchalasi mavjud servislarni chaqiradi — **yangi biznes-logika yozilmagan**.
+
+### Chatda uy baholash
+
+- **"Uyingiz qancha turadi?"** stsenariysi (tur → tuman → xona → maydon) `ValuationService`ni
+  chaqiradi — web'dagi bilan **bir xil** taxmin, past/yuqori oralig'i va izoh (2.1 baholash).
+
+### Chatda e'lon joylash sehrgari
+
+- Ketma-ket savol-javob: bitim → tur → tuman → manzil → mo'ljal → xona/maydon/qavat →
+  **rasmlar** → sarlavha → tavsif → narx → **moderatsiyaga yuboriladi** (web'dagi `MODERATION`
+  oqimi bilan bir xil). Tijorat obyektida xona so'ralmaydi.
+- Rasm Telegram'dan `file_id` orqali yuklab olinadi va `ListingsService.addImageBuffer` ichida
+  **`processImage`** (sharp) quvuridan o'tadi — upload endpoint bilan aynan bir pipeline.
+
+### "Mening e'lonlarim"
+
+- Foydalanuvchi e'lonlari holat yorliqlari bilan (Qoralama / Moderatsiyada / Chop etilgan /
+  Rad etilgan / Arxivlangan) va har biriga `PUBLIC_BASE_URL/obj/:id` havolasi.
+
+### Xabarnoma DM
+
+- Phase 2.2 **oylik narx xabarnomasi** endi ilova ichidagi inbox'dan tashqari **Telegram DM**
+  sifatida ham yetkaziladi — `telegramId` bo'lgan foydalanuvchiga. `NotificationsService`
+  `TelegramNotifier` seam'i orqali yuboradi; bot uxlab yotsa DM sokin o'tkazib yuboriladi.
+
+### Graceful degradation
+
+- Haqiqiy token bo'lmasa bot **uxlaydi** (`getMe()` placeholder token'da tez rad etadi),
+  API baribir normal ishga tushadi va CI yashil qoladi — `TELEGRAM_BOT_TOKEN` placeholder
+  (`dev-placeholder-token`) bilan `check`/`e2e` joblari buzilmaydi. Hech bir servis botga
+  bog'liq emas: yagona bir tomonlama seam — `TelegramNotifier`.
+
+### Jonli ishga tushirish
+
+1. @BotFather orqali bot yarating va tokenni oling.
+2. `TELEGRAM_BOT_TOKEN`ni (va `TELEGRAM_BOT_USERNAME`ni) haqiqiy qiymatga o'rnating.
+3. API'ni qayta ishga tushiring — bot long-polling'ni boshlaydi va DM'lar oqadi.
+
+**Stack:** `nestjs-telegraf` + `telegraf`, long-polling, stsenariya sessiyalari **xotirada**
+(bitta instans uchun; ko'p instansda Redis sessiya store kerak). Launch `BotService`da qo'lda
+(`launchOptions: false`) — yomon token boot'ni yiqitmaydi.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
