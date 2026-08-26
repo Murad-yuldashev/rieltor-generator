@@ -11,6 +11,7 @@ COPY .yarn/releases/ .yarn/releases/
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
+COPY apps/agent/package.json apps/agent/
 RUN yarn install --immutable
 
 # ---------- build ----------
@@ -19,6 +20,7 @@ COPY . .
 RUN yarn workspace @rieltor/api exec prisma generate
 RUN yarn workspace @rieltor/shared build
 RUN yarn workspace @rieltor/web build
+RUN yarn workspace @rieltor/agent build
 RUN yarn workspace @rieltor/api build
 
 # ---------- prod bog'liqliklari ----------
@@ -48,6 +50,8 @@ COPY --from=build /app/apps/api/prisma ./apps/api/prisma
 COPY --from=build /app/apps/api/src ./apps/api/src
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/web/dist ./apps/web/dist
+# The realtor cabinet SPA — configureApp() serves it from apps/api/dist at ../../agent/dist.
+COPY --from=build /app/apps/agent/dist ./apps/agent/dist
 COPY package.json ./
 
 # configureApp() shu yo'lni kutadi: apps/api/dist dan ../../web/dist
