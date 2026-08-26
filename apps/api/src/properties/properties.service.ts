@@ -5,6 +5,7 @@ import type {
   TrackedPropertyDetail,
 } from '@rieltor/shared';
 import { formatPriceSom } from '@rieltor/shared';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValuationService } from '../valuation/valuation.service';
 import { modeledHistory } from './price-history';
@@ -29,6 +30,7 @@ export class PropertiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly valuation: ValuationService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(userId: string, body: TrackedPropertyCreate): Promise<TrackedPropertyDetail> {
@@ -126,14 +128,12 @@ export class PropertiesService {
         if (prev != null && prev > 0n && prev !== next) {
           const deltaPct = Number(((next - prev) * 10000n) / prev) / 100;
           const dir = deltaPct >= 0 ? 'oshdi' : 'tushdi';
-          await this.prisma.notification.create({
-            data: {
-              userId: p.ownerId,
-              type: 'PRICE_UPDATE',
-              title: 'Uyingiz narxi yangilandi',
-              body: `${p.label ?? p.district} narxi ${dir}: ${formatPriceSom(String(next), 'SALE')} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%)`,
-              targetId: p.id,
-            },
+          const body = `${p.label ?? p.district} narxi ${dir}: ${formatPriceSom(String(next), 'SALE')} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%)`;
+          await this.notifications.notify(p.ownerId, {
+            type: 'PRICE_UPDATE',
+            title: 'Uyingiz narxi yangilandi',
+            body,
+            targetId: p.id,
           });
         }
       } catch (error) {

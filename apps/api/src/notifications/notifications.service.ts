@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { NotificationList } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { TelegramNotifier } from './telegram-notifier';
 
 const PUBLIC_SELECT = {
   id: true,
@@ -14,7 +15,32 @@ const PUBLIC_SELECT = {
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifier: TelegramNotifier,
+  ) {}
+
+  async notify(
+    userId: string,
+    input: { type: 'PRICE_UPDATE'; title: string; body: string; targetId?: string | null },
+  ) {
+    await this.prisma.notification.create({
+      data: {
+        userId,
+        type: input.type,
+        title: input.title,
+        body: input.body,
+        targetId: input.targetId ?? null,
+      },
+    });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { telegramId: true },
+    });
+    if (user?.telegramId) {
+      await this.notifier.send(user.telegramId, `${input.title}\n\n${input.body}`);
+    }
+  }
 
   async listMine(userId: string): Promise<NotificationList> {
     const [rows, unreadCount] = await Promise.all([
