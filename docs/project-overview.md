@@ -249,15 +249,19 @@ Har uchalasi mavjud servislarni chaqiradi — **yangi biznes-logika yozilmagan**
 ### Graceful degradation
 
 - Haqiqiy token bo'lmasa bot **uxlaydi** (`getMe()` placeholder token'da tez rad etadi),
-  API baribir normal ishga tushadi va CI yashil qoladi — `TELEGRAM_BOT_TOKEN` placeholder
-  (`dev-placeholder-token`) bilan `check`/`e2e` joblari buzilmaydi. Hech bir servis botga
-  bog'liq emas: yagona bir tomonlama seam — `TelegramNotifier`.
+  API baribir normal ishga tushadi va CI yashil qoladi — CI `check`/`e2e` joblari placeholder
+  token (`ci-test-bot-token`) bilan ishlaydi va buzilmaydi. `TELEGRAM_BOT_TOKEN` env o'zgaruvchisi
+  Phase 2.2'dayoq mavjud edi — **yangi env qo'shilmagan**. Hech bir servis botga bog'liq emas:
+  yagona bir tomonlama seam — `TelegramNotifier`.
 
 ### Jonli ishga tushirish
 
 1. @BotFather orqali bot yarating va tokenni oling.
-2. `TELEGRAM_BOT_TOKEN`ni (va `TELEGRAM_BOT_USERNAME`ni) haqiqiy qiymatga o'rnating.
+2. `TELEGRAM_BOT_TOKEN`ni haqiqiy qiymatga o'rnating.
 3. API'ni qayta ishga tushiring — bot long-polling'ni boshlaydi va DM'lar oqadi.
+
+> Web'dagi "Telegram orqali kirish" tugmasi alohida `VITE_TELEGRAM_BOT_USERNAME` (Vite/web) env'ini
+> ishlatadi — uni yangi bot username'iga moslash mumkin, lekin **bot ishlashi uchun shart emas**.
 
 **Stack:** `nestjs-telegraf` + `telegraf`, long-polling, stsenariya sessiyalari **xotirada**
 (bitta instans uchun; ko'p instansda Redis sessiya store kerak). Launch `BotService`da qo'lda
