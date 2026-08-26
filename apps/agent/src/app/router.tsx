@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 import { DashboardPage } from '@/pages/dashboard';
+import { ProfilePage } from '@/pages/profile';
 import { SubscribePage } from '@/pages/subscribe';
 import { CabinetGuard } from './cabinet-guard';
 import { RootLayout } from './root-layout';
@@ -18,7 +19,10 @@ export const router = createBrowserRouter(
       children: [
         {
           element: <CabinetGuard />,
-          children: [{ index: true, element: <DashboardPage /> }],
+          children: [
+            { index: true, element: <DashboardPage /> },
+            { path: 'profile', element: <ProfilePage /> },
+          ],
         },
         { path: 'subscribe', element: <SubscribePage /> },
       ],

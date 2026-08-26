@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useSession } from '@/entities/session';
 import { useSubscription } from '@/features/subscription';
 import { Icon, type IconName } from '@/shared/ui/icon';
@@ -13,12 +14,12 @@ const STATS: { key: string; label: string; value: string }[] = [
 ];
 
 /**
- * Cabinet navigation. The target pages land in later Phase 3.1 tasks, so each
- * entry is a "tez orada" (coming soon) placeholder rather than a live link — this
- * keeps the dashboard from routing into an unregistered path.
+ * Cabinet navigation. Entries with a `to` are live links; the rest land in later
+ * Phase 3.1 tasks and stay "tez orada" (coming soon) placeholders rather than
+ * routing into an unregistered path.
  */
-const NAV: { key: string; label: string; icon: IconName }[] = [
-  { key: 'profile', label: 'Profil', icon: 'home' },
+const NAV: { key: string; label: string; icon: IconName; to?: string }[] = [
+  { key: 'profile', label: 'Profil', icon: 'home', to: '/profile' },
   { key: 'browse', label: 'E’lonlar', icon: 'search' },
   { key: 'notes', label: 'Eslatmalar', icon: 'doc' },
   { key: 'collections', label: 'To‘plamlar', icon: 'heart' },
@@ -57,20 +58,40 @@ export function DashboardPage() {
       <section>
         <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-ink-3">Bo‘limlar</h2>
         <div className="flex flex-col gap-2">
-          {NAV.map((item) => (
-            <div
-              key={item.key}
-              className="flex items-center gap-3 rounded-card bg-card px-4 py-3.5 shadow-card"
-            >
-              <span className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent">
-                <Icon name={item.icon} className="size-5" />
-              </span>
-              <span className="flex-1 text-[15px] font-semibold text-ink">{item.label}</span>
-              <span className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-bold text-ink-3">
-                tez orada
-              </span>
-            </div>
-          ))}
+          {NAV.map((item) => {
+            const content = (
+              <>
+                <span className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent">
+                  <Icon name={item.icon} className="size-5" />
+                </span>
+                <span className="flex-1 text-[15px] font-semibold text-ink">{item.label}</span>
+                {item.to ? (
+                  <Icon name="chevronRight" className="size-5 text-ink-3" />
+                ) : (
+                  <span className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-bold text-ink-3">
+                    tez orada
+                  </span>
+                )}
+              </>
+            );
+
+            return item.to ? (
+              <Link
+                key={item.key}
+                to={item.to}
+                className="flex items-center gap-3 rounded-card bg-card px-4 py-3.5 shadow-card"
+              >
+                {content}
+              </Link>
+            ) : (
+              <div
+                key={item.key}
+                className="flex items-center gap-3 rounded-card bg-card px-4 py-3.5 shadow-card"
+              >
+                {content}
+              </div>
+            );
+          })}
         </div>
       </section>
     </main>
