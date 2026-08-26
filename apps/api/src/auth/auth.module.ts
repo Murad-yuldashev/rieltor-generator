@@ -18,7 +18,8 @@ import { TokenService } from './token.service';
   providers: [AuthService, TokenService, JwtGuard],
   // JwtModule is re-exported so JwtGuard (Task 6, in ListingsModule) can inject
   // JwtService after importing AuthModule. JwtGuard itself is exported so other
-  // modules can use it directly via @UseGuards(JwtGuard).
-  exports: [TokenService, JwtModule, JwtGuard],
+  // modules can use it directly via @UseGuards(JwtGuard). AuthService is exported
+  // so the Telegram bot (Phase 2.3) can resolve its user via ensureTelegramUser.
+  exports: [AuthService, TokenService, JwtModule, JwtGuard],
 })
 export class AuthModule {}
