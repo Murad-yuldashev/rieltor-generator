@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { ListingSummary, ListingType } from '@rieltor/shared';
 import { LISTING_TYPE_META, LISTING_TYPES, ListingCard, useListings } from '@/entities/listing';
+import { AddToCollectionModal } from '@/features/collections';
 import { NoteEditor, useNotes } from '@/features/notes';
 import { Icon } from '@/shared/ui/icon';
 
@@ -18,7 +19,7 @@ function matchesRooms(listing: ListingSummary, rooms: number | null): boolean {
   return rooms >= MAX_ROOMS_BUCKET ? listing.rooms >= rooms : listing.rooms === rooms;
 }
 
-interface Editing {
+interface Selection {
   listingId: string;
   title: string;
 }
@@ -37,7 +38,8 @@ export function BrowsePage() {
   const [district, setDistrict] = useState<string>('ALL');
   const [type, setType] = useState<TypeFilter>('ALL');
   const [rooms, setRooms] = useState<number | null>(null);
-  const [editing, setEditing] = useState<Editing | null>(null);
+  const [editing, setEditing] = useState<Selection | null>(null);
+  const [collecting, setCollecting] = useState<Selection | null>(null);
 
   // Districts that actually appear in the catalogue — deduped, sorted. Deriving
   // from live listings keeps every option non-empty (mirrors the marketplace).
@@ -133,6 +135,7 @@ export function BrowsePage() {
               isFirst={i === 0}
               hasNote={notedIds.has(listing.id)}
               onNote={() => setEditing({ listingId: listing.id, title: listing.title })}
+              onCollect={() => setCollecting({ listingId: listing.id, title: listing.title })}
             />
           ))}
         </div>
@@ -143,6 +146,14 @@ export function BrowsePage() {
           listingId={editing.listingId}
           listingTitle={editing.title}
           onClose={() => setEditing(null)}
+        />
+      )}
+
+      {collecting && (
+        <AddToCollectionModal
+          listingId={collecting.listingId}
+          listingTitle={collecting.title}
+          onClose={() => setCollecting(null)}
         />
       )}
     </main>

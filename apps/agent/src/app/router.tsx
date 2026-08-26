@@ -1,5 +1,7 @@
 import { createBrowserRouter } from 'react-router';
 import { BrowsePage } from '@/pages/browse';
+import { CollectionDetailPage } from '@/pages/collection-detail';
+import { CollectionsPage } from '@/pages/collections';
 import { DashboardPage } from '@/pages/dashboard';
 import { NotesPage } from '@/pages/notes';
 import { ProfilePage } from '@/pages/profile';
@@ -26,6 +28,8 @@ export const router = createBrowserRouter(
             { path: 'profile', element: <ProfilePage /> },
             { path: 'browse', element: <BrowsePage /> },
             { path: 'notes', element: <NotesPage /> },
+            { path: 'collections', element: <CollectionsPage /> },
+            { path: 'collections/:id', element: <CollectionDetailPage /> },
           ],
         },
         { path: 'subscribe', element: <SubscribePage /> },

@@ -1,20 +1,20 @@
 import { Link } from 'react-router';
 import { useSession } from '@/entities/session';
+import { useCollections } from '@/features/collections';
 import { useNotes } from '@/features/notes';
 import { useSubscription } from '@/features/subscription';
 import { Icon, type IconName } from '@/shared/ui/icon';
 import { TrialBanner } from '@/widgets/trial-banner';
 
 /**
- * Cabinet navigation. Entries with a `to` are live links; the rest land in later
- * Phase 3.1 tasks and stay "tez orada" (coming soon) placeholders rather than
- * routing into an unregistered path.
+ * Cabinet navigation. Every entry is now a live link — the last Phase 3.1 feature
+ * (collections) shipped in Task 11.
  */
-const NAV: { key: string; label: string; icon: IconName; to?: string }[] = [
+const NAV: { key: string; label: string; icon: IconName; to: string }[] = [
   { key: 'profile', label: 'Profil', icon: 'home', to: '/profile' },
   { key: 'browse', label: 'E’lonlar', icon: 'search', to: '/browse' },
   { key: 'notes', label: 'Eslatmalar', icon: 'doc', to: '/notes' },
-  { key: 'collections', label: 'To‘plamlar', icon: 'heart' },
+  { key: 'collections', label: 'To‘plamlar', icon: 'heart', to: '/collections' },
 ];
 
 export function DashboardPage() {
@@ -22,13 +22,17 @@ export function DashboardPage() {
   // The gate only renders this page for an active REALTOR, so a subscription is
   // guaranteed to be present in the cache by the time we get here.
   const { data: subscription } = useSubscription();
-  // The notes count is live (Task 10); collections lands in Task 11 and stays a
-  // placeholder until then.
+  // Both counts are live (notes: Task 10, collections: Task 11).
   const { data: notes } = useNotes();
+  const { data: collections } = useCollections();
 
-  // Quick counts — a live notes total, an em-dash for the not-yet-wired collections.
+  // Quick counts — the number of collections and of notes.
   const stats: { key: string; label: string; value: string }[] = [
-    { key: 'collections', label: 'To‘plamlar', value: '—' },
+    {
+      key: 'collections',
+      label: 'To‘plamlar',
+      value: collections ? String(collections.length) : '—',
+    },
     { key: 'notes', label: 'Eslatmalar', value: notes ? String(notes.length) : '—' },
   ];
 
@@ -59,40 +63,19 @@ export function DashboardPage() {
       <section>
         <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-ink-3">Bo‘limlar</h2>
         <div className="flex flex-col gap-2">
-          {NAV.map((item) => {
-            const content = (
-              <>
-                <span className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent">
-                  <Icon name={item.icon} className="size-5" />
-                </span>
-                <span className="flex-1 text-[15px] font-semibold text-ink">{item.label}</span>
-                {item.to ? (
-                  <Icon name="chevronRight" className="size-5 text-ink-3" />
-                ) : (
-                  <span className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-bold text-ink-3">
-                    tez orada
-                  </span>
-                )}
-              </>
-            );
-
-            return item.to ? (
-              <Link
-                key={item.key}
-                to={item.to}
-                className="flex items-center gap-3 rounded-card bg-card px-4 py-3.5 shadow-card"
-              >
-                {content}
-              </Link>
-            ) : (
-              <div
-                key={item.key}
-                className="flex items-center gap-3 rounded-card bg-card px-4 py-3.5 shadow-card"
-              >
-                {content}
-              </div>
-            );
-          })}
+          {NAV.map((item) => (
+            <Link
+              key={item.key}
+              to={item.to}
+              className="flex items-center gap-3 rounded-card bg-card px-4 py-3.5 shadow-card"
+            >
+              <span className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent">
+                <Icon name={item.icon} className="size-5" />
+              </span>
+              <span className="flex-1 text-[15px] font-semibold text-ink">{item.label}</span>
+              <Icon name="chevronRight" className="size-5 text-ink-3" />
+            </Link>
+          ))}
         </div>
       </section>
     </main>

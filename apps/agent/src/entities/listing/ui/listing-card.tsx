@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   IMAGE_SIZES,
   formatPriceSom,
@@ -19,6 +20,13 @@ interface Props {
   hasNote?: boolean;
   /** Rendered under the body on the "Mening eslatmalarim" page (the note snippet). */
   noteSnippet?: string;
+  /** Opens the add-to-collection picker for this listing (browse cards). */
+  onCollect?: () => void;
+  /**
+   * A custom action row that REPLACES the default note/collect buttons — used by
+   * the collection-detail page to render its reorder + remove controls instead.
+   */
+  footer?: ReactNode;
 }
 
 /**
@@ -36,6 +44,8 @@ export function ListingCard({
   onNote,
   hasNote = false,
   noteSnippet,
+  onCollect,
+  footer,
 }: Props) {
   const meta = LISTING_TYPE_META[listing.type];
 
@@ -96,32 +106,40 @@ export function ListingCard({
           </p>
         )}
 
-        <div className="mt-3.5 flex gap-2">
-          <button
-            type="button"
-            onClick={onNote}
-            className={cn(
-              'flex flex-1 items-center justify-center gap-1.5 rounded-[12px] px-3 py-2.5 text-[13px] font-bold',
-              hasNote ? 'bg-accent text-white' : 'bg-accent-soft text-accent-dark',
-            )}
-          >
-            <Icon name="doc" className="size-4" strokeWidth={2.2} />
-            {hasNote ? 'Eslatmani ochish' : 'Eslatma'}
-          </button>
+        {/* A custom footer (the collection-detail controls) fully replaces the
+            default note/collect action row. */}
+        {footer ? (
+          <div className="mt-3.5">{footer}</div>
+        ) : (
+          (onNote || onCollect) && (
+            <div className="mt-3.5 flex gap-2">
+              {onNote && (
+                <button
+                  type="button"
+                  onClick={onNote}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-1.5 rounded-[12px] px-3 py-2.5 text-[13px] font-bold',
+                    hasNote ? 'bg-accent text-white' : 'bg-accent-soft text-accent-dark',
+                  )}
+                >
+                  <Icon name="doc" className="size-4" strokeWidth={2.2} />
+                  {hasNote ? 'Eslatmani ochish' : 'Eslatma'}
+                </button>
+              )}
 
-          {/* The collections action lands in Task 11 — a disabled "tez orada"
-              stub here so the card's layout is final and the note action works. */}
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            title="Tez orada"
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-surface px-3 py-2.5 text-[13px] font-bold text-ink-3"
-          >
-            <Icon name="heart" className="size-4" />
-            Kolleksiyaga
-          </button>
-        </div>
+              {onCollect && (
+                <button
+                  type="button"
+                  onClick={onCollect}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-accent-soft px-3 py-2.5 text-[13px] font-bold text-accent-dark"
+                >
+                  <Icon name="heart" className="size-4" />
+                  Kolleksiyaga
+                </button>
+              )}
+            </div>
+          )
+        )}
       </div>
     </article>
   );
