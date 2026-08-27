@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } fro
 import {
   CollectionAddItemSchema,
   CollectionCreateSchema,
+  CollectionItemNoteSchema,
   CollectionReorderSchema,
   CollectionUpdateSchema,
   NoteUpsertSchema,
@@ -9,6 +10,7 @@ import {
 } from '@rieltor/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
+import { PresentationsService } from '../presentations/presentations.service';
 import { CollectionsService } from './collections.service';
 import { NotesService } from './notes.service';
 import { ProfileService } from './profile.service';
@@ -24,6 +26,7 @@ export class AgentController {
     private readonly profiles: ProfileService,
     private readonly notes: NotesService,
     private readonly collections: CollectionsService,
+    private readonly presentations: PresentationsService,
   ) {}
 
   // become-realtor + subscription routes are JwtGuard-only: right after the
@@ -152,5 +155,47 @@ export class AgentController {
     @Body() body: unknown,
   ) {
     return this.collections.reorder(user.id, id, CollectionReorderSchema.parse(body).listingIds);
+  }
+
+  // Distinct from the reorder route above: the extra :listingId segment routes
+  // this per-item note editor separately from PATCH collections/:id/items.
+  @Patch('collections/:id/items/:listingId')
+  @UseGuards(RealtorGuard)
+  setCollectionItemNote(
+    @CurrentUser() user: { id: string; role: string },
+    @Param('id') id: string,
+    @Param('listingId') listingId: string,
+    @Body() body: unknown,
+  ) {
+    return this.collections.setItemNote(
+      user.id,
+      id,
+      listingId,
+      CollectionItemNoteSchema.parse(body).note,
+    );
+  }
+
+  @Post('collections/:id/present')
+  @UseGuards(RealtorGuard)
+  presentCollection(@CurrentUser() user: { id: string; role: string }, @Param('id') id: string) {
+    return this.presentations.present(user.id, id);
+  }
+
+  @Get('presentations')
+  @UseGuards(RealtorGuard)
+  listPresentations(@CurrentUser() user: { id: string; role: string }) {
+    return this.presentations.list(user.id);
+  }
+
+  @Get('presentations/:id')
+  @UseGuards(RealtorGuard)
+  presentationDetail(@CurrentUser() user: { id: string; role: string }, @Param('id') id: string) {
+    return this.presentations.detail(user.id, id);
+  }
+
+  @Delete('presentations/:id')
+  @UseGuards(RealtorGuard)
+  removePresentation(@CurrentUser() user: { id: string; role: string }, @Param('id') id: string) {
+    return this.presentations.remove(user.id, id);
   }
 }
