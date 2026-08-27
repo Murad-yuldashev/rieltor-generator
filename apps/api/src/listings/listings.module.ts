@@ -6,6 +6,8 @@ import { ListingImageController } from './listing-image.controller';
 import { ListingsController } from './listings.controller';
 import { ListingsService } from './listings.service';
 import { ModerationController } from './moderation.controller';
+import { RealtorModerationController } from './realtor-moderation.controller';
+import { RealtorModerationService } from './realtor-moderation.service';
 
 @Module({
   imports: [AuthModule],
@@ -15,8 +17,9 @@ import { ModerationController } from './moderation.controller';
     ListingDraftController,
     ListingImageController,
     ModerationController,
+    RealtorModerationController,
   ],
-  providers: [ListingsService],
+  providers: [ListingsService, RealtorModerationService],
   exports: [ListingsService],
 })
 export class ListingsModule {}
