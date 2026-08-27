@@ -5,6 +5,8 @@ import type {
   PresentationCreateResult,
   PresentationDetail,
   PresentationSummary,
+  PresentationViewEvent,
+  PublicPresentation,
 } from '@rieltor/shared';
 import type { Env } from '../config/env';
 import { toListingSummary } from '../listings/mapper';
@@ -154,5 +156,61 @@ export class PresentationsService {
     const presentation = await this.prisma.presentation.findUnique({ where: { id } });
     if (!presentation || presentation.realtorId !== realtorId) throw new NotFoundException();
     await this.prisma.presentation.delete({ where: { id } });
+  }
+
+  /**
+   * The client-facing view of a presentation, resolved by its unguessable token —
+   * unauthenticated and NOT subscription-gated: a client (not a platform user)
+   * with the link must be able to open it even if the realtor's subscription has
+   * lapsed. Only client-facing fields are returned (title, realtor display, ordered
+   * items); realtorId, analytics, and token internals are never exposed. 404 on an
+   * unknown token.
+   */
+  async publicGet(token: string): Promise<PublicPresentation> {
+    const presentation = await this.prisma.presentation.findUnique({
+      where: { token },
+      include: {
+        items: {
+          orderBy: { position: 'asc' },
+          include: { listing: { include: LISTING_SUMMARY_INCLUDE } },
+        },
+        realtor: { select: { name: true, realtorProfile: { select: { agency: true } } } },
+      },
+    });
+    if (!presentation) throw new NotFoundException();
+
+    return {
+      title: presentation.title,
+      realtorName: presentation.realtor.name ?? 'Rieltor',
+      agency: presentation.realtor.realtorProfile?.agency ?? null,
+      items: presentation.items.map((it) => ({
+        listingId: it.listingId,
+        position: it.position,
+        note: it.note,
+        listing: toListingSummary(it.listing),
+      })),
+    };
+  }
+
+  /**
+   * Ingest one analytics beacon for a presentation, resolved by token. An unknown
+   * token returns silently (no throw) — this avoids leaking token validity and
+   * silences stray beacons (e.g. after a presentation is deleted). Public and NOT
+   * subscription-gated. A single lightweight insert; the open event carries a null
+   * listingId, a per-listing dwell event carries the listingId.
+   */
+  async recordView(token: string, event: PresentationViewEvent): Promise<void> {
+    const presentation = await this.prisma.presentation.findUnique({
+      where: { token },
+      select: { id: true },
+    });
+    if (!presentation) return;
+    await this.prisma.presentationView.create({
+      data: {
+        presentationId: presentation.id,
+        listingId: event.listingId ?? null,
+        durationMs: event.durationMs ?? null,
+      },
+    });
   }
 }
