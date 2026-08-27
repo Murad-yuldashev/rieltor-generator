@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import type { CollectionItem } from '@rieltor/shared';
+import type { CollectionItem, PresentationCreateResult } from '@rieltor/shared';
 import { ListingCard } from '@/entities/listing';
 import {
   useCollection,
@@ -9,7 +9,9 @@ import {
   useRenameCollection,
   useReorderCollection,
 } from '@/features/collections';
+import { useCreatePresentation, telegramShareUrl } from '@/features/presentations';
 import { Icon } from '@/shared/ui/icon';
+import { ClientNoteEditor } from './client-note-editor';
 
 const NAME_MAX = 80;
 
@@ -28,9 +30,12 @@ export function CollectionDetailPage() {
   const removeCollection = useDeleteCollection();
   const removeItem = useRemoveCollectionItem();
   const reorder = useReorderCollection();
+  const createPresentation = useCreatePresentation(id);
 
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState('');
+  const [share, setShare] = useState<PresentationCreateResult | null>(null);
+  const [copied, setCopied] = useState(false);
 
   function startRename() {
     setName(collection?.name ?? '');
@@ -60,6 +65,24 @@ export function CollectionDetailPage() {
     listingIds[index] = neighbour;
     listingIds[target] = current;
     reorder.mutate({ collectionId: id, listingIds });
+  }
+
+  /** Snapshot the collection into a shareable presentation and reveal its link. */
+  function handlePresent() {
+    if (createPresentation.isPending) return;
+    setCopied(false);
+    createPresentation.mutate(undefined, { onSuccess: setShare });
+  }
+
+  async function handleCopy() {
+    if (!share) return;
+    try {
+      await navigator.clipboard.writeText(share.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable (insecure context / denied) — the link stays visible to copy manually.
+    }
   }
 
   return (
@@ -139,6 +162,60 @@ export function CollectionDetailPage() {
             )}
           </header>
 
+          <section className="mb-5 rounded-card bg-card p-4 shadow-card">
+            <button
+              type="button"
+              onClick={handlePresent}
+              disabled={collection.items.length === 0 || createPresentation.isPending}
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Icon name="share" className="size-4" strokeWidth={2.2} />
+              {createPresentation.isPending ? 'Yaratilmoqda...' : 'Taqdimot yaratish va ulashish'}
+            </button>
+
+            {collection.items.length === 0 && (
+              <p className="mt-2 text-center text-[12px] font-medium text-ink-3">
+                Taqdimot yaratish uchun avval e'lon qo'shing.
+              </p>
+            )}
+
+            {createPresentation.isError && (
+              <p className="mt-2 text-center text-[13px] font-semibold text-brand-rose">
+                {createPresentation.error instanceof Error
+                  ? createPresentation.error.message
+                  : "Taqdimot yaratib bo'lmadi."}
+              </p>
+            )}
+
+            {share && (
+              <div className="mt-3 rounded-[12px] bg-surface p-3">
+                <p className="text-[12px] font-bold text-ink-2">Taqdimot havolasi tayyor</p>
+                <p className="mt-1 truncate text-[13px] font-medium text-accent-dark">
+                  {share.url}
+                </p>
+                <div className="mt-2.5 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-line bg-card px-3 py-2.5 text-[13px] font-bold text-ink-2"
+                  >
+                    <Icon name={copied ? 'check' : 'doc'} className="size-4" strokeWidth={2.2} />
+                    {copied ? 'Nusxa olindi' : 'Nusxa olish'}
+                  </button>
+                  <a
+                    href={telegramShareUrl(share.url, collection.name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-accent px-3 py-2.5 text-[13px] font-bold text-white"
+                  >
+                    <Icon name="telegram" className="size-4" />
+                    Telegramda ulashish
+                  </a>
+                </div>
+              </div>
+            )}
+          </section>
+
           {collection.items.length === 0 ? (
             <div className="rounded-card bg-card p-8 text-center shadow-card">
               <p className="text-[15px] font-bold text-ink">Bu kolleksiya bo'sh — e'lon qo'shing</p>
@@ -157,38 +234,44 @@ export function CollectionDetailPage() {
                   key={item.listingId}
                   listing={item.listing}
                   isFirst={i === 0}
-                  noteSnippet={item.note ?? undefined}
                   footer={
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => move(collection.items, i, -1)}
-                        disabled={i === 0 || reorder.isPending}
-                        aria-label="Yuqoriga"
-                        className="flex flex-1 items-center justify-center rounded-[12px] bg-surface py-2.5 text-ink-2 disabled:opacity-40"
-                      >
-                        <Icon name="chevronUp" className="size-4" strokeWidth={2.4} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => move(collection.items, i, 1)}
-                        disabled={i === collection.items.length - 1 || reorder.isPending}
-                        aria-label="Pastga"
-                        className="flex flex-1 items-center justify-center rounded-[12px] bg-surface py-2.5 text-ink-2 disabled:opacity-40"
-                      >
-                        <Icon name="chevronDown" className="size-4" strokeWidth={2.4} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          removeItem.mutate({ collectionId: id, listingId: item.listingId })
-                        }
-                        disabled={removeItem.isPending}
-                        className="flex flex-[2] items-center justify-center gap-1.5 rounded-[12px] bg-surface py-2.5 text-[13px] font-bold text-brand-rose disabled:opacity-50"
-                      >
-                        <Icon name="close" className="size-4" strokeWidth={2.4} />
-                        Olib tashlash
-                      </button>
+                    <div className="flex flex-col gap-3">
+                      <ClientNoteEditor
+                        collectionId={id}
+                        listingId={item.listingId}
+                        note={item.note}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => move(collection.items, i, -1)}
+                          disabled={i === 0 || reorder.isPending}
+                          aria-label="Yuqoriga"
+                          className="flex flex-1 items-center justify-center rounded-[12px] bg-surface py-2.5 text-ink-2 disabled:opacity-40"
+                        >
+                          <Icon name="chevronUp" className="size-4" strokeWidth={2.4} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => move(collection.items, i, 1)}
+                          disabled={i === collection.items.length - 1 || reorder.isPending}
+                          aria-label="Pastga"
+                          className="flex flex-1 items-center justify-center rounded-[12px] bg-surface py-2.5 text-ink-2 disabled:opacity-40"
+                        >
+                          <Icon name="chevronDown" className="size-4" strokeWidth={2.4} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removeItem.mutate({ collectionId: id, listingId: item.listingId })
+                          }
+                          disabled={removeItem.isPending}
+                          className="flex flex-[2] items-center justify-center gap-1.5 rounded-[12px] bg-surface py-2.5 text-[13px] font-bold text-brand-rose disabled:opacity-50"
+                        >
+                          <Icon name="close" className="size-4" strokeWidth={2.4} />
+                          Olib tashlash
+                        </button>
+                      </div>
                     </div>
                   }
                 />
