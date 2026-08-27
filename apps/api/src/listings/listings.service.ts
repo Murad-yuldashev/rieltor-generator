@@ -7,7 +7,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import { toListingDetail, toListingSummary } from './mapper';
 import { processImage } from './process-image';
 
-const FULL_INCLUDE = { agent: true, images: { orderBy: { position: 'asc' } } } as const;
+const FULL_INCLUDE = {
+  agent: true,
+  images: { orderBy: { position: 'asc' } },
+  owner: {
+    select: {
+      role: true,
+      name: true,
+      phone: true,
+      photoUrl: true,
+      realtorProfile: { select: { agency: true, slug: true, verified: true, logoUrl: true } },
+    },
+  },
+} as const;
 
 // Seeded agency agent id — user listings are attributed to their own account
 // in Phase 3, when the realtor profile exists.
