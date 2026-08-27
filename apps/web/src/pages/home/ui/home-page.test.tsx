@@ -25,6 +25,7 @@ const listings = [
     agencyName: 'Rieltor',
     agentPhoneMasked: '+998 90 ••• •• 67',
     agentVerified: false,
+    agentProfileSlug: null,
   },
 ];
 

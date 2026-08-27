@@ -16,6 +16,7 @@ const fullListing = {
   type: 'SECONDARY',
   deal: 'SALE',
   agentVerified: true,
+  agentProfileSlug: 'murod-buxoro',
   views: 7,
   listedAt: '2026-07-28',
   images: [

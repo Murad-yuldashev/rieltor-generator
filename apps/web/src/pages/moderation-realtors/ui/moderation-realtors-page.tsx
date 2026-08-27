@@ -84,7 +84,7 @@ function RealtorItem({
           {realtor.verified && (
             <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-brand-green/10 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-brand-green">
               <Icon name="check" className="h-2.5 w-2.5" strokeWidth={3} />
-              TASDIQLANGAN
+              Tasdiqlangan
             </span>
           )}
         </p>

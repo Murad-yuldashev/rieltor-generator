@@ -81,9 +81,11 @@ export function toListingDetail(row: ListingRow): ListingDetail {
     views: row.views,
     listedAt: dateText(row.listedAt),
     images: [...row.images].sort((a, b) => a.position - b.position).map(imageDto),
-    // ListingDetail inherits agentVerified from the summary schema (it is not
-    // omitted there); mirror the resolved seller's badge for a consistent shape.
+    // ListingDetail inherits agentVerified + agentProfileSlug from the summary
+    // schema (neither is omitted there); mirror the resolved seller so the shape
+    // stays consistent. The nested `agent` object below carries the same values.
     agentVerified: s.verified,
+    agentProfileSlug: s.profileSlug,
     agent: {
       id: s.id,
       name: s.name,
@@ -127,5 +129,8 @@ export function toListingSummary(row: ListingRow): ListingSummary {
     agencyName: s.agency,
     agentPhoneMasked: maskPhone(s.phone),
     agentVerified: s.verified,
+    // Same resolved seller value `toListingDetail` puts on `agent.profileSlug`:
+    // null for the default Agent (seed), the realtor's slug for a published one.
+    agentProfileSlug: s.profileSlug,
   };
 }

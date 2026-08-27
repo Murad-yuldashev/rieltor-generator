@@ -64,6 +64,13 @@ export const ListingSummarySchema = z.object({
   agentPhoneMasked: z.string(),
   /** Drives the verified badge on a card's seller panel. */
   agentVerified: z.boolean(),
+  /**
+   * Seller's public profile slug, mirroring `Agent.profileSlug`. Null for the
+   * default Agent (seed listings); set for a published realtor. Lets a card
+   * tell a seed listing from an unverified real realtor so the legacy static
+   * badge stays on seed rows while a real realtor's badge follows `agentVerified`.
+   */
+  agentProfileSlug: z.string().nullable(),
 });
 
 export const ListingDetailSchema = ListingSummarySchema.omit({

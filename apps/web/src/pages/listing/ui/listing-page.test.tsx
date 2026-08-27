@@ -21,6 +21,7 @@ const listing = {
   views: 3,
   listedAt: '2026-07-22',
   agentVerified: false,
+  agentProfileSlug: null,
   images: [
     {
       base: '/images/bx-002/01',

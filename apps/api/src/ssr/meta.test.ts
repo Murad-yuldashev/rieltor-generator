@@ -18,6 +18,7 @@ const listing = {
   views: 0,
   listedAt: '2026-07-20',
   agentVerified: false,
+  agentProfileSlug: null,
   images: [
     {
       base: '/images/bx-001/01',
