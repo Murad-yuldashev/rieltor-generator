@@ -1901,6 +1901,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@rieltor/agent@workspace:apps/agent":
+  version: 0.0.0-use.local
+  resolution: "@rieltor/agent@workspace:apps/agent"
+  dependencies:
+    "@fontsource-variable/inter": "npm:^5.1.0"
+    "@rieltor/shared": "workspace:*"
+    "@tailwindcss/vite": "npm:^4.0.0"
+    "@tanstack/react-query": "npm:^5.62.0"
+    "@types/react": "npm:^19.0.0"
+    "@types/react-dom": "npm:^19.0.0"
+    "@vitejs/plugin-react": "npm:^4.3.4"
+    clsx: "npm:^2.1.1"
+    react: "npm:^19.0.0"
+    react-dom: "npm:^19.0.0"
+    react-router: "npm:^7.1.0"
+    tailwindcss: "npm:^4.0.0"
+    typescript: "npm:^5.7.2"
+    vite: "npm:^6.0.0"
+    zod: "npm:^4.0.0"
+  languageName: unknown
+  linkType: soft
+
 "@rieltor/api@workspace:apps/api":
   version: 0.0.0-use.local
   resolution: "@rieltor/api@workspace:apps/api"

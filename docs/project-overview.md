@@ -267,6 +267,65 @@ Har uchalasi mavjud servislarni chaqiradi — **yangi biznes-logika yozilmagan**
 (bitta instans uchun; ko'p instansda Redis sessiya store kerak). Launch `BotService`da qo'lda
 (`launchOptions: false`) — yomon token boot'ni yiqitmaydi.
 
+## 4g. Phase 3.1 — Rieltor kabineti (2026-08-26)
+
+Rieltorlar uchun alohida ish kabineti — obuna, shaxsiy eslatmalar va mijozga podborkalar.
+Spec: `docs/superpowers/specs/2026-08-26-phase-3.1-realtor-cabinet-design.md`,
+reja: `docs/superpowers/plans/2026-08-26-phase-3.1-realtor-cabinet.md`.
+Marketplace'ga **tegilmagan** — kabinet uning `/api/objects` e'lonlarini qayta ishlatadi.
+
+### Alohida ilova — `apps/agent`
+
+- Yangi **`apps/agent`** SPA'si (React 19 · Vite 6 · Tailwind v4 · React Router 7 · TanStack
+  Query 5, Feature-Sliced Design) — `apps/web` konfigini aks ettiradi, lekin **web'ni
+  import qilmaydi**.
+- Prod'da **`/agent`** subpath'ida xizmat qilinadi: API `bootstrap.ts` express darajasida
+  statik asset'lar (`/agent/assets/*`) va SPA-fallback (`/agent`, `/agent/*` → `index.html`)
+  o'rnatadi. Fallback Nest router'idan **oldin** ishlaydi, shuning uchun `/agent` web
+  SSR'iga tushmaydi. Bu **`/api/agent`ga tegmaydi** — u NestJS `AgentController` ostidagi
+  API (global `api` prefiks).
+
+### Obuna: trial → paywall
+
+- **"Rieltor bo'lish"** USER'ni REALTOR'ga aylantiradi va **14 kunlik bepul trial** ochadi
+  (`status=TRIAL`). Idempotent — mavjud rieltor obunasini saqlaydi.
+- Muddat tugasa **paywall** ko'rsatiladi; **"test to'lov"** obunani **30 kunga** faollashtiradi
+  (`status=ACTIVE`). To'lov **STUB** — haqiqiy pul yechilmaydi, real Click/Payme keyin.
+- **`RealtorGuard`** har so'rovda **jonli muddatni** tekshiradi (`status !== EXPIRED` **va**
+  `currentPeriodEnd > hozir`) — muddati o'tgan obuna kabinet API'siga kira olmaydi.
+
+### Rieltor profili
+
+- Ichki profil: agentlik nomi, bio, ishlaydigan hududlar, tajriba (`RealtorProfile`) —
+  hozircha faqat kabinet ichida ko'rinadi (ommaviy profil 3.3'da).
+
+### Eslatmalar (C9) va Kolleksiyalar (C10)
+
+- **Eslatmalar** — har e'longa rieltorning **shaxsiy** matnli eslatmasi (`Note`,
+  `realtorId_listingId` bo'yicha unikal upsert).
+- **Kolleksiyalar / podborka** — mijoz uchun tartiblangan e'lon to'plamlari (`Collection` +
+  `CollectionItem`): yaratish, e'lon qo'shish/olib tashlash, qayta tartiblash.
+- Har ikki so'rov **egalik bo'yicha** cheklangan — rieltor faqat o'zining eslatma va
+  kolleksiyalarini ko'radi/o'zgartiradi.
+
+### E'lon-browser
+
+- Kabinet ichidagi e'lon ro'yxati marketplace **`/api/objects`**ni qayta ishlatadi —
+  yangi e'lon manbasi yozilmagan; eslatma va kolleksiya elementlari `ListingSummary`ni ushlaydi.
+
+### Ma'lumot modeli va API
+
+- **5 yangi Prisma modeli:** `RealtorProfile`, `Subscription`, `Note`, `Collection`,
+  `CollectionItem`.
+- Yangi **`agent`** API moduli (`/api/agent/*`) — barcha yozuv/o'qish yo'llari `RealtorGuard`
+  bilan himoyalangan (rol + jonli obuna).
+- **Yangi env qo'shilmagan**; marketplace, AI va bot oqimlariga tegilmagan.
+
+### Kelasi
+
+- Ommaviy rieltor profili + reyting (3.3), ulashiladigan taqdimot + analitika (3.2),
+  shaxsiy sayt generatori (3.3), va **real to'lov** integratsiyasi (Click/Payme).
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

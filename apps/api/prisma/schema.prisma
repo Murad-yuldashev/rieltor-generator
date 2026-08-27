@@ -65,6 +65,8 @@ model Listing {
   status          ListingStatus @default(PUBLISHED)
   rejectionReason String?
   publishedAt     DateTime?
+  notes           Note[]
+  collectionItems CollectionItem[]
 
   @@index([type])
   @@index([deal])
@@ -118,6 +120,10 @@ model User {
   trackedProperties TrackedProperty[]
   notifications     Notification[]
   propertyRequests  PropertyRequest[]
+  realtorProfile    RealtorProfile?
+  subscription      Subscription?
+  notes             Note[]
+  collections       Collection[]
 }
 
 model Session {
@@ -241,4 +247,69 @@ model PropertyRequest {
   createdAt   DateTime      @default(now())
 
   @@index([status, createdAt])
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+}
+
+model RealtorProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agency          String
+  bio             String?
+  regions         String[]
+  experienceYears Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Subscription {
+  id               String             @id @default(cuid())
+  userId           String             @unique
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status           SubscriptionStatus @default(TRIAL)
+  tier             String             @default("PRO")
+  currentPeriodEnd DateTime
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  realtorId String
+  realtor   User     @relation(fields: [realtorId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([realtorId, listingId])
+}
+
+model Collection {
+  id        String           @id @default(cuid())
+  realtorId String
+  realtor   User             @relation(fields: [realtorId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  items     CollectionItem[]
+}
+
+model CollectionItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  listingId    String
+  listing      Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  position     Int
+  note         String?
+  addedAt      DateTime   @default(now())
+
+  @@unique([collectionId, listingId])
 }

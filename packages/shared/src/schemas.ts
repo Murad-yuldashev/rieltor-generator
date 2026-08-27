@@ -292,6 +292,65 @@ export const PropertyRequestFilterSchema = z.object({
 /** Response of `POST /api/requests/:id/contact` and the listing reveal. */
 export const RevealedContactSchema = z.object({ phone: z.string() });
 
+export const SubscriptionStatusSchema = z.enum(['TRIAL', 'ACTIVE', 'EXPIRED']);
+
+export const SubscriptionViewSchema = z.object({
+  status: SubscriptionStatusSchema,
+  tier: z.string(),
+  currentPeriodEnd: z.string(), // ISO
+  isActive: z.boolean(), // computed: status !== EXPIRED && currentPeriodEnd > now
+  daysLeft: z.number().int(), // clamped at 0
+});
+
+export const RealtorProfileSchema = z.object({
+  agency: z.string(),
+  bio: z.string().nullable(),
+  regions: z.array(z.string()),
+  experienceYears: z.number().int().nullable(),
+});
+
+export const RealtorProfileUpdateSchema = z.object({
+  agency: z.string().min(2).max(80).optional(),
+  bio: z.string().max(1000).nullable().optional(),
+  regions: z.array(z.string().min(2)).max(14).optional(),
+  experienceYears: z.number().int().min(0).max(70).nullable().optional(),
+});
+
+export const NoteUpsertSchema = z.object({ body: z.string().min(1).max(2000) });
+
+export const NoteWithListingSchema = z.object({
+  listingId: z.string(),
+  body: z.string(),
+  updatedAt: z.string(), // ISO
+  listing: ListingSummarySchema,
+});
+
+export const CollectionSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  itemCount: z.number().int(),
+  updatedAt: z.string(), // ISO
+});
+
+export const CollectionCreateSchema = z.object({ name: z.string().min(1).max(80) });
+export const CollectionUpdateSchema = z.object({ name: z.string().min(1).max(80) });
+
+export const CollectionItemSchema = z.object({
+  listingId: z.string(),
+  position: z.number().int(),
+  note: z.string().nullable(),
+  listing: ListingSummarySchema,
+});
+
+export const CollectionDetailSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  items: z.array(CollectionItemSchema), // ordered by position asc
+});
+
+export const CollectionAddItemSchema = z.object({ listingId: z.string().min(1) });
+export const CollectionReorderSchema = z.object({ listingIds: z.array(z.string().min(1)) });
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -319,3 +378,16 @@ export type NotificationList = z.infer<typeof NotificationListSchema>;
 export type PropertyRequestCreate = z.infer<typeof PropertyRequestCreateSchema>;
 export type PropertyRequestSummary = z.infer<typeof PropertyRequestSummarySchema>;
 export type PropertyRequestFilter = z.infer<typeof PropertyRequestFilterSchema>;
+export type SubscriptionStatus = z.infer<typeof SubscriptionStatusSchema>;
+export type SubscriptionView = z.infer<typeof SubscriptionViewSchema>;
+export type RealtorProfile = z.infer<typeof RealtorProfileSchema>;
+export type RealtorProfileUpdate = z.infer<typeof RealtorProfileUpdateSchema>;
+export type NoteUpsert = z.infer<typeof NoteUpsertSchema>;
+export type NoteWithListing = z.infer<typeof NoteWithListingSchema>;
+export type CollectionSummary = z.infer<typeof CollectionSummarySchema>;
+export type CollectionCreate = z.infer<typeof CollectionCreateSchema>;
+export type CollectionUpdate = z.infer<typeof CollectionUpdateSchema>;
+export type CollectionItem = z.infer<typeof CollectionItemSchema>;
+export type CollectionDetail = z.infer<typeof CollectionDetailSchema>;
+export type CollectionAddItem = z.infer<typeof CollectionAddItemSchema>;
+export type CollectionReorder = z.infer<typeof CollectionReorderSchema>;
