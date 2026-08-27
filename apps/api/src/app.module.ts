@@ -14,6 +14,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PresentationsModule } from './presentations/presentations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PropertiesModule } from './properties/properties.module';
+import { RealtorPublicModule } from './realtor-public/realtor-public.module';
 import { RequestsModule } from './requests/requests.module';
 import { SavedSearchModule } from './saved-search/saved-search.module';
 import { SsrModule } from './ssr/ssr.module';
@@ -38,6 +39,7 @@ import { ViewsModule } from './views/views.module';
     NotificationsModule,
     PresentationsModule,
     PropertiesModule,
+    RealtorPublicModule,
     RequestsModule,
     SavedSearchModule,
     ValuationModule,

@@ -7,7 +7,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { toListingDetail, toListingSummary } from './mapper';
 import { processImage } from './process-image';
 
-const FULL_INCLUDE = {
+// Shared with the public realtor microsite (realtor-public.service.ts) so a
+// realtor's own listings resolve the same seller info everywhere.
+export const FULL_INCLUDE = {
   agent: true,
   images: { orderBy: { position: 'asc' } },
   owner: {
