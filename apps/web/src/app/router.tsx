@@ -4,6 +4,7 @@ import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
 import { ListingPage } from '@/pages/listing';
 import { ListingCreatePage } from '@/pages/listing-create';
+import { ModerationRealtorsPage } from '@/pages/moderation-realtors';
 import { MyListingsPage } from '@/pages/my-listings';
 import { MyPropertiesPage, PropertyDetailPage } from '@/pages/my-properties';
 import { NotFoundPage } from '@/pages/not-found';
@@ -52,6 +53,8 @@ export const router = createBrowserRouter([
       { path: '/my/listings/new', element: <ListingCreatePage /> },
       // Public seller-capture valuation hook — own light chrome, no auth, no bottom nav.
       { path: '/valuation', element: <ValuationPage /> },
+      // Moderator-only realtor verification — full-screen admin surface, role-gated in-page.
+      { path: '/moderation/realtors', element: <ModerationRealtorsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -96,16 +96,20 @@ export function ListingResultRow({ listing, favoriteSlot }: Props) {
       <div className="relative h-fit rounded-card bg-surface p-4">
         {favoriteSlot && <div className="absolute top-3 right-3">{favoriteSlot}</div>}
 
-        <p className="pr-9 text-[15px] leading-tight font-extrabold">{listing.agentName}</p>
+        <p className="flex items-center gap-1.5 pr-9 text-[15px] leading-tight font-extrabold">
+          <span className="truncate">{listing.agentName}</span>
+          {/* Verified is now a real, per-realtor flag (Phase 3.3a) — the badge
+              only shows for a moderator-verified seller, not every row. */}
+          {listing.agentVerified && (
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-brand-green/10 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-brand-green">
+              <Icon name="check" className="h-2.5 w-2.5" strokeWidth={3} />
+              TEKSHIRILGAN
+            </span>
+          )}
+        </p>
         <p className="mt-0.5 truncate text-[12.5px] font-semibold text-ink-3">
           {listing.agencyName}
         </p>
-
-        {/* ListingSummary carries no "verified" flag — this is a static trust
-            element, same as AgentCard on the listing detail page. */}
-        <span className="mt-2 inline-block rounded-full bg-brand-green/10 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-brand-green">
-          ✓ TEKSHIRILGAN
-        </span>
 
         {/* Display-only: reveal-on-tap is centralised on the listing detail
             page (a later task), not duplicated per row. */}
