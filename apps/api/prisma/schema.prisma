@@ -67,6 +67,7 @@ model Listing {
   publishedAt     DateTime?
   notes           Note[]
   collectionItems CollectionItem[]
+  presentationItems PresentationItem[]
 
   @@index([type])
   @@index([deal])
@@ -124,6 +125,7 @@ model User {
   subscription      Subscription?
   notes             Note[]
   collections       Collection[]
+  presentations     Presentation[]
 }
 
 model Session {
@@ -312,4 +314,38 @@ model CollectionItem {
   addedAt      DateTime   @default(now())
 
   @@unique([collectionId, listingId])
+}
+
+model Presentation {
+  id                 String             @id @default(cuid())
+  realtorId          String
+  realtor            User               @relation(fields: [realtorId], references: [id], onDelete: Cascade)
+  token              String             @unique
+  title              String
+  clientLabel        String?
+  sourceCollectionId String?
+  createdAt          DateTime           @default(now())
+  items              PresentationItem[]
+  views              PresentationView[]
+}
+
+model PresentationItem {
+  id             String       @id @default(cuid())
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  listingId      String
+  listing        Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  position       Int
+  note           String?
+}
+
+model PresentationView {
+  id             String       @id @default(cuid())
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  listingId      String?
+  durationMs     Int?
+  at             DateTime     @default(now())
+
+  @@index([presentationId])
 }
