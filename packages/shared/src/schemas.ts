@@ -351,6 +351,64 @@ export const CollectionDetailSchema = z.object({
 export const CollectionAddItemSchema = z.object({ listingId: z.string().min(1) });
 export const CollectionReorderSchema = z.object({ listingIds: z.array(z.string().min(1)) });
 
+/** Body of `PATCH /api/my/collections/:id/items/:listingId` — the per-item note. */
+export const CollectionItemNoteSchema = z.object({ note: z.string().max(500).nullable() });
+
+export const PresentationSummarySchema = z.object({
+  id: z.string(),
+  token: z.string(),
+  title: z.string(),
+  clientLabel: z.string().nullable(),
+  createdAt: z.string(), // ISO
+  opensCount: z.number().int(), // presentation-open events (listingId null)
+  url: z.string(), // `${PUBLIC_BASE_URL}/p/${token}`
+});
+
+export const PresentationAnalyticsItemSchema = z.object({
+  listingId: z.string(),
+  position: z.number().int(),
+  note: z.string().nullable(),
+  listing: ListingSummarySchema,
+  opens: z.number().int(), // per-listing view events
+  avgDurationMs: z.number().int(), // rounded average dwell (0 when no dwell recorded)
+});
+
+export const PresentationDetailSchema = z.object({
+  id: z.string(),
+  token: z.string(),
+  title: z.string(),
+  clientLabel: z.string().nullable(),
+  createdAt: z.string(),
+  url: z.string(),
+  totalOpens: z.number().int(),
+  items: z.array(PresentationAnalyticsItemSchema), // ordered by position asc
+});
+
+export const PublicPresentationItemSchema = z.object({
+  listingId: z.string(),
+  position: z.number().int(),
+  note: z.string().nullable(),
+  listing: ListingSummarySchema,
+});
+
+export const PublicPresentationSchema = z.object({
+  title: z.string(),
+  realtorName: z.string(), // User.name (or a fallback)
+  agency: z.string().nullable(), // RealtorProfile.agency, if any
+  items: z.array(PublicPresentationItemSchema), // ordered by position asc
+});
+
+export const PresentationCreateResultSchema = z.object({
+  id: z.string(),
+  token: z.string(),
+  url: z.string(),
+});
+
+export const PresentationViewEventSchema = z.object({
+  listingId: z.string().nullable().optional(),
+  durationMs: z.number().int().nonnegative().max(3_600_000).optional(), // cap 1h
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -391,3 +449,11 @@ export type CollectionItem = z.infer<typeof CollectionItemSchema>;
 export type CollectionDetail = z.infer<typeof CollectionDetailSchema>;
 export type CollectionAddItem = z.infer<typeof CollectionAddItemSchema>;
 export type CollectionReorder = z.infer<typeof CollectionReorderSchema>;
+export type CollectionItemNote = z.infer<typeof CollectionItemNoteSchema>;
+export type PresentationSummary = z.infer<typeof PresentationSummarySchema>;
+export type PresentationAnalyticsItem = z.infer<typeof PresentationAnalyticsItemSchema>;
+export type PresentationDetail = z.infer<typeof PresentationDetailSchema>;
+export type PublicPresentationItem = z.infer<typeof PublicPresentationItemSchema>;
+export type PublicPresentation = z.infer<typeof PublicPresentationSchema>;
+export type PresentationCreateResult = z.infer<typeof PresentationCreateResultSchema>;
+export type PresentationViewEvent = z.infer<typeof PresentationViewEventSchema>;

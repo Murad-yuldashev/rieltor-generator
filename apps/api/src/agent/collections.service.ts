@@ -137,6 +137,25 @@ export class CollectionsService {
   }
 
   /**
+   * Set (or clear, with null) the per-item note shown on a presentation. Ownership
+   * is checked first; a (collection, listing) pair with no matching item 404s — the
+   * updateMany's count is 0 when the listing is not in this collection.
+   */
+  async setItemNote(
+    realtorId: string,
+    id: string,
+    listingId: string,
+    note: string | null,
+  ): Promise<void> {
+    await this.ownedOrThrow(realtorId, id);
+    const { count } = await this.prisma.collectionItem.updateMany({
+      where: { collectionId: id, listingId },
+      data: { note },
+    });
+    if (count === 0) throw new NotFoundException('Element topilmadi');
+  }
+
+  /**
    * Reposition the collection's items to match listingIds' order (1-based, to
    * match addItem's numbering). Ids not in the collection are ignored; every
    * update runs in one transaction.

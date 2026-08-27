@@ -326,6 +326,63 @@ Marketplace'ga **tegilmagan** — kabinet uning `/api/objects` e'lonlarini qayta
 - Ommaviy rieltor profili + reyting (3.3), ulashiladigan taqdimot + analitika (3.2),
   shaxsiy sayt generatori (3.3), va **real to'lov** integratsiyasi (Click/Payme).
 
+## 4h. Phase 3.2 — Mijoz taqdimotlari (2026-08-27)
+
+Rieltor kolleksiyasini mijozga yuboriladigan ommaviy taqdimotga aylantiradi — ochiladigan
+havola, boy Telegram/WhatsApp karta va ochilish analitikasi bilan.
+Spec: `docs/superpowers/specs/2026-08-27-phase-3.2-presentations-design.md`,
+reja: `docs/superpowers/plans/2026-08-27-phase-3.2-presentations.md`.
+Marketplace e'lon ko'rinishiga **tegilmagan** — taqdimot uning kartalari va SSR'ini qayta ishlatadi.
+
+### Snapshot taqdimot
+
+- **"Taqdimot yaratish"** kolleksiyadan **o'zgarmas nusxa** oladi — `Presentation` +
+  har element uchun `PresentationItem` (listing, tartib, izoh) bitta atomik create'da
+  ko'chiriladi. Keyin manba kolleksiyani tahrirlash **yuborilgan taqdimotga ta'sir qilmaydi**.
+- Har element uchun **mijozga qaratilgan izoh** (`CollectionItem.note` → snapshot'ga) taqdimotda
+  **"Rieltor izohi"** bo'lib ko'rinadi. Bu C9 **shaxsiy** eslatmadan (`Note`) **butunlay
+  boshqa** maydon — ichki eslatma hech qachon ommaga chiqmaydi.
+
+### Ommaviy `/p/:token` sahifasi
+
+- **SSR + og-preview**: `buildPresentationMetaTags` orqali Telegram/WhatsApp'ga boy karta
+  (sarlavha, tavsif, rasm) beriladi — `obj/:id` naqshini aks ettiradi.
+- E'lonlar marketplace'ning mavjud **e'lon kartalari** bilan render qilinadi (reuse).
+- Sahifa **`NotFoundShellFilter`** orqali xizmat qilinadi: ommaviy API `@Controller('p')`
+  (→ `/api/p/:token`) bilan to'qnashuv bo'lgani uchun `/p/:token` `setGlobalPrefix` **exclude**'iga
+  qo'shilmaydi (aks holda API GET'i un-prefiks bo'lardi). Live token → to'ldirilgan shell,
+  noma'lum token → oddiy 404 shell (`obj/:id` bilan bir xil).
+
+### Analitika (C4)
+
+- Mijoz sahifada — **ochilishlar** (null `listingId` event) va **per-obyekt dwell**
+  (`IntersectionObserver` bilan ko'rish vaqti, `navigator.sendBeacon` bilan yuboriladi).
+- Rieltor kabinetida — **"Jami ochilishlar"** va har e'lon uchun **"N ochilish · o'rtacha Xs"**
+  (bitta `groupBy` bilan agregatsiya; null-guruh — jami ochilish, listing guruhlari — per-item).
+
+### Telegram ulashish (C5)
+
+- Kabinetdagi **"Ulashish"** `t.me/share/url` deep-link'i taqdimot havolasini ochadi;
+  Telegram og-preview'ni tortadi — mijoz oldindan boy kartani ko'radi.
+
+### Ommaviy endpointlar
+
+- **`GET /api/p/:token`** (o'qish) va **`POST /api/p/:token/view`** (analitika ingest) —
+  **authsiz**, faqat **token bilan** himoyalangan va **obunaga bog'liq EMAS**: yuborilgan
+  havola rieltor obunasi tugagan bo'lsa ham ishlaydi (mijoz — platforma foydalanuvchisi emas).
+  `realtorId`, analitika va token ichki tafsilotlari hech qachon ochilmaydi.
+- Yaratish / ro'yxat / detal-analitika / o'chirish esa **`RealtorGuard` + egalik** bilan
+  cheklangan — rieltor faqat o'z taqdimotlarini boshqaradi.
+
+### Ma'lumot modeli va env
+
+- **3 yangi Prisma modeli:** `Presentation`, `PresentationItem`, `PresentationView`.
+- **Yangi env qo'shilmagan**; marketplace listing ko'rinishi va API'siga tegilmagan.
+
+### Kelasi
+
+- Shaxsiy sayt generatori + ommaviy rieltor profili (3.3), va **real to'lov** (Click/Payme).
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

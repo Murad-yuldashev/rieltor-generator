@@ -23,6 +23,13 @@ export function configureApp(app: NestExpressApplication): void {
     exclude: [
       { path: '/', method: RequestMethod.GET },
       { path: 'obj/:id', method: RequestMethod.GET },
+      // NOTE: '/p/:token' is deliberately NOT excluded here. Unlike 'obj/:id'
+      // (which has no matching API controller), the presentation API is
+      // '@Controller('p')' → /api/p/:token. setGlobalPrefix's exclude matches
+      // {path, method} across the whole app (see NotFoundShellFilter's comment),
+      // so excluding 'p/:token' would strip the 'api' prefix off that API GET
+      // too and collide the two handlers. The public /p/:token page is served
+      // with its og-meta by NotFoundShellFilter instead.
       ...SPA_ROUTES.map((path) => ({ path, method: RequestMethod.GET })),
     ],
   });

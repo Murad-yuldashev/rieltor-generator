@@ -5,6 +5,7 @@ import {
   formatPriceSom,
   imageSrcSet,
   type ListingDetail,
+  type PublicPresentation,
 } from '@rieltor/shared';
 
 const DESCRIPTION_MAX = 200;
@@ -67,6 +68,50 @@ export function buildMetaTags(listing: ListingDetail, baseUrl: string): string {
     // Preloading the LCP image is the biggest single win for Lighthouse ≥90 (spec §8).
     tags.push(
       `<link rel="preload" as="image" imagesrcset="${escapeHtml(imageSrcSet(firstImage.base))}" imagesizes="${escapeHtml(IMAGE_SIZES)}" />`,
+    );
+  }
+
+  return tags.join('\n    ');
+}
+
+/**
+ * OG/head tags for a public presentation page (/p/:token). Mirrors buildMetaTags:
+ * the Telegram/link preview is the whole point of the SSR shell for a share link.
+ * The title is the presentation title; the description reads "<N> obyekt · <realtor>";
+ * the preview image is the first item's cover, if any.
+ */
+export function buildPresentationMetaTags(
+  presentation: PublicPresentation,
+  token: string,
+  baseUrl: string,
+): string {
+  const title = presentation.title;
+  const description = `${presentation.items.length} obyekt · ${presentation.realtorName}`;
+  const pageUrl = `${baseUrl}/p/${token}`;
+  // Reuses the same absolute-URL shape buildMetaTags uses for a listing's cover.
+  const firstImage = presentation.items[0]?.listing.image ?? null;
+
+  const tags = [
+    `<title>${escapeHtml(title)}</title>`,
+    meta('name', 'description', description),
+    `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    meta('property', 'og:type', 'website'),
+    meta('property', 'og:site_name', 'Rieltor'),
+    meta('property', 'og:url', pageUrl),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
+    meta('name', 'twitter:card', 'summary_large_image'),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
+  ];
+
+  if (firstImage?.ogUrl) {
+    // Telegram does not follow relative paths — an absolute URL is required.
+    tags.push(
+      meta('property', 'og:image', `${baseUrl}${firstImage.ogUrl}`),
+      meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
+      meta('property', 'og:image:height', String(OG_IMAGE_HEIGHT)),
+      meta('name', 'twitter:image', `${baseUrl}${firstImage.ogUrl}`),
     );
   }
 

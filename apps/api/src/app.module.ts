@@ -11,6 +11,7 @@ import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PresentationsModule } from './presentations/presentations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PropertiesModule } from './properties/properties.module';
 import { RequestsModule } from './requests/requests.module';
@@ -35,6 +36,7 @@ import { ViewsModule } from './views/views.module';
     HealthModule,
     ListingsModule,
     NotificationsModule,
+    PresentationsModule,
     PropertiesModule,
     RequestsModule,
     SavedSearchModule,
