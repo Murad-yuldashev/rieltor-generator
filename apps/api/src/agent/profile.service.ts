@@ -13,6 +13,10 @@ export class ProfileService {
       bio: p?.bio ?? null,
       regions: p?.regions ?? [],
       experienceYears: p?.experienceYears ?? null,
+      slug: p?.slug ?? null,
+      verified: p?.verified ?? false,
+      logoUrl: p?.logoUrl ?? null,
+      brandColor: p?.brandColor ?? null,
     };
   }
 

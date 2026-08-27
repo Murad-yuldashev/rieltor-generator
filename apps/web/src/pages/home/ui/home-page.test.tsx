@@ -24,6 +24,7 @@ const listings = [
     agentName: 'Murod',
     agencyName: 'Rieltor',
     agentPhoneMasked: '+998 90 ••• •• 67',
+    agentVerified: false,
   },
 ];
 
