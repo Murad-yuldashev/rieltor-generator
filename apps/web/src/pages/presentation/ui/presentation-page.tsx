@@ -116,6 +116,12 @@ function usePresentationViewAnalytics(token: string, items: PublicPresentationIt
     window.addEventListener('pagehide', flush);
 
     return () => {
+      // An in-app SPA navigation (e.g. tapping a card's "Batafsil" link) unmounts
+      // this component without firing visibilitychange/pagehide, so flush here too.
+      // flush() clears its accumulators after sending, so if a real pagehide/
+      // visibilitychange flush already ran, this one finds them empty and sends
+      // nothing — no double-count.
+      flush();
       observer.disconnect();
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('pagehide', flush);
