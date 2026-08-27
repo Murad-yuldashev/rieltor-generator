@@ -3,12 +3,13 @@ import { APP_FILTER } from '@nestjs/core';
 import { ZodExceptionFilter } from '../common/zod-exception.filter';
 import { ListingsModule } from '../listings/listings.module';
 import { PresentationsModule } from '../presentations/presentations.module';
+import { RealtorPublicModule } from '../realtor-public/realtor-public.module';
 import { HtmlCacheService } from './html-cache.service';
 import { NotFoundShellFilter } from './not-found-shell.filter';
 import { SsrController } from './ssr.controller';
 
 @Module({
-  imports: [ListingsModule, PresentationsModule],
+  imports: [ListingsModule, PresentationsModule, RealtorPublicModule],
   controllers: [SsrController],
   providers: [
     HtmlCacheService,

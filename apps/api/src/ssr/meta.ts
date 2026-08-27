@@ -6,6 +6,7 @@ import {
   imageSrcSet,
   type ListingDetail,
   type PublicPresentation,
+  type PublicRealtor,
 } from '@rieltor/shared';
 
 const DESCRIPTION_MAX = 200;
@@ -112,6 +113,54 @@ export function buildPresentationMetaTags(
       meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
       meta('property', 'og:image:height', String(OG_IMAGE_HEIGHT)),
       meta('name', 'twitter:image', `${baseUrl}${firstImage.ogUrl}`),
+    );
+  }
+
+  return tags.join('\n    ');
+}
+
+/**
+ * OG/head tags for a public realtor microsite (/r/:slug). Mirrors
+ * buildPresentationMetaTags: the Telegram/link preview is the whole point of the
+ * SSR shell for a share link. The title is "<name> · <agency>" (name alone when
+ * the agency is blank); the description is the bio (truncated) or "<N> e'lon";
+ * the preview image is the realtor's logo, or the first listing's cover as a
+ * fallback.
+ */
+export function buildRealtorMetaTags(
+  realtor: PublicRealtor,
+  slug: string,
+  baseUrl: string,
+): string {
+  const title = realtor.agency ? `${realtor.name} · ${realtor.agency}` : realtor.name;
+  const description = realtor.bio ? truncate(realtor.bio) : `${realtor.listings.length} e'lon`;
+  const pageUrl = `${baseUrl}/r/${slug}`;
+  // The logo is a renderable relative URL ("/images/logo-<user>/01-1200.webp");
+  // the first listing's cover is the fallback when a realtor has uploaded none.
+  const relativeImage = realtor.logoUrl ?? realtor.listings[0]?.image?.ogUrl ?? null;
+
+  const tags = [
+    `<title>${escapeHtml(title)}</title>`,
+    meta('name', 'description', description),
+    `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    meta('property', 'og:type', 'website'),
+    meta('property', 'og:site_name', 'Rieltor'),
+    meta('property', 'og:url', pageUrl),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
+    meta('name', 'twitter:card', 'summary_large_image'),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
+  ];
+
+  if (relativeImage) {
+    // Telegram does not follow relative paths — an absolute URL is required.
+    const absolute = `${baseUrl}${relativeImage}`;
+    tags.push(
+      meta('property', 'og:image', absolute),
+      meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
+      meta('property', 'og:image:height', String(OG_IMAGE_HEIGHT)),
+      meta('name', 'twitter:image', absolute),
     );
   }
 

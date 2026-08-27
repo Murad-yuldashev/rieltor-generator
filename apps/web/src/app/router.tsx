@@ -10,6 +10,7 @@ import { NotFoundPage } from '@/pages/not-found';
 import { NotificationsPage } from '@/pages/notifications';
 import { OfferPage } from '@/pages/offer';
 import { PresentationPage } from '@/pages/presentation';
+import { RealtorPage } from '@/pages/realtor';
 import { MyRequestsPage, RequestCreatePage, RequestsPage } from '@/pages/requests';
 import { SearchPage } from '@/pages/search';
 import { ValuationPage } from '@/pages/valuation';
@@ -45,6 +46,8 @@ export const router = createBrowserRouter([
       { path: '/obj/:id', element: <ListingPage /> },
       // Public client presentation — token-gated, no auth, no bottom nav.
       { path: '/p/:token', element: <PresentationPage /> },
+      // Public realtor microsite — slug-gated, no auth, no bottom nav.
+      { path: '/r/:slug', element: <RealtorPage /> },
       // The wizard owns its own chrome (top bar + left rail, no bottom nav).
       { path: '/my/listings/new', element: <ListingCreatePage /> },
       // Public seller-capture valuation hook — own light chrome, no auth, no bottom nav.
