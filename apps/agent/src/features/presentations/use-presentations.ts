@@ -1,10 +1,20 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { PresentationCreateResultSchema } from '@rieltor/shared';
-import { apiPatch, apiPost } from '@/shared/api/client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  PresentationCreateResultSchema,
+  PresentationDetailSchema,
+  PresentationSummarySchema,
+} from '@rieltor/shared';
+import * as z from 'zod';
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api/client';
 
-/** The presentations-list key. The list itself lands in Task 8; owning the key
- *  here lets create-and-share invalidate it so the new presentation shows up. */
+/** The presentations-list key, shared by the list query, create-and-share (T7),
+ *  and delete so any of them can invalidate the list. */
 export const PRESENTATIONS_QUERY_KEY = ['presentations'] as const;
+
+/** Per-presentation detail (analytics) cache key. */
+export const presentationQueryKey = (id: string) => ['presentation', id] as const;
+
+const PresentationSummaryArraySchema = z.array(PresentationSummarySchema);
 
 /** The collection-detail cache key, kept in sync with the collections feature's
  *  `collectionQueryKey`. Inlined (not imported) because FSD boundaries forbid one
@@ -43,6 +53,48 @@ export function useCreatePresentation(collectionId: string) {
     mutationFn: () =>
       apiPost(`/api/agent/collections/${collectionId}/present`, PresentationCreateResultSchema),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: PRESENTATIONS_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * `GET /api/agent/presentations` (RealtorGuard) → this realtor's presentations,
+ * newest first, each with its public URL and open count. Powers the "Mening
+ * taqdimotlarim" list and the dashboard count.
+ */
+export function usePresentations() {
+  return useQuery({
+    queryKey: PRESENTATIONS_QUERY_KEY,
+    queryFn: () => apiGet('/api/agent/presentations', PresentationSummaryArraySchema),
+    staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * `GET /api/agent/presentations/:id` → one presentation with its per-listing
+ * analytics (opens + average dwell), items ordered by position asc. `enabled`
+ * lets a caller skip the fetch until an id is in hand.
+ */
+export function usePresentation(id: string, { enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: presentationQueryKey(id),
+    queryFn: () => apiGet(`/api/agent/presentations/${id}`, PresentationDetailSchema),
+    enabled: enabled && id !== '',
+  });
+}
+
+/**
+ * `DELETE /api/agent/presentations/:id`. Drops the detail cache entry and refreshes
+ * the list so the removed presentation disappears.
+ */
+export function useDeletePresentation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => apiDelete(`/api/agent/presentations/${id}`),
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: presentationQueryKey(id) });
       void queryClient.invalidateQueries({ queryKey: PRESENTATIONS_QUERY_KEY });
     },
   });

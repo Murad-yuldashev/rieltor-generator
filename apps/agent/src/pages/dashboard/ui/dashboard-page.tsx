@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { useSession } from '@/entities/session';
 import { useCollections } from '@/features/collections';
 import { useNotes } from '@/features/notes';
+import { usePresentations } from '@/features/presentations';
 import { useSubscription } from '@/features/subscription';
 import { Icon, type IconName } from '@/shared/ui/icon';
 import { TrialBanner } from '@/widgets/trial-banner';
@@ -15,6 +16,7 @@ const NAV: { key: string; label: string; icon: IconName; to: string }[] = [
   { key: 'browse', label: 'E’lonlar', icon: 'search', to: '/browse' },
   { key: 'notes', label: 'Eslatmalar', icon: 'doc', to: '/notes' },
   { key: 'collections', label: 'To‘plamlar', icon: 'heart', to: '/collections' },
+  { key: 'presentations', label: 'Taqdimotlar', icon: 'share', to: '/presentations' },
 ];
 
 export function DashboardPage() {
@@ -22,11 +24,12 @@ export function DashboardPage() {
   // The gate only renders this page for an active REALTOR, so a subscription is
   // guaranteed to be present in the cache by the time we get here.
   const { data: subscription } = useSubscription();
-  // Both counts are live (notes: Task 10, collections: Task 11).
+  // All three counts are live (notes: Task 10, collections: Task 11, presentations: Task 8).
   const { data: notes } = useNotes();
   const { data: collections } = useCollections();
+  const { data: presentations } = usePresentations();
 
-  // Quick counts — the number of collections and of notes.
+  // Quick counts — the number of collections, notes, and presentations.
   const stats: { key: string; label: string; value: string }[] = [
     {
       key: 'collections',
@@ -34,6 +37,11 @@ export function DashboardPage() {
       value: collections ? String(collections.length) : '—',
     },
     { key: 'notes', label: 'Eslatmalar', value: notes ? String(notes.length) : '—' },
+    {
+      key: 'presentations',
+      label: 'Taqdimotlar',
+      value: presentations ? String(presentations.length) : '—',
+    },
   ];
 
   return (
