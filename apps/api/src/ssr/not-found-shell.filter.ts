@@ -1,6 +1,13 @@
 import { ArgumentsHost, Catch, ExceptionFilter, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
+import type { Env } from '../config/env';
+import { PresentationsService } from '../presentations/presentations.service';
 import { HtmlCacheService } from './html-cache.service';
+import { buildPresentationMetaTags } from './meta';
+
+/** Public presentation page path: /p/:token (a single token segment). */
+const PRESENTATION_PATH = /^\/p\/([^/]+)\/?$/;
 
 /**
  * Catches NotFoundException thrown either by NestJS itself (the "Cannot GET /x"
@@ -17,10 +24,22 @@ import { HtmlCacheService } from './html-cache.service';
  * controller, so a broad pattern like '{*path}' would strip the 'api/' prefix
  * from every GET route (verified: /api/health turned into
  * "Cannot GET /api/health"). Hence this filter instead of a catch-all @Get('*').
+ *
+ * The public presentation page (GET /p/:token) is a special case handled here
+ * rather than in SsrController: its base segment 'p' is ALSO an API controller
+ * (@Controller('p') → /api/p/:token), so it cannot be a prefix-excluded SSR
+ * route without un-prefixing that API GET (the same cross-controller exclude
+ * limitation noted above). It has no matching NestJS route, so it lands in this
+ * filter, where its og-meta is injected for the Telegram/link preview — 200 for
+ * a live token, the plain shell with 404 for an unknown one (mirrors obj/:id).
  */
 @Catch(NotFoundException)
 export class NotFoundShellFilter implements ExceptionFilter {
-  constructor(private readonly html: HtmlCacheService) {}
+  constructor(
+    private readonly html: HtmlCacheService,
+    private readonly presentations: PresentationsService,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
 
   async catch(exception: NotFoundException, host: ArgumentsHost): Promise<void> {
     const ctx = host.switchToHttp();
@@ -33,6 +52,26 @@ export class NotFoundShellFilter implements ExceptionFilter {
     }
 
     const shell = await this.html.shell();
+
+    const presentationMatch = req.method === 'GET' ? PRESENTATION_PATH.exec(req.path) : null;
+    const token = presentationMatch?.[1];
+    if (token) {
+      try {
+        const presentation = await this.presentations.publicGet(token);
+        const baseUrl = this.config.get('PUBLIC_BASE_URL', { infer: true });
+        res
+          .status(200)
+          .type('html')
+          .send(
+            this.html.injectMeta(shell, buildPresentationMetaTags(presentation, token, baseUrl)),
+          );
+        return;
+      } catch (error) {
+        // Unknown token → fall through to the plain 404 shell, same as obj/:id.
+        if (!(error instanceof NotFoundException)) throw error;
+      }
+    }
+
     res.status(404).type('html').send(shell);
   }
 }

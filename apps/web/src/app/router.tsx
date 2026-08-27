@@ -9,6 +9,7 @@ import { MyPropertiesPage, PropertyDetailPage } from '@/pages/my-properties';
 import { NotFoundPage } from '@/pages/not-found';
 import { NotificationsPage } from '@/pages/notifications';
 import { OfferPage } from '@/pages/offer';
+import { PresentationPage } from '@/pages/presentation';
 import { MyRequestsPage, RequestCreatePage, RequestsPage } from '@/pages/requests';
 import { SearchPage } from '@/pages/search';
 import { ValuationPage } from '@/pages/valuation';
@@ -42,6 +43,8 @@ export const router = createBrowserRouter([
       },
       // The listing page sits outside TabLayout: full-bleed gallery and its own sticky CTA.
       { path: '/obj/:id', element: <ListingPage /> },
+      // Public client presentation — token-gated, no auth, no bottom nav.
+      { path: '/p/:token', element: <PresentationPage /> },
       // The wizard owns its own chrome (top bar + left rail, no bottom nav).
       { path: '/my/listings/new', element: <ListingCreatePage /> },
       // Public seller-capture valuation hook — own light chrome, no auth, no bottom nav.
