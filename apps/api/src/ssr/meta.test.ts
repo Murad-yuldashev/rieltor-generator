@@ -17,6 +17,8 @@ const listing = {
   deal: 'SALE' as const,
   views: 0,
   listedAt: '2026-07-20',
+  agentVerified: false,
+  agentProfileSlug: null,
   images: [
     {
       base: '/images/bx-001/01',
@@ -34,6 +36,8 @@ const listing = {
     phone: '+998901234567',
     phoneMasked: '+99890 ••• •• 67',
     telegram: 'username',
+    verified: false,
+    profileSlug: null,
   },
 };
 

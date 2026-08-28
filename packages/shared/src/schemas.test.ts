@@ -15,6 +15,8 @@ const fullListing = {
   description: 'Uch jumlalik tavsif.',
   type: 'SECONDARY',
   deal: 'SALE',
+  agentVerified: true,
+  agentProfileSlug: 'murod-buxoro',
   views: 7,
   listedAt: '2026-07-28',
   images: [
@@ -34,6 +36,8 @@ const fullListing = {
     phone: '+998901234567',
     phoneMasked: '+99890 ••• •• 67',
     telegram: 'murod',
+    verified: true,
+    profileSlug: 'murod-buxoro',
   },
 };
 

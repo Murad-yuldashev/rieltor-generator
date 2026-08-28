@@ -9,6 +9,8 @@ const agent = {
   photoUrl: '/images/agents/agent-1.jpg',
   phoneMasked: '+998 90 ••• •• 67',
   telegram: 'murod',
+  verified: false,
+  profileSlug: null,
 };
 
 describe('AgentCard', () => {

@@ -4,12 +4,14 @@ import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
 import { ListingPage } from '@/pages/listing';
 import { ListingCreatePage } from '@/pages/listing-create';
+import { ModerationRealtorsPage } from '@/pages/moderation-realtors';
 import { MyListingsPage } from '@/pages/my-listings';
 import { MyPropertiesPage, PropertyDetailPage } from '@/pages/my-properties';
 import { NotFoundPage } from '@/pages/not-found';
 import { NotificationsPage } from '@/pages/notifications';
 import { OfferPage } from '@/pages/offer';
 import { PresentationPage } from '@/pages/presentation';
+import { RealtorPage } from '@/pages/realtor';
 import { MyRequestsPage, RequestCreatePage, RequestsPage } from '@/pages/requests';
 import { SearchPage } from '@/pages/search';
 import { ValuationPage } from '@/pages/valuation';
@@ -45,10 +47,14 @@ export const router = createBrowserRouter([
       { path: '/obj/:id', element: <ListingPage /> },
       // Public client presentation — token-gated, no auth, no bottom nav.
       { path: '/p/:token', element: <PresentationPage /> },
+      // Public realtor microsite — slug-gated, no auth, no bottom nav.
+      { path: '/r/:slug', element: <RealtorPage /> },
       // The wizard owns its own chrome (top bar + left rail, no bottom nav).
       { path: '/my/listings/new', element: <ListingCreatePage /> },
       // Public seller-capture valuation hook — own light chrome, no auth, no bottom nav.
       { path: '/valuation', element: <ValuationPage /> },
+      // Moderator-only realtor verification — full-screen admin surface, role-gated in-page.
+      { path: '/moderation/realtors', element: <ModerationRealtorsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

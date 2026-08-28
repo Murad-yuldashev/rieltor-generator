@@ -4,7 +4,7 @@ import {
   type RealtorProfile,
   type RealtorProfileUpdate,
 } from '@rieltor/shared';
-import { apiGet, apiPatch } from '@/shared/api/client';
+import { apiGet, apiPatch, apiUpload } from '@/shared/api/client';
 
 export const PROFILE_QUERY_KEY = ['profile'] as const;
 
@@ -34,6 +34,28 @@ export function useSaveProfile() {
   return useMutation({
     mutationFn: (patch: RealtorProfileUpdate) =>
       apiPatch('/api/agent/profile', RealtorProfileSchema, patch),
+    onSuccess: (profile) => {
+      queryClient.setQueryData<RealtorProfile>(PROFILE_QUERY_KEY, profile);
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * `POST /api/agent/profile/logo` — multipart brand-logo upload. The endpoint stores
+ * the file and returns the full, reconciled `RealtorProfile` (with the new `logoUrl`),
+ * so — exactly like `useSaveProfile` — we seed the cache with it for an instant reflect
+ * and then invalidate to stay honest with server truth.
+ */
+export function useSaveLogo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiUpload('/api/agent/profile/logo', formData, RealtorProfileSchema);
+    },
     onSuccess: (profile) => {
       queryClient.setQueryData<RealtorProfile>(PROFILE_QUERY_KEY, profile);
       void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });

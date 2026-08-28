@@ -8,6 +8,10 @@ export const AgentSchema = z.object({
   /** Displayed on the public listing page; the real number is behind GET /api/objects/:id/contact. */
   phoneMasked: z.string(),
   telegram: z.string(),
+  /** Whether this seller has a moderator-granted verified badge. */
+  verified: z.boolean(),
+  /** Public profile slug, when the seller has one; links to /realtors/:slug. */
+  profileSlug: z.string().nullable(),
 });
 
 export const ImageSchema = z.object({
@@ -58,6 +62,15 @@ export const ListingSummarySchema = z.object({
   agencyName: z.string(),
   /** Masked phone for the seller panel — same masking as the detail payload. */
   agentPhoneMasked: z.string(),
+  /** Drives the verified badge on a card's seller panel. */
+  agentVerified: z.boolean(),
+  /**
+   * Seller's public profile slug, mirroring `Agent.profileSlug`. Null for the
+   * default Agent (seed listings); set for a published realtor. Lets a card
+   * tell a seed listing from an unverified real realtor so the legacy static
+   * badge stays on seed rows while a real realtor's badge follows `agentVerified`.
+   */
+  agentProfileSlug: z.string().nullable(),
 });
 
 export const ListingDetailSchema = ListingSummarySchema.omit({
@@ -307,14 +320,56 @@ export const RealtorProfileSchema = z.object({
   bio: z.string().nullable(),
   regions: z.array(z.string()),
   experienceYears: z.number().int().nullable(),
+  /** Public profile slug, when set; null until the realtor claims one. */
+  slug: z.string().nullable(),
+  /** Moderator-granted verified badge. */
+  verified: z.boolean(),
+  /** Optional brand logo URL for the public profile header. */
+  logoUrl: z.string().nullable(),
+  /** Optional brand accent colour ("#rrggbb") for the public profile. */
+  brandColor: z.string().nullable(),
 });
+
+/** Slug rule: lowercase kebab, 3–40 chars, [a-z0-9-], not starting/ending with '-'. */
+export const RealtorSlugSchema = z.string().regex(/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/);
 
 export const RealtorProfileUpdateSchema = z.object({
   agency: z.string().min(2).max(80).optional(),
   bio: z.string().max(1000).nullable().optional(),
   regions: z.array(z.string().min(2)).max(14).optional(),
   experienceYears: z.number().int().min(0).max(70).nullable().optional(),
+  slug: RealtorSlugSchema.nullable().optional(),
+  brandColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .nullable()
+    .optional(),
 });
+
+/** Public realtor profile page — GET /api/realtors/:slug. Embeds the seller's live listings. */
+export const PublicRealtorSchema = z.object({
+  name: z.string(),
+  agency: z.string(),
+  bio: z.string().nullable(),
+  regions: z.array(z.string()),
+  experienceYears: z.number().int().nullable(),
+  logoUrl: z.string().nullable(),
+  brandColor: z.string().nullable(),
+  verified: z.boolean(),
+  listings: z.array(ListingSummarySchema),
+});
+
+/** One row in the moderator's realtor table — GET /api/moderation/realtors. */
+export const ModeratorRealtorRowSchema = z.object({
+  userId: z.string(),
+  name: z.string(),
+  agency: z.string(),
+  slug: z.string().nullable(),
+  verified: z.boolean(),
+});
+
+/** Body of `POST /api/moderation/realtors/:userId/verify`. */
+export const RealtorVerifySchema = z.object({ verified: z.boolean() });
 
 export const NoteUpsertSchema = z.object({ body: z.string().min(1).max(2000) });
 
@@ -440,6 +495,9 @@ export type SubscriptionStatus = z.infer<typeof SubscriptionStatusSchema>;
 export type SubscriptionView = z.infer<typeof SubscriptionViewSchema>;
 export type RealtorProfile = z.infer<typeof RealtorProfileSchema>;
 export type RealtorProfileUpdate = z.infer<typeof RealtorProfileUpdateSchema>;
+export type PublicRealtor = z.infer<typeof PublicRealtorSchema>;
+export type ModeratorRealtorRow = z.infer<typeof ModeratorRealtorRowSchema>;
+export type RealtorVerify = z.infer<typeof RealtorVerifySchema>;
 export type NoteUpsert = z.infer<typeof NoteUpsertSchema>;
 export type NoteWithListing = z.infer<typeof NoteWithListingSchema>;
 export type CollectionSummary = z.infer<typeof CollectionSummarySchema>;

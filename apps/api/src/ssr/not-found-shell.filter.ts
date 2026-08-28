@@ -3,11 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import type { Env } from '../config/env';
 import { PresentationsService } from '../presentations/presentations.service';
+import { RealtorPublicService } from '../realtor-public/realtor-public.service';
 import { HtmlCacheService } from './html-cache.service';
-import { buildPresentationMetaTags } from './meta';
+import { buildPresentationMetaTags, buildRealtorMetaTags } from './meta';
 
 /** Public presentation page path: /p/:token (a single token segment). */
 const PRESENTATION_PATH = /^\/p\/([^/]+)\/?$/;
+
+/** Public realtor microsite path: /r/:slug (a single slug segment). */
+const REALTOR_PATH = /^\/r\/([^/]+)\/?$/;
 
 /**
  * Catches NotFoundException thrown either by NestJS itself (the "Cannot GET /x"
@@ -32,12 +36,18 @@ const PRESENTATION_PATH = /^\/p\/([^/]+)\/?$/;
  * limitation noted above). It has no matching NestJS route, so it lands in this
  * filter, where its og-meta is injected for the Telegram/link preview — 200 for
  * a live token, the plain shell with 404 for an unknown one (mirrors obj/:id).
+ *
+ * The public realtor microsite (GET /r/:slug) is the same special case: 'r' is
+ * ALSO an API controller (@Controller('r') → /api/r/:slug), so it lives here for
+ * the identical reason — og-meta injected for a live slug, the plain 404 shell
+ * for an unknown one.
  */
 @Catch(NotFoundException)
 export class NotFoundShellFilter implements ExceptionFilter {
   constructor(
     private readonly html: HtmlCacheService,
     private readonly presentations: PresentationsService,
+    private readonly realtors: RealtorPublicService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -68,6 +78,23 @@ export class NotFoundShellFilter implements ExceptionFilter {
         return;
       } catch (error) {
         // Unknown token → fall through to the plain 404 shell, same as obj/:id.
+        if (!(error instanceof NotFoundException)) throw error;
+      }
+    }
+
+    const realtorMatch = req.method === 'GET' ? REALTOR_PATH.exec(req.path) : null;
+    const slug = realtorMatch?.[1];
+    if (slug) {
+      try {
+        const realtor = await this.realtors.getBySlug(slug);
+        const baseUrl = this.config.get('PUBLIC_BASE_URL', { infer: true });
+        res
+          .status(200)
+          .type('html')
+          .send(this.html.injectMeta(shell, buildRealtorMetaTags(realtor, slug, baseUrl)));
+        return;
+      } catch (error) {
+        // Unknown slug → fall through to the plain 404 shell, same as obj/:id.
         if (!(error instanceof NotFoundException)) throw error;
       }
     }

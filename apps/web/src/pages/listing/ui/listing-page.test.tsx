@@ -20,6 +20,8 @@ const listing = {
   deal: 'SALE',
   views: 3,
   listedAt: '2026-07-22',
+  agentVerified: false,
+  agentProfileSlug: null,
   images: [
     {
       base: '/images/bx-002/01',
@@ -36,6 +38,8 @@ const listing = {
     photoUrl: '/images/agents/agent-1.jpg',
     phoneMasked: '+998 90 ••• •• 67',
     telegram: 'murod',
+    verified: false,
+    profileSlug: null,
   },
 };
 

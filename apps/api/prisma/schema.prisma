@@ -265,6 +265,10 @@ model RealtorProfile {
   bio             String?
   regions         String[]
   experienceYears Int?
+  slug            String?  @unique
+  verified        Boolean  @default(false)
+  logoUrl         String?
+  brandColor      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

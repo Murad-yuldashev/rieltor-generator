@@ -6,7 +6,51 @@ import {
   type ListingSummary,
 } from '@rieltor/shared';
 
-export type ListingRow = Listing & { agent: Agent; images: Pick<Image, keyof ImageDto>[] };
+type OwnerWithProfile = {
+  role: string;
+  name: string | null;
+  phone: string;
+  photoUrl: string | null;
+  realtorProfile: {
+    agency: string;
+    slug: string | null;
+    verified: boolean;
+    logoUrl: string | null;
+  } | null;
+};
+export type ListingRow = Listing & {
+  agent: Agent;
+  images: Pick<Image, keyof ImageDto>[];
+  owner?: OwnerWithProfile | null;
+};
+
+/** The seller shown publicly: the real realtor when the owner is a published REALTOR, else the default Agent. */
+function resolveSeller(row: ListingRow) {
+  const o = row.owner;
+  const p = o?.realtorProfile;
+  if (o?.role === 'REALTOR' && p?.slug) {
+    return {
+      id: row.agent.id, // keep the Agent id (schema shape unchanged)
+      name: o.name ?? 'Rieltor',
+      agency: p.agency,
+      photoUrl: p.logoUrl ?? o.photoUrl ?? row.agent.photoUrl,
+      phone: o.phone, // masked by the callers via maskPhone
+      telegram: row.agent.telegram, // telegram CTA stays the Agent's for now
+      verified: p.verified,
+      profileSlug: p.slug,
+    };
+  }
+  return {
+    id: row.agent.id,
+    name: row.agent.name,
+    agency: row.agent.agency,
+    photoUrl: row.agent.photoUrl,
+    phone: row.agent.phone,
+    telegram: row.agent.telegram,
+    verified: false,
+    profileSlug: null,
+  };
+}
 
 /** @db.Date in the database, UTC midnight in JS — the first 10 ISO chars suffice. */
 function dateText(date: Date): string {
@@ -18,6 +62,7 @@ function imageDto(r: Pick<Image, keyof ImageDto>): ImageDto {
 }
 
 export function toListingDetail(row: ListingRow): ListingDetail {
+  const s = resolveSeller(row);
   return {
     id: row.id,
     title: row.title,
@@ -36,20 +81,28 @@ export function toListingDetail(row: ListingRow): ListingDetail {
     views: row.views,
     listedAt: dateText(row.listedAt),
     images: [...row.images].sort((a, b) => a.position - b.position).map(imageDto),
+    // ListingDetail inherits agentVerified + agentProfileSlug from the summary
+    // schema (neither is omitted there); mirror the resolved seller so the shape
+    // stays consistent. The nested `agent` object below carries the same values.
+    agentVerified: s.verified,
+    agentProfileSlug: s.profileSlug,
     agent: {
-      id: row.agent.id,
-      name: row.agent.name,
-      agency: row.agent.agency,
-      photoUrl: row.agent.photoUrl,
+      id: s.id,
+      name: s.name,
+      agency: s.agency,
+      photoUrl: s.photoUrl,
       // The raw number is intentionally NOT part of the public payload — the real
       // number is revealed (and tracked as a ContactReveal) via GET /objects/:id/contact.
-      phoneMasked: maskPhone(row.agent.phone),
-      telegram: row.agent.telegram,
+      phoneMasked: maskPhone(s.phone),
+      telegram: s.telegram,
+      verified: s.verified,
+      profileSlug: s.profileSlug,
     },
   };
 }
 
 export function toListingSummary(row: ListingRow): ListingSummary {
+  const s = resolveSeller(row);
   const firstImage = [...row.images].sort((a, b) => a.position - b.position)[0];
   return {
     id: row.id,
@@ -72,8 +125,12 @@ export function toListingSummary(row: ListingRow): ListingSummary {
       row.description.length > 240
         ? row.description.slice(0, 240).trimEnd() + '…'
         : row.description,
-    agentName: row.agent.name,
-    agencyName: row.agent.agency,
-    agentPhoneMasked: maskPhone(row.agent.phone),
+    agentName: s.name,
+    agencyName: s.agency,
+    agentPhoneMasked: maskPhone(s.phone),
+    agentVerified: s.verified,
+    // Same resolved seller value `toListingDetail` puts on `agent.profileSlug`:
+    // null for the default Agent (seed), the realtor's slug for a published one.
+    agentProfileSlug: s.profileSlug,
   };
 }

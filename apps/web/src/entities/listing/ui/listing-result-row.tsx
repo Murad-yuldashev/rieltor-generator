@@ -101,11 +101,23 @@ export function ListingResultRow({ listing, favoriteSlot }: Props) {
           {listing.agencyName}
         </p>
 
-        {/* ListingSummary carries no "verified" flag — this is a static trust
-            element, same as AgentCard on the listing detail page. */}
-        <span className="mt-2 inline-block rounded-full bg-brand-green/10 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-brand-green">
-          ✓ TEKSHIRILGAN
-        </span>
+        {/* Same ruling as the AgentCard seller panel: a seed listing (default
+            Agent, agentProfileSlug null) keeps the legacy static badge exactly
+            as before — this whole branch is byte-identical to the pre-3.3a row.
+            A real published realtor (agentProfileSlug set) earns the badge only
+            once a moderator has verified them. */}
+        {listing.agentProfileSlug === null ? (
+          <span className="mt-2 inline-block rounded-full bg-brand-green/10 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-brand-green">
+            ✓ TEKSHIRILGAN
+          </span>
+        ) : (
+          listing.agentVerified && (
+            <span className="mt-2 inline-flex items-center gap-0.5 rounded-full bg-brand-green/10 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-brand-green">
+              <Icon name="check" className="h-2.5 w-2.5" strokeWidth={3} />
+              Tasdiqlangan
+            </span>
+          )
+        )}
 
         {/* Display-only: reveal-on-tap is centralised on the listing detail
             page (a later task), not duplicated per row. */}
