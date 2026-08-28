@@ -66,14 +66,27 @@ export class ListingsService {
   async revealContact(listingId: string, ip: string) {
     const listing = await this.prisma.listing.findFirst({
       where: { id: listingId, status: 'PUBLISHED' },
-      select: { agent: { select: { phone: true, telegram: true } } },
+      select: {
+        agent: { select: { phone: true, telegram: true } },
+        // Same seller-resolution inputs as FULL_INCLUDE / resolveSeller, so the
+        // revealed number matches the masked preview on the card/detail.
+        owner: { select: { role: true, phone: true, realtorProfile: { select: { slug: true } } } },
+      },
     });
 
     if (!listing) throw new NotFoundException();
 
     await this.prisma.contactReveal.create({ data: { listingId, ip } });
 
-    return listing.agent;
+    // Mirror resolveSeller (mapper.ts): a published realtor-owned listing reveals
+    // the realtor owner's own number (what the masked preview showed); every other
+    // listing reveals the Agent's. telegram intentionally stays the Agent's, same
+    // as the mapper — only the phone is seller-resolved.
+    const owner = listing.owner;
+    const phone =
+      owner?.role === 'REALTOR' && owner.realtorProfile?.slug ? owner.phone : listing.agent.phone;
+
+    return { phone, telegram: listing.agent.telegram };
   }
 
   async createDraft(ownerId: string) {
