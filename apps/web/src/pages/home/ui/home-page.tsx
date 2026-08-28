@@ -14,11 +14,11 @@ import {
   useListingFilters,
 } from '@/features/listing-filters';
 import { useCreateSavedSearch } from '@/features/saved-search';
+import { useInfiniteScroll } from '@/shared/lib/use-infinite-scroll';
 import { Icon } from '@/shared/ui/icon';
-import { ValuationBanner } from './valuation-banner';
 
-/** How many cards fill the first screen — the rest arrive via "Ko'proq". */
-const PAGE_SIZE = 6;
+/** How many cards fill the first screen — the rest arrive via infinite scroll. */
+const PAGE_SIZE = 8;
 
 function CardSkeleton() {
   return (
@@ -50,6 +50,9 @@ export function HomePage() {
 
   const shown = filters.visible.slice(0, limit);
   const hasMore = filters.visible.length > shown.length;
+  const sentinelRef = useInfiniteScroll(hasMore, shown.length, () =>
+    setLimit((n) => n + PAGE_SIZE),
+  );
 
   // Changing a filter rewinds the list; otherwise a new slice would open
   // already "expanded" from the previous one.
@@ -85,8 +88,6 @@ export function HomePage() {
   return (
     <main>
       <ListingHero search={filters.search} onSearchChange={resetPaging(filters.setSearch)} />
-
-      <ValuationBanner />
 
       {/* "Qidiryapman" board entry — sits beside the valuation hook as the other
           seller-facing way in: browse buyers' reverse requests. Renders the same
@@ -175,17 +176,8 @@ export function HomePage() {
             </p>
           )}
 
-          {hasMore && (
-            <div className="px-4 pt-[18px] pb-1.5 desk:px-0 desk:pt-6">
-              <button
-                type="button"
-                onClick={() => setLimit((n) => n + PAGE_SIZE)}
-                className="w-full rounded-[14px] border-[1.5px] border-accent py-3.5 text-[14.5px] font-extrabold text-accent active:bg-accent-soft desk:mx-auto desk:block desk:w-64 desk:hover:bg-accent-soft"
-              >
-                Ko'proq ko'rsatish
-              </button>
-            </div>
-          )}
+          {/* Infinite scroll: this sentinel auto-loads the next slice as it nears the viewport. */}
+          {hasMore && <div ref={sentinelRef} aria-hidden className="h-px w-full" />}
 
           {!hasMore && shown.length > 0 && (
             <p className="px-4 pt-3 pb-1 text-center text-xs font-semibold text-ink-3 desk:pt-6">
