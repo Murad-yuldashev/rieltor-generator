@@ -1,1 +1,1 @@
-export { PROFILE_QUERY_KEY, useProfile, useSaveProfile } from './use-profile';
+export { PROFILE_QUERY_KEY, useProfile, useSaveProfile, useSaveLogo } from './use-profile';
