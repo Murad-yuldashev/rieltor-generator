@@ -8,6 +8,8 @@ import { ListingsService } from './listings.service';
 import { ModerationController } from './moderation.controller';
 import { RealtorModerationController } from './realtor-moderation.controller';
 import { RealtorModerationService } from './realtor-moderation.service';
+import { ReviewModerationController } from './review-moderation.controller';
+import { ReviewModerationService } from './review-moderation.service';
 
 @Module({
   imports: [AuthModule],
@@ -18,8 +20,9 @@ import { RealtorModerationService } from './realtor-moderation.service';
     ListingImageController,
     ModerationController,
     RealtorModerationController,
+    ReviewModerationController,
   ],
-  providers: [ListingsService, RealtorModerationService],
+  providers: [ListingsService, RealtorModerationService, ReviewModerationService],
   exports: [ListingsService],
 })
 export class ListingsModule {}
