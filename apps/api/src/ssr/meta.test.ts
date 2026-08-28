@@ -19,6 +19,8 @@ const listing = {
   listedAt: '2026-07-20',
   agentVerified: false,
   agentProfileSlug: null,
+  agentRatingAvg: null,
+  agentRatingCount: 0,
   images: [
     {
       base: '/images/bx-001/01',
@@ -38,6 +40,8 @@ const listing = {
     telegram: 'username',
     verified: false,
     profileSlug: null,
+    ratingAvg: null,
+    ratingCount: 0,
   },
 };
 

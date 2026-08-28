@@ -26,6 +26,8 @@ const listings = [
     agentPhoneMasked: '+998 90 ••• •• 67',
     agentVerified: false,
     agentProfileSlug: null,
+    agentRatingAvg: null,
+    agentRatingCount: 0,
   },
 ];
 

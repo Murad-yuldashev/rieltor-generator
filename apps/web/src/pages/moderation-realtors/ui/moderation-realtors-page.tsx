@@ -9,7 +9,15 @@ import { MODERATION_REALTORS_KEY, moderationRealtorsQuery } from '../api';
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto min-h-dvh max-w-content bg-surface px-4 py-6">
-      <h1 className="text-xl font-extrabold text-ink">Rieltorlarni tasdiqlash</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-extrabold text-ink">Rieltorlarni tasdiqlash</h1>
+        <Link
+          to="/moderation/reviews"
+          className="text-[13px] font-bold text-accent hover:underline"
+        >
+          Sharhlar →
+        </Link>
+      </div>
       <div className="mt-4">{children}</div>
     </main>
   );

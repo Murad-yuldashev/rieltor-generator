@@ -22,6 +22,8 @@ const listing = {
   listedAt: '2026-07-22',
   agentVerified: false,
   agentProfileSlug: null,
+  agentRatingAvg: null,
+  agentRatingCount: 0,
   images: [
     {
       base: '/images/bx-002/01',
@@ -40,6 +42,8 @@ const listing = {
     telegram: 'murod',
     verified: false,
     profileSlug: null,
+    ratingAvg: null,
+    ratingCount: 0,
   },
 };
 

@@ -11,6 +11,8 @@ const agent = {
   telegram: 'murod',
   verified: false,
   profileSlug: null,
+  ratingAvg: null,
+  ratingCount: 0,
 };
 
 describe('AgentCard', () => {

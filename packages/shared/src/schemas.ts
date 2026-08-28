@@ -12,6 +12,10 @@ export const AgentSchema = z.object({
   verified: z.boolean(),
   /** Public profile slug, when the seller has one; links to /realtors/:slug. */
   profileSlug: z.string().nullable(),
+  /** Average of APPROVED review ratings; null until the seller has any. */
+  ratingAvg: z.number().nullable(),
+  /** Count of APPROVED reviews backing `ratingAvg`. */
+  ratingCount: z.number(),
 });
 
 export const ImageSchema = z.object({
@@ -71,6 +75,10 @@ export const ListingSummarySchema = z.object({
    * badge stays on seed rows while a real realtor's badge follows `agentVerified`.
    */
   agentProfileSlug: z.string().nullable(),
+  /** Seller's average APPROVED review rating; null until they have any. Mirrors `Agent.ratingAvg`. */
+  agentRatingAvg: z.number().nullable(),
+  /** Count of APPROVED reviews backing `agentRatingAvg`. Mirrors `Agent.ratingCount`. */
+  agentRatingCount: z.number(),
 });
 
 export const ListingDetailSchema = ListingSummarySchema.omit({
@@ -346,6 +354,32 @@ export const RealtorProfileUpdateSchema = z.object({
     .optional(),
 });
 
+/** Moderation lifecycle of a realtor review. */
+export const ReviewStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
+
+/** Body of `POST /api/realtors/:slug/reviews` — a buyer leaves a rating + optional note. */
+export const ReviewCreateSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(1000).optional(),
+});
+
+/** One APPROVED review shown on the public realtor profile. */
+export const PublicReviewSchema = z.object({
+  id: z.string(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().nullable(),
+  authorName: z.string(),
+  authorPhotoUrl: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+/** The author's own review of a realtor (any status) — GET /api/realtors/:slug/reviews/mine. */
+export const MyReviewSchema = z.object({
+  rating: z.number().int(),
+  comment: z.string().nullable(),
+  status: ReviewStatusSchema,
+});
+
 /** Public realtor profile page — GET /api/realtors/:slug. Embeds the seller's live listings. */
 export const PublicRealtorSchema = z.object({
   name: z.string(),
@@ -356,7 +390,13 @@ export const PublicRealtorSchema = z.object({
   logoUrl: z.string().nullable(),
   brandColor: z.string().nullable(),
   verified: z.boolean(),
+  /** Average of APPROVED review ratings; null until the realtor has any. */
+  ratingAvg: z.number().nullable(),
+  /** Count of APPROVED reviews backing `ratingAvg`. */
+  ratingCount: z.number(),
   listings: z.array(ListingSummarySchema),
+  /** APPROVED reviews, newest first. */
+  reviews: z.array(PublicReviewSchema),
 });
 
 /** One row in the moderator's realtor table — GET /api/moderation/realtors. */
@@ -370,6 +410,20 @@ export const ModeratorRealtorRowSchema = z.object({
 
 /** Body of `POST /api/moderation/realtors/:userId/verify`. */
 export const RealtorVerifySchema = z.object({ verified: z.boolean() });
+
+/** One row in the moderator's review queue — GET /api/moderation/reviews. */
+export const ModeratorReviewRowSchema = z.object({
+  id: z.string(),
+  realtorName: z.string(),
+  realtorSlug: z.string().nullable(),
+  authorName: z.string(),
+  rating: z.number().int(),
+  comment: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+/** Body of `POST /api/moderation/reviews/:id/moderate`. */
+export const ReviewModerateSchema = z.object({ status: z.enum(['APPROVED', 'REJECTED']) });
 
 export const NoteUpsertSchema = z.object({ body: z.string().min(1).max(2000) });
 
@@ -498,6 +552,12 @@ export type RealtorProfileUpdate = z.infer<typeof RealtorProfileUpdateSchema>;
 export type PublicRealtor = z.infer<typeof PublicRealtorSchema>;
 export type ModeratorRealtorRow = z.infer<typeof ModeratorRealtorRowSchema>;
 export type RealtorVerify = z.infer<typeof RealtorVerifySchema>;
+export type ReviewStatus = z.infer<typeof ReviewStatusSchema>;
+export type ReviewCreate = z.infer<typeof ReviewCreateSchema>;
+export type PublicReview = z.infer<typeof PublicReviewSchema>;
+export type MyReview = z.infer<typeof MyReviewSchema>;
+export type ModeratorReviewRow = z.infer<typeof ModeratorReviewRowSchema>;
+export type ReviewModerate = z.infer<typeof ReviewModerateSchema>;
 export type NoteUpsert = z.infer<typeof NoteUpsertSchema>;
 export type NoteWithListing = z.infer<typeof NoteWithListingSchema>;
 export type CollectionSummary = z.infer<typeof CollectionSummarySchema>;

@@ -18,7 +18,16 @@ export const FULL_INCLUDE = {
       name: true,
       phone: true,
       photoUrl: true,
-      realtorProfile: { select: { agency: true, slug: true, verified: true, logoUrl: true } },
+      realtorProfile: {
+        select: {
+          agency: true,
+          slug: true,
+          verified: true,
+          logoUrl: true,
+          ratingSum: true,
+          ratingCount: true,
+        },
+      },
     },
   },
 } as const;

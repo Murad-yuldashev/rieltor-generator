@@ -444,6 +444,56 @@ reja: `docs/superpowers/plans/2026-08-27-phase-3.3a-realtor-public-profile.md`.
 - **3.3b:** rieltor **sharhlari + reyting** (C14 ning ikkinchi yarmi; profil sahifasida joy
   ajratilgan). Subdomen (`ali.domen.uz`) — keyin reverse-proxy bilan, kod o'zgarishisiz.
 
+## 4j. Phase 3.3b — Rieltor sharhlari + reyting (2026-08-28)
+
+C14 ning ikkinchi yarmi: rieltorlar uchun **moderatsiyalanadigan ommaviy reyting + sharhlar**.
+`/r/:slug` mikrosaytida (3.3a ajratgan joyda) va marketplace sotuvchi ko'rinishida ko'rsatiladi —
+3.3a tasdiqlangan-nishoni ochган ishonch halqasini yopadi. **Shu bilan Phase 3 (Rieltor toolkit)
+to'liq tugadi.**
+Spec: `docs/superpowers/specs/2026-08-28-phase-3.3b-realtor-reviews-rating-design.md`,
+reja: `docs/superpowers/plans/2026-08-28-phase-3.3b-realtor-reviews-rating.md`.
+
+### Sharh yozish
+
+- **Har qanday telefon-tasdiqlangan foydalanuvchi** bitta rieltorga **bitta** sharh (1–5 yulduz +
+  ixtiyoriy izoh) qoldiradi — `POST /api/r/:slug/reviews` (**`JwtGuard`**, obunaga bog'liq EMAS).
+  `Review` `@@unique([realtorId, authorId])` — qayta yozsa upsert → holat yana **PENDING**. Rieltor
+  o'ziga sharh qoldira olmaydi (400). O'z sharhini `GET /api/r/:slug/my-review` (authed) bilan ko'radi.
+
+### Keshlangan agregat (o'zak invariant)
+
+- `RealtorProfile` += **`ratingSum`** + **`ratingCount`** — faqat **APPROVED** sharhlardan. Har
+  APPROVED-a'zolik o'zgarishida **tranzaksiyada delta** bilan yangilanadi (marketplace har e'londa
+  sotuvchini serializatsiya qiladi — N+1 bo'lmasin). Ikki yozuvchi (sharh tahriri + moderator)
+  bitta `RealtorProfile` qatorini **`SELECT … FOR UPDATE`** bilan qulflaydi → agregat hech qachon
+  drift qilmaydi.
+
+### Moderatsiya
+
+- **`GET /api/moderation/reviews`** (PENDING navbat) + **`PATCH /api/moderation/reviews/:id`**
+  (`{ status }`, tranzaksion delta) — `MODERATOR`/`ADMIN`. Faqat APPROVED ommaga chiqadi va agregatga
+  kiradi. `apps/web`'da "Sharhlar" navbati (tasdiqlash/rad etish).
+
+### Ommaviy ko'rsatish + marketplace
+
+- **`GET /api/r/:slug`** += `ratingAvg`/`ratingCount`/`reviews` (APPROVED, yangi-birinchi, muallif
+  ismi/rasmi — `authorId` sizmaydi). `/r/:slug` sahifasida reyting bloki + auth foydalanuvchi uchun
+  **sharh formasi** (moderatsiyada holati bilan).
+- **Marketplace (additiv):** `AgentSchema` += `ratingAvg`/`ratingCount`, `ListingSummary` +=
+  `agentRatingAvg`/`agentRatingCount` (3.3a naqshi, **doim to'ldirilgan**); sotuvchi panelida/qatorda
+  ixcham yulduz+son (`ratingCount > 0` bo'lganda). Seed e'lonlar **o'zgarmaydi**.
+- **Kabinet:** rieltor o'z reytingi + sharhlarini (faqat o'qish) "Baholarim" bo'limida ko'radi.
+
+### Ma'lumot modeli va env
+
+- **1 yangi Prisma model** (`Review`) + `ReviewStatus` enum + `RealtorProfile`'ga 2 keshlangan
+  ustun (additiv migratsiya). **Yangi env qo'shilmagan.**
+
+### Kelasi
+
+- Rieltor **javobi** (sharhga), **report/flag**, reyting bo'yicha **saralash** — keyin. Phase 4:
+  **Lead market** (yopiq halqani yopadi).
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

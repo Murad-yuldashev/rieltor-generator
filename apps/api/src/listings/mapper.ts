@@ -16,6 +16,8 @@ type OwnerWithProfile = {
     slug: string | null;
     verified: boolean;
     logoUrl: string | null;
+    ratingSum: number;
+    ratingCount: number;
   } | null;
 };
 export type ListingRow = Listing & {
@@ -38,6 +40,9 @@ function resolveSeller(row: ListingRow) {
       telegram: row.agent.telegram, // telegram CTA stays the Agent's for now
       verified: p.verified,
       profileSlug: p.slug,
+      // Cached aggregate (Phase 3.3b T1): average is null until an APPROVED review exists.
+      ratingAvg: p.ratingCount > 0 ? p.ratingSum / p.ratingCount : null,
+      ratingCount: p.ratingCount,
     };
   }
   return {
@@ -49,6 +54,9 @@ function resolveSeller(row: ListingRow) {
     telegram: row.agent.telegram,
     verified: false,
     profileSlug: null,
+    // The default Agent (seed) carries no reviews — always null/0.
+    ratingAvg: null,
+    ratingCount: 0,
   };
 }
 
@@ -86,6 +94,11 @@ export function toListingDetail(row: ListingRow): ListingDetail {
     // stays consistent. The nested `agent` object below carries the same values.
     agentVerified: s.verified,
     agentProfileSlug: s.profileSlug,
+    // ListingDetail extends the summary schema, so the summary-level rating
+    // mirrors on the detail too (same as agentVerified/agentProfileSlug above).
+    // The nested `agent` object below carries the same values.
+    agentRatingAvg: s.ratingAvg,
+    agentRatingCount: s.ratingCount,
     agent: {
       id: s.id,
       name: s.name,
@@ -97,6 +110,8 @@ export function toListingDetail(row: ListingRow): ListingDetail {
       telegram: s.telegram,
       verified: s.verified,
       profileSlug: s.profileSlug,
+      ratingAvg: s.ratingAvg,
+      ratingCount: s.ratingCount,
     },
   };
 }
@@ -132,5 +147,8 @@ export function toListingSummary(row: ListingRow): ListingSummary {
     // Same resolved seller value `toListingDetail` puts on `agent.profileSlug`:
     // null for the default Agent (seed), the realtor's slug for a published one.
     agentProfileSlug: s.profileSlug,
+    // Marketplace stars on the card — mirrors the resolved seller's rating.
+    agentRatingAvg: s.ratingAvg,
+    agentRatingCount: s.ratingCount,
   };
 }
