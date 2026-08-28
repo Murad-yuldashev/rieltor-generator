@@ -22,6 +22,8 @@ export class ReviewsService {
   // Upsert the author's review of a realtor. Every write resets status to PENDING,
   // so editing an already-APPROVED review pulls it back out of the public set —
   // this is aggregate-writer #1: it decrements the cached ratingSum/ratingCount.
+  // The moderator (Task 6, aggregate-writer #2) takes the SAME profile-row lock,
+  // so the two writers never interleave their read-modify-write on the aggregate.
   async submit(
     slug: string,
     authorId: string,
@@ -33,6 +35,14 @@ export class ReviewsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Serialize every aggregate mutation for THIS realtor on the profile row:
+      // concurrent submit-edits (a double-click / two tabs) and the moderator's
+      // approve/reject block here instead of racing the read-decrement-upsert, so
+      // ratingSum/ratingCount can't drift (double-decrement) under ReadCommitted.
+      // The RealtorProfile row is guaranteed to exist (slug already resolved above);
+      // ${realtorId} is parameterized by the tagged template — no SQL injection.
+      await tx.$queryRaw`SELECT 1 FROM "RealtorProfile" WHERE "userId" = ${realtorId} FOR UPDATE`;
+
       const existing = await tx.review.findUnique({
         where: { realtorId_authorId: { realtorId, authorId } },
         select: { status: true, rating: true },
