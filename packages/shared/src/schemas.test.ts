@@ -17,6 +17,8 @@ const fullListing = {
   deal: 'SALE',
   agentVerified: true,
   agentProfileSlug: 'murod-buxoro',
+  agentRatingAvg: null,
+  agentRatingCount: 0,
   views: 7,
   listedAt: '2026-07-28',
   images: [
@@ -38,6 +40,8 @@ const fullListing = {
     telegram: 'murod',
     verified: true,
     profileSlug: 'murod-buxoro',
+    ratingAvg: null,
+    ratingCount: 0,
   },
 };
 
