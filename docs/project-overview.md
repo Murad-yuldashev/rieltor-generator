@@ -383,6 +383,67 @@ Marketplace e'lon ko'rinishiga **tegilmagan** — taqdimot uning kartalari va SS
 
 - Shaxsiy sayt generatori + ommaviy rieltor profili (3.3), va **real to'lov** (Click/Payme).
 
+## 4i. Phase 3.3a — Rieltorning ommaviy sahifasi (2026-08-27)
+
+Har rieltorga **brendlangan ommaviy mikrosayt** (`/r/:slug`) beradi — logotip, brend rangi,
+**tasdiqlangan nishoni** va avtomatik yangilanadigan **e'lonlar katalogi** bilan — hamda
+marketplace'dagi "kim sotyapti" ko'rinishini **real rieltor profiliga** bog'laydi (3.1/3.2 dan
+ataylab qoldirilgan qism). Bu Product C ning **C1** (sayt generatori) + **C14** (tasdiqlangan
+profil) qismi; **reyting/sharhlar** esa **3.3b** ga qoldirildi.
+Spec: `docs/superpowers/specs/2026-08-27-phase-3.3a-realtor-public-profile-design.md`,
+reja: `docs/superpowers/plans/2026-08-27-phase-3.3a-realtor-public-profile.md`.
+
+### Ommaviy `/r/:slug` mikrosayti
+
+- **SSR + og-preview**: `buildRealtorMetaTags` orqali Telegram/WhatsApp'ga boy karta (rieltor
+  nomi · agentlik, tavsif, logotip yoki birinchi e'lon rasmi) beriladi — `p/:token` naqshini
+  aks ettiradi.
+- **Brendlangan sarlavha** (logotip, ism, agentlik, **tasdiqlangan** nishoni, bio, hududlar,
+  tajriba, `brandColor` urg'u) + **katalog**: rieltorning **PUBLISHED** e'lonlari marketplace
+  kartalari bilan render qilinadi (reuse), har biri `/obj/:id` ga havola.
+- Sahifa **`NotFoundShellFilter`** orqali xizmat qilinadi: ommaviy API `@Controller('r')`
+  (→ `/api/r/:slug`) bilan to'qnashmaslik uchun `/r/:slug` `setGlobalPrefix` **exclude**'iga
+  qo'shilmaydi (`/p/:token` bilan bir xil dars). Noma'lum slug → oddiy 404 shell.
+
+### Brending (kabinet, `apps/agent`)
+
+- Rieltor 3.1 profil sahifasida **slug** (`/r/[slug]`), **logotip yuklash**
+  (`POST /api/agent/profile/logo` → `processImage`), **brend rangi** va ommaviy-sahifa
+  havolasini boshqaradi. Slug'da **band nomlar ro'yxati** (`search`, `new`, `obj`, `p`, `r`, …)
+  va **noyoblik** tekshiriladi — band bo'lsa "Bu manzil band" / "allaqachon olingan".
+
+### Tasdiqlash (moderator)
+
+- **`PATCH /api/moderation/realtors/:userId`** (`{ verified }`) + **`GET /api/moderation/realtors`** —
+  faqat **`MODERATOR`/`ADMIN`** (`JwtGuard + RolesGuard`). Nishon `/r/:slug` sarlavhasida va
+  marketplace sotuvchi panelida ko'rinadi. `apps/web`'da minimal moderator ro'yxati (verify toggle).
+
+### Marketplace ulanishi (additive)
+
+- Listing mapper'da sotuvchi **shartli** aniqlanadi: e'lon egasi **published rieltor**
+  (`owner.role === 'REALTOR'` va `realtorProfile.slug` bor) bo'lsa → **real rieltor**
+  (ism, agentlik, logotip, `verified`, `profileSlug`); aks holda **avvalgi `Agent`** aynan
+  o'zi (`verified: false`, `profileSlug: null`). `AgentSchema` (+`verified`/`profileSlug`) va
+  `ListingSummary` (+`agentVerified`/`agentProfileSlug`) **doim to'ldirilgan** — seed e'lonlar
+  **o'zgarmaydi** (natijalar qatoridagi legacy nishoni ham saqlanadi).
+
+### Ommaviy endpointlar
+
+- **`GET /api/r/:slug`** va **`/r/:slug`** sahifasi — **authsiz**, **slug bilan** himoyalangan va
+  **obunaga bog'liq EMAS**: rieltor obunasi tugagan bo'lsa ham ommaviy sahifa ishlaydi (marketing
+  ko'rinishi). `userId` va ichki maydonlar ochilmaydi. Tahrirlash / logotip / tasdiqlash esa
+  **`RealtorGuard` / `MODERATOR`** bilan cheklangan.
+
+### Ma'lumot modeli va env
+
+- `RealtorProfile`'ga **4 additiv ustun**: `slug` (`@unique`), `verified`, `logoUrl`, `brandColor`
+  (migratsiya additiv). **Yangi env qo'shilmagan** (`PUBLIC_BASE_URL` va rasm quvuri mavjud edi).
+
+### Kelasi
+
+- **3.3b:** rieltor **sharhlari + reyting** (C14 ning ikkinchi yarmi; profil sahifasida joy
+  ajratilgan). Subdomen (`ali.domen.uz`) — keyin reverse-proxy bilan, kod o'zgarishisiz.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
