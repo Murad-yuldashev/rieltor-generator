@@ -26,6 +26,27 @@ export class RealtorPublicService {
     });
     const listings = rows.map(toListingSummary);
 
+    // APPROVED reviews only, newest first. authorId is never selected/leaked.
+    const reviewRows = await this.prisma.review.findMany({
+      where: { realtorId: profile.userId, status: 'APPROVED' },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        author: { select: { name: true, photoUrl: true } },
+      },
+    });
+    const reviews = reviewRows.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      authorName: r.author.name ?? 'Foydalanuvchi',
+      authorPhotoUrl: r.author.photoUrl,
+      createdAt: r.createdAt.toISOString(),
+    }));
+
     // Client-facing shape only — no userId/slug or other internal fields leak.
     return {
       name: profile.user.name ?? 'Rieltor',
@@ -36,6 +57,9 @@ export class RealtorPublicService {
       logoUrl: profile.logoUrl,
       brandColor: profile.brandColor,
       verified: profile.verified,
+      ratingCount: profile.ratingCount,
+      ratingAvg: profile.ratingCount > 0 ? profile.ratingSum / profile.ratingCount : null,
+      reviews,
       listings,
     };
   }
