@@ -7,6 +7,7 @@ import {
   type ListingSummary,
 } from '@rieltor/shared';
 import { Icon } from '@/shared/ui/icon';
+import { RatingStars } from '@/shared/ui/rating-stars';
 import { ResponsiveImage } from '@/shared/ui/responsive-image';
 import { relativeFreshness } from '../lib/relative-time';
 import { TypeBadge } from './type-badge';
@@ -100,6 +101,15 @@ export function ListingResultRow({ listing, favoriteSlot }: Props) {
         <p className="mt-0.5 truncate text-[12.5px] font-semibold text-ink-3">
           {listing.agencyName}
         </p>
+
+        {/* Stars appear only once the seller has APPROVED reviews — a seed
+            listing (agentRatingCount 0) renders exactly as before. */}
+        {listing.agentRatingCount > 0 && (
+          <p className="mt-1 flex items-center gap-1">
+            <RatingStars value={listing.agentRatingAvg ?? 0} className="gap-0" />
+            <span className="text-[12px] font-bold text-ink-3">({listing.agentRatingCount})</span>
+          </p>
+        )}
 
         {/* Same ruling as the AgentCard seller panel: a seed listing (default
             Agent, agentProfileSlug null) keeps the legacy static badge exactly

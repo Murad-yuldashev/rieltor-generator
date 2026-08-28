@@ -5,6 +5,7 @@ import { HomePage } from '@/pages/home';
 import { ListingPage } from '@/pages/listing';
 import { ListingCreatePage } from '@/pages/listing-create';
 import { ModerationRealtorsPage } from '@/pages/moderation-realtors';
+import { ModerationReviewsPage } from '@/pages/moderation-reviews';
 import { MyListingsPage } from '@/pages/my-listings';
 import { MyPropertiesPage, PropertyDetailPage } from '@/pages/my-properties';
 import { NotFoundPage } from '@/pages/not-found';
@@ -55,6 +56,8 @@ export const router = createBrowserRouter([
       { path: '/valuation', element: <ValuationPage /> },
       // Moderator-only realtor verification — full-screen admin surface, role-gated in-page.
       { path: '/moderation/realtors', element: <ModerationRealtorsPage /> },
+      // Moderator-only review queue — same full-screen admin surface, role-gated in-page.
+      { path: '/moderation/reviews', element: <ModerationReviewsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -1,6 +1,7 @@
 import type { Agent } from '@rieltor/shared';
 import { Link } from 'react-router';
 import { Icon } from '@/shared/ui/icon';
+import { RatingStars } from '@/shared/ui/rating-stars';
 
 export function AgentCard({ agent }: { agent: Agent }) {
   // The default Agent (seed listings) carries no profileSlug — those keep the
@@ -31,6 +32,14 @@ export function AgentCard({ agent }: { agent: Agent }) {
             </span>
           )}
         </p>
+        {/* Stars appear only once the seller has APPROVED reviews — a seed
+            listing (ratingCount 0) renders exactly as before. */}
+        {agent.ratingCount > 0 && (
+          <p className="mt-1 flex items-center gap-1.5">
+            <RatingStars value={agent.ratingAvg ?? 0} />
+            <span className="text-[12.5px] font-bold text-ink-3">({agent.ratingCount})</span>
+          </p>
+        )}
         <p className="mt-0.5 text-[12.5px] font-semibold text-ink-3">{agent.agency}</p>
         {/* Masked here — the real number only appears via the StickyCTA's tracked reveal. */}
         <p className="mt-0.5 text-[13.5px] font-bold text-accent">{agent.phoneMasked}</p>

@@ -3,11 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 import { formatListedAt, type PublicReview } from '@rieltor/shared';
 import { ListingCard } from '@/entities/listing';
-import { RatingStars, StarPicker } from '@/entities/rating';
 import { useSession } from '@/entities/session';
 import { LoginModal } from '@/features/auth';
 import { ApiError } from '@/shared/api/client';
 import { Icon } from '@/shared/ui/icon';
+import { RatingStars, StarPicker } from '@/shared/ui/rating-stars';
 import { NotFoundView } from '@/widgets/not-found';
 import { myReviewQuery, realtorQuery, useSubmitReview } from '../api';
 
