@@ -12,6 +12,7 @@ import {
   type Criteria,
 } from '@/features/listing-filters';
 import { useSearchHistory } from '@/features/search-history';
+import { useInfiniteScroll } from '@/shared/lib/use-infinite-scroll';
 import { Icon } from '@/shared/ui/icon';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
@@ -19,8 +20,8 @@ import { SectionCard } from '@/shared/ui/section-card';
 /** The mockup lists four districts. */
 const TOP_DISTRICTS = 4;
 
-/** How many result cards are shown before "Ko'proq ko'rsatish". */
-const PAGE_SIZE = 6;
+/** How many result cards are shown before more auto-load on scroll. */
+const PAGE_SIZE = 8;
 
 function countByDistrict(listings: ListingSummary[] | undefined) {
   const counts = new Map<string, number>();
@@ -60,6 +61,10 @@ export function SearchPage() {
   const matches = filterListings(data, criteria);
   const districts = countByDistrict(data);
   const shown = matches.slice(0, limit);
+  const hasMore = matches.length > shown.length;
+  const sentinelRef = useInfiniteScroll(hasMore, shown.length, () =>
+    setLimit((n) => n + PAGE_SIZE),
+  );
 
   function submit(next: Criteria = criteria) {
     setCriteria(next);
@@ -230,15 +235,8 @@ export function SearchPage() {
               </p>
             )}
 
-            {matches.length > shown.length && (
-              <button
-                type="button"
-                onClick={() => setLimit((n) => n + PAGE_SIZE)}
-                className="mt-4 w-full rounded-[14px] border-[1.5px] border-accent py-3.5 text-[14.5px] font-extrabold text-accent active:bg-accent-soft"
-              >
-                Ko'proq ko'rsatish
-              </button>
-            )}
+            {/* Infinite scroll: auto-loads the next slice as this nears the viewport. */}
+            {hasMore && <div ref={sentinelRef} aria-hidden className="mt-4 h-px w-full" />}
           </div>
         )}
       </div>
