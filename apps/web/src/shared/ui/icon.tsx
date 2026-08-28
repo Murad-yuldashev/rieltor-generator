@@ -47,10 +47,14 @@ const PATHS = {
   money: ['M3 7h18v10H3V7Z', 'M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z', 'M6 7v10M18 7v10'],
   mic: ['M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z', 'M6 11a6 6 0 0 0 12 0M12 19v3'],
   bell: ['M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9', 'M13.7 21a2 2 0 0 1-3.4 0'],
+  star: ['M12 2.6l2.7 5.9 6.4.6-4.8 4.3 1.4 6.3L12 16.9 6.3 19.7l1.4-6.3-4.8-4.3 6.4-.6L12 2.6Z'],
+  starSolid: [
+    'M12 2.6l2.7 5.9 6.4.6-4.8 4.3 1.4 6.3L12 16.9 6.3 19.7l1.4-6.3-4.8-4.3 6.4-.6L12 2.6Z',
+  ],
 } as const;
 
 /** These icons are drawn as a solid shape rather than an outline. */
-const FILLED = new Set<IconName>(['heart', 'telegram']);
+const FILLED = new Set<IconName>(['heart', 'telegram', 'starSolid']);
 
 export type IconName = keyof typeof PATHS;
 
