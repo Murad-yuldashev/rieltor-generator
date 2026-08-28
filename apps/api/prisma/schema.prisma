@@ -126,6 +126,8 @@ model User {
   notes             Note[]
   collections       Collection[]
   presentations     Presentation[]
+  receivedReviews   Review[]          @relation("ReceivedReviews")
+  writtenReviews    Review[]          @relation("WrittenReviews")
 }
 
 model Session {
@@ -269,6 +271,8 @@ model RealtorProfile {
   verified        Boolean  @default(false)
   logoUrl         String?
   brandColor      String?
+  ratingSum       Int      @default(0)
+  ratingCount     Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -352,4 +356,27 @@ model PresentationView {
   at             DateTime     @default(now())
 
   @@index([presentationId])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id        String       @id @default(cuid())
+  realtorId String
+  realtor   User         @relation("ReceivedReviews", fields: [realtorId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User         @relation("WrittenReviews", fields: [authorId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  status    ReviewStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([realtorId, authorId])
+  @@index([realtorId, status])
+  @@index([status, createdAt])
 }
