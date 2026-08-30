@@ -296,9 +296,30 @@ export const PropertyRequestSummarySchema = z.object({
   priceMaxSom: z.string().nullable(),
   areaMinM2: z.number().nullable(),
   note: z.string().nullable(),
-  status: z.enum(['OPEN', 'CLOSED']),
+  /** Lifecycle: OPEN → CLAIMED (a realtor took it) or CLOSED; EXPIRED when the exclusive window lapses. */
+  status: z.enum(['OPEN', 'CLOSED', 'CLAIMED', 'EXPIRED']),
   createdAt: z.string(),
   authorPhoneMasked: z.string(),
+  /** Lead quality score (0–100), always populated by the server. */
+  score: z.number(),
+  /** Server-estimated lead price in som — BigInt-as-string, like `priceMaxSom`. */
+  priceSom: z.string(),
+});
+
+/** The realtor feed row: `authorPhoneMasked` always, `phone` null until the caller claims it. */
+export const LeadSchema = PropertyRequestSummarySchema.extend({
+  phone: z.string().nullable(),
+});
+
+/** The buyer's own request row plus whether a realtor has claimed it. */
+export const MyLeadSchema = PropertyRequestSummarySchema.extend({
+  claimed: z.boolean(),
+});
+
+/** Response of claiming a lead — the buyer's real contact, revealed to the claiming realtor. */
+export const LeadClaimResponseSchema = z.object({
+  phone: z.string(),
+  name: z.string().nullable(),
 });
 
 /** Query params for `GET /api/requests` (all optional). `roomsMin` arrives as a string. */
@@ -544,6 +565,9 @@ export type Notification = z.infer<typeof NotificationSchema>;
 export type NotificationList = z.infer<typeof NotificationListSchema>;
 export type PropertyRequestCreate = z.infer<typeof PropertyRequestCreateSchema>;
 export type PropertyRequestSummary = z.infer<typeof PropertyRequestSummarySchema>;
+export type Lead = z.infer<typeof LeadSchema>;
+export type MyLead = z.infer<typeof MyLeadSchema>;
+export type LeadClaimResponse = z.infer<typeof LeadClaimResponseSchema>;
 export type PropertyRequestFilter = z.infer<typeof PropertyRequestFilterSchema>;
 export type SubscriptionStatus = z.infer<typeof SubscriptionStatusSchema>;
 export type SubscriptionView = z.infer<typeof SubscriptionViewSchema>;
