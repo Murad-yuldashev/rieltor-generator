@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { BotModule } from './bot/bot.module';
 import { envSchema } from './config/env';
 import { HealthModule } from './health/health.module';
+import { LeadsModule } from './leads/leads.module';
 import { ListingsModule } from './listings/listings.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PresentationsModule } from './presentations/presentations.module';
@@ -35,6 +36,7 @@ import { ViewsModule } from './views/views.module';
     AuthModule,
     BotModule,
     HealthModule,
+    LeadsModule,
     ListingsModule,
     NotificationsModule,
     PresentationsModule,

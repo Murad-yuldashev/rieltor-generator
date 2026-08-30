@@ -5,6 +5,7 @@ import {
   type PropertyRequestFilter,
   type PropertyRequestSummary,
 } from '@rieltor/shared';
+import { computeLeadScore, priceForScore } from '../leads/lead-scoring';
 import { PrismaService } from '../prisma/prisma.service';
 
 type RequestRow = {
@@ -16,7 +17,9 @@ type RequestRow = {
   priceMaxSom: bigint | null;
   areaMinM2: number | null;
   note: string | null;
-  status: 'OPEN' | 'CLOSED';
+  status: 'OPEN' | 'CLOSED' | 'CLAIMED' | 'EXPIRED';
+  score: number;
+  priceSom: bigint;
   createdAt: Date;
   author: { phone: string };
 };
@@ -26,6 +29,17 @@ export class RequestsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, body: PropertyRequestCreate) {
+    const createdAt = new Date();
+    const score = computeLeadScore({
+      district: body.district ?? null,
+      type: body.type ?? null,
+      roomsMin: body.roomsMin ?? null,
+      areaMinM2: body.areaMinM2 ?? null,
+      note: body.note ?? null,
+      priceMaxSom: body.priceMaxSom != null ? BigInt(body.priceMaxSom) : null,
+      createdAt,
+    });
+    const priceSom = priceForScore(score);
     const row = await this.prisma.propertyRequest.create({
       data: {
         authorId: userId,
@@ -36,6 +50,8 @@ export class RequestsService {
         priceMaxSom: body.priceMaxSom != null ? BigInt(body.priceMaxSom) : null,
         areaMinM2: body.areaMinM2 ?? null,
         note: body.note ?? null,
+        score,
+        priceSom,
       },
       include: { author: { select: { phone: true } } },
     });
@@ -123,5 +139,7 @@ function toSummary(r: RequestRow): PropertyRequestSummary {
     status: r.status,
     createdAt: r.createdAt.toISOString(),
     authorPhoneMasked: maskPhone(r.author.phone),
+    score: r.score,
+    priceSom: String(r.priceSom),
   };
 }

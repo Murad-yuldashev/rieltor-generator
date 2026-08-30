@@ -1,0 +1,27 @@
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { RealtorGuard } from '../agent/realtor.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtGuard } from '../auth/jwt.guard';
+import { LeadsService } from './leads.service';
+
+@Controller('leads')
+@UseGuards(JwtGuard, RealtorGuard)
+export class LeadsController {
+  constructor(private readonly leads: LeadsService) {}
+
+  @Get()
+  feed() {
+    return this.leads.feed();
+  }
+
+  // Declared before `:id` so the literal path is not captured as an id.
+  @Get('mine')
+  mine(@CurrentUser() u: { id: string }) {
+    return this.leads.mine(u.id);
+  }
+
+  @Get(':id')
+  one(@Param('id') id: string, @CurrentUser() u: { id: string }) {
+    return this.leads.findOne(id, u.id);
+  }
+}
