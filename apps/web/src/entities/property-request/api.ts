@@ -1,7 +1,8 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  LeadClaimResponseSchema,
+  LeadSchema,
   PropertyRequestSummarySchema,
-  RevealedContactSchema,
   type PropertyRequestCreate,
   type PropertyRequestFilter,
 } from '@rieltor/shared';
@@ -24,6 +25,17 @@ export const requestsQuery = (filter: PropertyRequestFilter) =>
   queryOptions({
     queryKey: ['requests', filter] as const,
     queryFn: () => apiGet(`/api/requests${toQuery(filter)}`, z.array(PropertyRequestSummarySchema)),
+  });
+
+/**
+ * The realtor lead feed (`GET /api/leads`, RealtorGuard) — OPEN leads ordered by
+ * score desc, each with a masked phone. The endpoint takes no filter params, so
+ * the board applies its filter client-side over the returned rows.
+ */
+export const leadsQuery = () =>
+  queryOptions({
+    queryKey: ['leads'] as const,
+    queryFn: () => apiGet('/api/leads', z.array(LeadSchema)),
   });
 
 export const myRequestsQuery = () =>
@@ -57,8 +69,16 @@ export function useDeleteRequest() {
   });
 }
 
-export function useRevealRequestContact() {
+/**
+ * Exclusively claims a lead (`POST /api/leads/:id/claim`, RealtorGuard) — returns
+ * the buyer's real `{ phone, name }`, or 409 if another realtor already took it,
+ * 400 on a self-claim. On success the feed is invalidated so the now-CLAIMED lead
+ * drops out of the OPEN list.
+ */
+export function useClaimLead() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiPost(`/api/requests/${id}/contact`, RevealedContactSchema),
+    mutationFn: (id: string) => apiPost(`/api/leads/${id}/claim`, LeadClaimResponseSchema),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
   });
 }

@@ -1,15 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  TASHKENT_DISTRICTS,
-  type Deal,
-  type ListingType,
-  type PropertyRequestFilter,
-} from '@rieltor/shared';
+import { TASHKENT_DISTRICTS, type Deal, type Lead, type ListingType } from '@rieltor/shared';
 import { Link } from 'react-router';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
-import { RequestCard, requestsQuery } from '@/entities/property-request';
-import { RevealButton } from '@/features/request-contact-reveal';
+import { RequestCard, leadsQuery } from '@/entities/property-request';
+import { ClaimButton } from '@/features/lead-claim';
+import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
@@ -55,10 +51,31 @@ function CardSkeleton() {
   );
 }
 
+/** Client-side mirror of the server's OPEN-request filter (deal/type/district
+ * exact, roomsMin `gte`, priceMaxSom `lte`) — `GET /api/leads` is unfiltered
+ * (score desc), so the board narrows the ≤100-row feed here. */
+function matchesFilter(
+  lead: Lead,
+  deal: Deal | undefined,
+  type: ListingType | undefined,
+  district: string | undefined,
+  roomsMin: number | undefined,
+  priceMaxSom: string | undefined,
+): boolean {
+  if (deal && lead.deal !== deal) return false;
+  if (type && lead.type !== type) return false;
+  if (district && lead.district !== district) return false;
+  if (roomsMin != null && (lead.roomsMin == null || lead.roomsMin < roomsMin)) return false;
+  if (priceMaxSom && (lead.priceMaxSom == null || BigInt(lead.priceMaxSom) > BigInt(priceMaxSom)))
+    return false;
+  return true;
+}
+
 /**
- * `/requests` — the "Qidiryapman" board. Buyers post reverse requests; realtors
- * and owners browse them (phone masked) and reveal a number to reach out. The
- * mirror image of the listing feed: here the seller-side does the searching.
+ * `/requests` — the realtor lead feed. Buyers post reverse requests; the feed
+ * scores them and surfaces the best first (`GET /api/leads`, RealtorGuard). A
+ * realtor claims a lead exclusively — the claim reveals the buyer's contact and
+ * removes the lead from every other realtor's feed.
  */
 export function RequestsPage() {
   const [deal, setDeal] = useState<Deal | undefined>(undefined);
@@ -67,21 +84,40 @@ export function RequestsPage() {
   const [roomsMin, setRoomsMin] = useState<number | undefined>(undefined);
   const [priceMaxSom, setPriceMaxSom] = useState<string | undefined>(undefined);
 
-  const filter: PropertyRequestFilter = {
-    ...(deal ? { deal } : {}),
-    ...(type ? { type } : {}),
-    ...(district ? { district } : {}),
-    ...(roomsMin != null ? { roomsMin } : {}),
-    ...(priceMaxSom ? { priceMaxSom } : {}),
-  };
+  const { data, isPending, isError, error } = useQuery(leadsQuery());
 
-  const { data, isPending, isError } = useQuery(requestsQuery(filter));
+  // A non-realtor is RealtorGuard-blocked (403); everything else is a real load error.
+  const isForbidden = error instanceof ApiError && error.status === 403;
+
+  const leads = data?.filter((lead) =>
+    matchesFilter(lead, deal, type, district, roomsMin, priceMaxSom),
+  );
+
+  if (isForbidden) {
+    return (
+      <main>
+        <PageHeading
+          title="Lidlar"
+          subtitle="Sifatli xaridor so'rovlari — eng yaxshisidan boshlab"
+        />
+        <div className="px-4 pt-3.5 desk:px-0 desk:pt-5">
+          <div className="rounded-card border border-line/60 bg-card px-6 py-12 text-center">
+            <p className="text-[15px] font-extrabold text-ink">Rieltor bo'ling</p>
+            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-ink-2">
+              Lidlar faqat rieltorlar uchun. Profilingizni rieltorga aylantiring va sifatli xaridor
+              so'rovlarini oling.
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main>
       <PageHeading
-        title="Qidiryapman"
-        subtitle="Xaridorlar so'rovlari — mos uyingiz bo'lsa, o'zingiz bog'laning"
+        title="Lidlar"
+        subtitle="Sifatli xaridor so'rovlari — eng yaxshisini olib, mijoz bilan bog'laning"
       />
 
       <div className="px-4 pt-3.5 desk:px-0 desk:pt-5">
@@ -187,24 +223,20 @@ export function RequestsPage() {
 
           {!isPending &&
             !isError &&
-            data?.map((request) => (
-              <RequestCard
-                key={request.id}
-                request={request}
-                revealSlot={<RevealButton id={request.id} />}
-              />
+            leads?.map((lead) => (
+              <RequestCard key={lead.id} request={lead} revealSlot={<ClaimButton id={lead.id} />} />
             ))}
         </div>
 
         {isError && (
           <p className="px-6 py-12 text-center text-[15px] text-ink-2">
-            So'rovlarni yuklab bo'lmadi. Keyinroq urinib ko'ring.
+            Lidlarni yuklab bo'lmadi. Keyinroq urinib ko'ring.
           </p>
         )}
 
-        {!isPending && !isError && data && data.length === 0 && (
+        {!isPending && !isError && leads && leads.length === 0 && (
           <p className="px-6 py-12 text-center text-[15px] leading-relaxed text-ink-2">
-            Hozircha so'rovlar yo'q. Birinchi bo'lib qidiruv joylang.
+            Hozircha yangi lead yo'q.
           </p>
         )}
       </div>

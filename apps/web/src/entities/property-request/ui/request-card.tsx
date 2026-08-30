@@ -65,7 +65,18 @@ export function RequestCard({ request, revealSlot, actionSlot }: Props) {
             {relativeTime(request.createdAt)}
           </p>
         </div>
+        {request.score != null && (
+          <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-1 text-[12px] font-extrabold text-accent">
+            Sifat: {request.score}
+          </span>
+        )}
       </div>
+
+      {request.priceSom && (
+        <p className="text-[15px] font-extrabold text-ink">
+          {formatPriceSom(request.priceSom, request.deal)}
+        </p>
+      )}
 
       {constraints.length > 0 && (
         <div className="flex flex-wrap gap-1.5">

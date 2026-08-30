@@ -1,9 +1,10 @@
 export {
   requestsQuery,
+  leadsQuery,
   myRequestsQuery,
   useCreateRequest,
   useCloseRequest,
   useDeleteRequest,
-  useRevealRequestContact,
+  useClaimLead,
 } from './api';
 export { RequestCard } from './ui/request-card';
