@@ -224,7 +224,12 @@ export function RequestsPage() {
           {!isPending &&
             !isError &&
             leads?.map((lead) => (
-              <RequestCard key={lead.id} request={lead} revealSlot={<ClaimButton id={lead.id} />} />
+              <RequestCard
+                key={lead.id}
+                request={lead}
+                showLeadMeta
+                revealSlot={<ClaimButton id={lead.id} />}
+              />
             ))}
         </div>
 

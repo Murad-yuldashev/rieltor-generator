@@ -38,10 +38,17 @@ interface Props {
   revealSlot?: ReactNode;
   /** Owner controls (status chip, close/delete) shown in a bottom footer on "my requests". */
   actionSlot?: ReactNode;
+  /**
+   * Realtor-only lead metadata: the quality score badge + the claim-fee price.
+   * Off by default so the buyer's own "my requests" cards never expose the score
+   * or the price a realtor pays to claim the request — only the realtor lead feed
+   * opts in.
+   */
+  showLeadMeta?: boolean;
 }
 
 /** Presentational card for one "Qidiryapman" buyer request. */
-export function RequestCard({ request, revealSlot, actionSlot }: Props) {
+export function RequestCard({ request, revealSlot, actionSlot, showLeadMeta = false }: Props) {
   const titleParts = [
     DEAL_LABEL[request.deal],
     request.type ? TYPE_LABEL[request.type] : null,
@@ -65,14 +72,14 @@ export function RequestCard({ request, revealSlot, actionSlot }: Props) {
             {relativeTime(request.createdAt)}
           </p>
         </div>
-        {request.score != null && (
+        {showLeadMeta && request.score != null && (
           <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-1 text-[12px] font-extrabold text-accent">
             Sifat: {request.score}
           </span>
         )}
       </div>
 
-      {request.priceSom && (
+      {showLeadMeta && request.priceSom && (
         <p className="text-[15px] font-extrabold text-ink">
           {formatPriceSom(request.priceSom, request.deal)}
         </p>
