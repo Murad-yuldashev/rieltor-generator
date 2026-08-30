@@ -494,6 +494,50 @@ reja: `docs/superpowers/plans/2026-08-28-phase-3.3b-realtor-reviews-rating.md`.
 - Rieltor **javobi** (sharhga), **report/flag**, reyting bo'yicha **saralash** — keyin. Phase 4:
   **Lead market** (yopiq halqani yopadi).
 
+## 4k. Phase 4.1 — Lead poydevori (2026-08-30)
+
+Phase 4 (Lead market — yopiq halqani yopadigan faza) ning birinchi qadami: bepul "Qidiryapman"
+xaridor-so'rovi doskasini **skorlangan, narxlangan, eksklyuziv olinadigan lead doskasi**ga
+aylantiradi. To'lov (hamyon) → 4.2, conversion tracking → 4.3, cross-CRM fixation (C6) → Phase 5.
+Spec: `docs/superpowers/specs/2026-08-28-phase-4.1-lead-foundation-design.md`,
+reja: `docs/superpowers/plans/2026-08-28-phase-4.1-lead-foundation.md`.
+
+### PropertyRequest → Lead (additiv)
+
+- `PropertyRequest` joyida o'stirildi (rename yo'q, API/UI'da **"Lead"**): += `score Int`,
+  `priceSom BigInt`, `claimedById`/`claimedBy`(SetNull)/`claimedAt`; `RequestStatus` += `CLAIMED`/
+  `EXPIRED`. Migratsiya **additiv**.
+
+### Skorlash + narx (sof funksiya)
+
+- `computeLeadScore` (0–100, deterministik): to'liqlik (+10×5 maydon, max 50) + byudjet
+  (`priceMaxSom/50mln`, max 30) + yangililik (max 20, kunlik pasayadi). `priceForScore` → 3 tier:
+  `<40`→**20 000**, `≤70`→**35 000**, `>70`→**50 000 so'm**. Yaratishda hisoblanadi + saqlanadi.
+
+### Rieltor lead-lentasi + eksklyuziv claim
+
+- **`GET /api/leads`** (RealtorGuard) — OPEN leadlar **score-desc**, xaridor telefoni **niqoblangan**.
+  **`POST /api/leads/:id/claim`** (RealtorGuard) — tranzaksiyada `SELECT … FOR UPDATE` bilan
+  `OPEN→CLAIMED` (birinchi rieltor yutadi, ikkinchisi **409**), xaridor kontaktini qaytaradi + lead
+  lentadan chiqadi. O'ziga claim → 400. 4.1'da claim **BEPUL** (to'lov 4.2). Eski bepul reveal
+  (`POST /api/requests/:id/contact`) **olib tashlandi**. `GET /api/leads/mine` — rieltorning olgan
+  leadlari (kontakt ochilgan).
+
+### UI
+
+- **`apps/web`:** rieltor doskasi (`/requests`) lead-lentaga aylandi (Sifat + narx + claim); xaridor
+  formasi to'liqlik-nudge + `/my/requests`da **claimed nishoni** (score/narx faqat rieltorga
+  ko'rinadi — `RequestCard.showLeadMeta`). Score/narx sof serverda; kontakt claim'gача niqoblangan.
+
+### Ma'lumot modeli va env
+
+- Yangi Prisma model YO'Q (`PropertyRequest` additiv). **Yangi env qo'shilmagan.**
+
+### Kelasi
+
+- **4.2:** rieltor hamyoni/balansi + claim narxni yechadi + top-up (test-to'lov). **4.3:** conversion
+  tracking + analitika. Keyin Phase 5 (developer CRM) — C6 to'liq fixation.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
