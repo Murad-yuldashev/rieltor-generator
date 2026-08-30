@@ -8,6 +8,7 @@ import { PresentationDetailPage } from '@/pages/presentation-detail';
 import { PresentationsPage } from '@/pages/presentations';
 import { ProfilePage } from '@/pages/profile';
 import { SubscribePage } from '@/pages/subscribe';
+import { WalletPage } from '@/pages/wallet';
 import { CabinetGuard } from './cabinet-guard';
 import { RootLayout } from './root-layout';
 
@@ -28,6 +29,7 @@ export const router = createBrowserRouter(
           children: [
             { index: true, element: <DashboardPage /> },
             { path: 'profile', element: <ProfilePage /> },
+            { path: 'wallet', element: <WalletPage /> },
             { path: 'browse', element: <BrowsePage /> },
             { path: 'notes', element: <NotesPage /> },
             { path: 'collections', element: <CollectionsPage /> },
