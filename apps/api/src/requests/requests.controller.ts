@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Ip,
   Param,
   Patch,
   Post,
@@ -33,12 +32,6 @@ export class RequestsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.requests.findOne(id);
-  }
-
-  @Post(':id/contact')
-  @UseGuards(JwtGuard)
-  reveal(@Param('id') id: string, @Ip() ip: string) {
-    return this.requests.revealContact(id, ip);
   }
 
   @Patch(':id')

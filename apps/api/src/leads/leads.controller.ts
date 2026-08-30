@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { RealtorGuard } from '../agent/realtor.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
@@ -23,5 +23,10 @@ export class LeadsController {
   @Get(':id')
   one(@Param('id') id: string, @CurrentUser() u: { id: string }) {
     return this.leads.findOne(id, u.id);
+  }
+
+  @Post(':id/claim')
+  claim(@Param('id') id: string, @CurrentUser() u: { id: string }) {
+    return this.leads.claim(id, u.id);
   }
 }

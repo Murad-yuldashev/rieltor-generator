@@ -84,17 +84,6 @@ export class RequestsService {
     return toSummary(row as RequestRow);
   }
 
-  /** Reveal the requester's real phone; the reveal event is the lead (mirrors listing reveal). */
-  async revealContact(id: string, ip: string): Promise<{ phone: string }> {
-    const row = await this.prisma.propertyRequest.findUnique({
-      where: { id },
-      select: { author: { select: { phone: true } } },
-    });
-    if (!row) throw new NotFoundException();
-    await this.prisma.contactReveal.create({ data: { requestId: id, ip } });
-    return { phone: row.author.phone };
-  }
-
   async close(id: string, userId: string): Promise<void> {
     await this.assertAuthor(id, userId);
     await this.prisma.propertyRequest.update({ where: { id }, data: { status: 'CLOSED' } });

@@ -1,5 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { type Lead, maskPhone } from '@rieltor/shared';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { type Lead, type LeadClaimResponse, maskPhone } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 type LeadRow = {
@@ -53,6 +58,32 @@ export class LeadsService {
       include: { author: { select: { phone: true } } },
     });
     return rows.map((r) => toLead(r as LeadRow, true));
+  }
+
+  /**
+   * Exclusively claim an OPEN lead: reveal the buyer's contact and close the
+   * lead to everyone else. The row is locked FIRST so two concurrent claims
+   * serialize on it — the winner flips the status to CLAIMED, the loser then
+   * reads that status and 409s. Claim is free here; payment lands in 4.2.
+   */
+  async claim(id: string, realtorId: string): Promise<LeadClaimResponse> {
+    return this.prisma.$transaction(async (tx) => {
+      // Lock the lead row so two concurrent claims serialize; the loser sees CLAIMED.
+      await tx.$queryRaw`SELECT 1 FROM "PropertyRequest" WHERE id = ${id} FOR UPDATE`;
+      const lead = await tx.propertyRequest.findUnique({
+        where: { id },
+        select: { status: true, authorId: true, author: { select: { phone: true, name: true } } },
+      });
+      if (!lead) throw new NotFoundException();
+      if (lead.authorId === realtorId) throw new BadRequestException("O'z lead'ingizni ololmaysiz");
+      if (lead.status !== 'OPEN') throw new ConflictException('Bu lead allaqachon olingan');
+      await tx.propertyRequest.update({
+        where: { id },
+        data: { status: 'CLAIMED', claimedById: realtorId, claimedAt: new Date() },
+      });
+      await tx.contactReveal.create({ data: { requestId: id, userId: realtorId, ip: '' } });
+      return { phone: lead.author.phone, name: lead.author.name };
+    });
   }
 }
 
