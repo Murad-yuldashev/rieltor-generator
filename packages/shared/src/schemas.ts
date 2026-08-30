@@ -300,15 +300,20 @@ export const PropertyRequestSummarySchema = z.object({
   status: z.enum(['OPEN', 'CLOSED', 'CLAIMED', 'EXPIRED']),
   createdAt: z.string(),
   authorPhoneMasked: z.string(),
+});
+
+/**
+ * The realtor feed row: `authorPhoneMasked` always, `phone` null until the caller
+ * claims it. `score`/`priceSom` are lead-quality + claim-fee values that live only
+ * here — they are served exclusively by the RealtorGuard-protected `GET /api/leads`,
+ * never by the unguarded request endpoints or the buyer's own request rows.
+ */
+export const LeadSchema = PropertyRequestSummarySchema.extend({
+  phone: z.string().nullable(),
   /** Lead quality score (0–100), always populated by the server. */
   score: z.number(),
   /** Server-estimated lead price in som — BigInt-as-string, like `priceMaxSom`. */
   priceSom: z.string(),
-});
-
-/** The realtor feed row: `authorPhoneMasked` always, `phone` null until the caller claims it. */
-export const LeadSchema = PropertyRequestSummarySchema.extend({
-  phone: z.string().nullable(),
 });
 
 /** The buyer's own request row plus whether a realtor has claimed it. */

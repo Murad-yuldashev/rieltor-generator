@@ -91,7 +91,9 @@ export function RequestCreatePage() {
                 ✓
               </span>
               <p className="text-[15px] font-extrabold text-ink">Qidiruvingiz joylandi</p>
-              <p className="text-[13px] font-semibold text-ink-2">Lead sifati: {created.score}</p>
+              <p className="text-[13px] font-semibold text-ink-2">
+                So'rovingiz rieltorlar taxtasiga chiqdi.
+              </p>
               <Link
                 to="/my/requests"
                 className="rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-6 py-3 text-[14px] font-extrabold text-white shadow-lg shadow-accent/35"

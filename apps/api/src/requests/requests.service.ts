@@ -18,8 +18,6 @@ type RequestRow = {
   areaMinM2: number | null;
   note: string | null;
   status: 'OPEN' | 'CLOSED' | 'CLAIMED' | 'EXPIRED';
-  score: number;
-  priceSom: bigint;
   createdAt: Date;
   author: { phone: string };
 };
@@ -128,7 +126,5 @@ function toSummary(r: RequestRow): PropertyRequestSummary {
     status: r.status,
     createdAt: r.createdAt.toISOString(),
     authorPhoneMasked: maskPhone(r.author.phone),
-    score: r.score,
-    priceSom: String(r.priceSom),
   };
 }

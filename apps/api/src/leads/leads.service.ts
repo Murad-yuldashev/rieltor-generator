@@ -30,8 +30,11 @@ export class LeadsService {
 
   /** Open leads for the realtor feed, best-scored first; contact stays masked. */
   async feed(): Promise<Lead[]> {
+    // `score: { gt: 0 }` hides pre-branch legacy rows the migration defaulted to
+    // score=0 (they would show "Sifat: 0 / 0 so'm"). A freshly-created lead always
+    // scores ≥20 (recency alone is 20 at create), so this never drops a real lead.
     const rows = await this.prisma.propertyRequest.findMany({
-      where: { status: 'OPEN' },
+      where: { status: 'OPEN', score: { gt: 0 } },
       orderBy: [{ score: 'desc' }, { createdAt: 'desc' }],
       include: { author: { select: { phone: true } } },
       take: 100,

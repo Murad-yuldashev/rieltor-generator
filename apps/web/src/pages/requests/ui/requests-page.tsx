@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TASHKENT_DISTRICTS, type Deal, type Lead, type ListingType } from '@rieltor/shared';
+import {
+  TASHKENT_DISTRICTS,
+  type Deal,
+  type Lead,
+  type LeadClaimResponse,
+  type ListingType,
+} from '@rieltor/shared';
 import { Link } from 'react-router';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
 import { RequestCard, leadsQuery } from '@/entities/property-request';
 import { ClaimButton } from '@/features/lead-claim';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
+import { Icon } from '@/shared/ui/icon';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
 
@@ -83,6 +90,10 @@ export function RequestsPage() {
   const [district, setDistrict] = useState<string | undefined>(undefined);
   const [roomsMin, setRoomsMin] = useState<number | undefined>(undefined);
   const [priceMaxSom, setPriceMaxSom] = useState<string | undefined>(undefined);
+  // The revealed contact of the most recently claimed lead. Held at the page level
+  // so it outlives the claimed card, which unmounts when the ['leads'] refetch drops
+  // the now-CLAIMED lead from the OPEN feed.
+  const [claimedContact, setClaimedContact] = useState<LeadClaimResponse | null>(null);
 
   const { data, isPending, isError, error } = useQuery(leadsQuery());
 
@@ -121,6 +132,33 @@ export function RequestsPage() {
       />
 
       <div className="px-4 pt-3.5 desk:px-0 desk:pt-5">
+        {claimedContact && (
+          <div className="mb-4 flex items-start justify-between gap-3 rounded-card border border-brand-green/30 bg-brand-green/10 p-4">
+            <div className="min-w-0">
+              <p className="text-[12.5px] font-extrabold uppercase tracking-wide text-brand-green">
+                Lead olindi
+              </p>
+              <p className="mt-1 text-[14px] font-bold text-ink">
+                {claimedContact.name ?? 'Xaridor'}
+              </p>
+              <a
+                href={`tel:${claimedContact.phone}`}
+                className="mt-1 inline-flex w-fit items-center gap-1.5 text-[15px] font-extrabold text-brand-green"
+              >
+                <Icon name="phone" className="h-4 w-4" strokeWidth={2.2} />
+                {claimedContact.phone}
+              </a>
+            </div>
+            <button
+              type="button"
+              onClick={() => setClaimedContact(null)}
+              className="shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-bold text-ink-2 transition-colors hover:bg-surface"
+            >
+              Yopish
+            </button>
+          </div>
+        )}
+
         <div className="mb-4 flex justify-end">
           <Link
             to="/requests/new"
@@ -228,7 +266,7 @@ export function RequestsPage() {
                 key={lead.id}
                 request={lead}
                 showLeadMeta
-                revealSlot={<ClaimButton id={lead.id} />}
+                revealSlot={<ClaimButton id={lead.id} onClaimed={setClaimedContact} />}
               />
             ))}
         </div>

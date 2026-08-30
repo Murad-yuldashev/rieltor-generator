@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { formatPriceSom, type PropertyRequestSummary } from '@rieltor/shared';
+import { formatPriceSom, type Lead, type PropertyRequestSummary } from '@rieltor/shared';
 
 const DEAL_LABEL = { SALE: 'Sotib olish', RENT: 'Ijara' } as const;
 
@@ -33,7 +33,13 @@ function relativeTime(iso: string): string {
 }
 
 interface Props {
-  request: PropertyRequestSummary;
+  /**
+   * A buyer's request summary. `score`/`priceSom` are realtor-only (they exist on
+   * `Lead`, not the base summary), so they are optional here: the realtor feed
+   * passes a `Lead` (with them) and opts into `showLeadMeta`; the buyer's own
+   * "my requests" passes a plain summary (without them).
+   */
+  request: PropertyRequestSummary & Partial<Pick<Lead, 'score' | 'priceSom'>>;
   /** The board swaps in a reveal button; omitted, the masked phone is shown. */
   revealSlot?: ReactNode;
   /** Owner controls (status chip, close/delete) shown in a bottom footer on "my requests". */
@@ -81,7 +87,10 @@ export function RequestCard({ request, revealSlot, actionSlot, showLeadMeta = fa
 
       {showLeadMeta && request.priceSom && (
         <p className="text-[15px] font-extrabold text-ink">
-          {formatPriceSom(request.priceSom, request.deal)}
+          {/* The claim fee is a one-time charge, never monthly — force SALE so a
+              RENT lead's fee is not suffixed "/oy". The buyer's budget below keeps
+              its deal-aware formatting. */}
+          {formatPriceSom(request.priceSom, 'SALE')}
         </p>
       )}
 

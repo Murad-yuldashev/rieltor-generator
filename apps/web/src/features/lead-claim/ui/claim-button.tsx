@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import type { LeadClaimResponse } from '@rieltor/shared';
 import { useClaimLead } from '@/entities/property-request';
 import { ApiError } from '@/shared/api/client';
 import { Icon } from '@/shared/ui/icon';
-
-interface ClaimedContact {
-  phone: string;
-  name: string | null;
-}
 
 /**
  * "Lead'ni olish" for the realtor board: the lead lists a masked phone, so
@@ -15,11 +11,22 @@ interface ClaimedContact {
  * `{ phone, name }` and drops the lead from every realtor's OPEN feed. The claim
  * is a race: a 409 means someone else took it first (the feed refetches so the
  * stale card disappears), a 400 is a self-claim whose server message is shown.
+ *
+ * On a win the claim also invalidates `['leads']`, so this card unmounts as the
+ * now-CLAIMED lead leaves the OPEN feed. The revealed contact therefore cannot
+ * live in this component's local state alone — it is lifted to the page via
+ * `onClaimed`, which renders a persistent panel outside the feed list.
  */
-export function ClaimButton({ id }: { id: string }) {
+export function ClaimButton({
+  id,
+  onClaimed,
+}: {
+  id: string;
+  onClaimed?: (contact: LeadClaimResponse) => void;
+}) {
   const qc = useQueryClient();
   const claim = useClaimLead();
-  const [contact, setContact] = useState<ClaimedContact | null>(null);
+  const [contact, setContact] = useState<LeadClaimResponse | null>(null);
 
   if (contact) {
     return (
@@ -49,7 +56,10 @@ export function ClaimButton({ id }: { id: string }) {
   async function onClick() {
     try {
       const revealed = await claim.mutateAsync(id);
+      // Show the reveal here for the brief window before the card unmounts, and
+      // lift it to the page so it survives the ['leads'] refetch that removes it.
       setContact(revealed);
+      onClaimed?.(revealed);
     } catch (err) {
       // onSuccess refetches on a win; a 409 means the lead is already gone, so
       // refetch here too to drop the stale card. The caught error otherwise just
