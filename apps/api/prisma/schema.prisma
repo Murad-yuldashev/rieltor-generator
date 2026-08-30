@@ -121,6 +121,7 @@ model User {
   trackedProperties TrackedProperty[]
   notifications     Notification[]
   propertyRequests  PropertyRequest[]
+  claimedLeads      PropertyRequest[] @relation("ClaimedLeads")
   realtorProfile    RealtorProfile?
   subscription      Subscription?
   notes             Note[]
@@ -234,6 +235,8 @@ model Notification {
 enum RequestStatus {
   OPEN
   CLOSED
+  CLAIMED
+  EXPIRED
 }
 
 model PropertyRequest {
@@ -248,6 +251,11 @@ model PropertyRequest {
   areaMinM2   Float?
   note        String?
   status      RequestStatus @default(OPEN)
+  score       Int           @default(0)
+  priceSom    BigInt        @default(0)
+  claimedById String?
+  claimedBy   User?         @relation("ClaimedLeads", fields: [claimedById], references: [id], onDelete: SetNull)
+  claimedAt   DateTime?
   createdAt   DateTime      @default(now())
 
   @@index([status, createdAt])

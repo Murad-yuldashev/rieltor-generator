@@ -13,8 +13,10 @@ import { PageHeading } from '@/shared/ui/page-heading';
 import { AuthPrompt } from './auth-prompt';
 
 const STATUS_META = {
-  OPEN: { label: 'Ochiq', className: 'bg-brand-green/10 text-brand-green' },
+  CLAIMED: { label: 'Rieltor oldi ✓', className: 'bg-brand-green/10 text-brand-green' },
+  OPEN: { label: 'Ochiq', className: 'bg-accent/10 text-accent' },
   CLOSED: { label: 'Yopilgan', className: 'bg-ink-3/10 text-ink-2' },
+  EXPIRED: { label: 'Yopilgan', className: 'bg-ink-3/10 text-ink-2' },
 } as const;
 
 function StatusChip({ status }: { status: PropertyRequestSummary['status'] }) {
