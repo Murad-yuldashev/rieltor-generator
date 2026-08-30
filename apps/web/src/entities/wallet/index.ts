@@ -1,0 +1,1 @@
+export { walletQuery } from './api';

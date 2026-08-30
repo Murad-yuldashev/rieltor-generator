@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   TASHKENT_DISTRICTS,
+  formatPriceSom,
   type Deal,
   type Lead,
   type LeadClaimResponse,
@@ -10,6 +11,7 @@ import {
 import { Link } from 'react-router';
 import { LISTING_TYPE_META, LISTING_TYPES } from '@/entities/listing';
 import { RequestCard, leadsQuery } from '@/entities/property-request';
+import { walletQuery } from '@/entities/wallet';
 import { ClaimButton } from '@/features/lead-claim';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
@@ -96,6 +98,9 @@ export function RequestsPage() {
   const [claimedContact, setClaimedContact] = useState<LeadClaimResponse | null>(null);
 
   const { data, isPending, isError, error } = useQuery(leadsQuery());
+  // The realtor's prepaid balance. Runs alongside the feed, but its widget renders
+  // only past the 403 guard below — i.e. only for realtors, who always have a wallet.
+  const wallet = useQuery(walletQuery());
 
   // A non-realtor is RealtorGuard-blocked (403); everything else is a real load error.
   const isForbidden = error instanceof ApiError && error.status === 403;
@@ -132,6 +137,15 @@ export function RequestsPage() {
       />
 
       <div className="px-4 pt-3.5 desk:px-0 desk:pt-5">
+        {wallet.isSuccess && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-card border border-line/60 bg-card px-4 py-3.5 shadow-card">
+            <span className="text-[13px] font-bold text-ink-2">Balans</span>
+            <span className="text-[15px] font-extrabold text-ink">
+              {formatPriceSom(wallet.data.balanceSom, 'SALE')}
+            </span>
+          </div>
+        )}
+
         {claimedContact && (
           <div className="mb-4 flex items-start justify-between gap-3 rounded-card border border-brand-green/30 bg-brand-green/10 p-4">
             <div className="min-w-0">

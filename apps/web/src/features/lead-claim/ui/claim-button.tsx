@@ -43,15 +43,22 @@ export function ClaimButton({
     );
   }
 
+  // A 402 (insufficient balance) is its own case: it needs a top-up LINK, not just
+  // a line of text, so it stays OUT of the errorText chain and renders a CTA block
+  // below. The lead is untouched by a 402 — it stays OPEN, so no ['leads'] refetch.
+  const isInsufficient = claim.error instanceof ApiError && claim.error.status === 402;
+
   // A 409 (already claimed) and a 400 (self-claim) are the two lead-specific
-  // failures worth naming; anything else falls back to a generic retry line.
-  const errorText = claim.error
-    ? claim.error instanceof ApiError && claim.error.status === 409
-      ? 'Bu lead allaqachon olingan'
-      : claim.error instanceof ApiError && claim.error.status === 400
-        ? claim.error.message
-        : "Xatolik yuz berdi. Qaytadan urinib ko'ring."
-    : null;
+  // failures worth naming; anything else (except the 402 handled above) falls back
+  // to a generic retry line.
+  const errorText =
+    claim.error && !isInsufficient
+      ? claim.error instanceof ApiError && claim.error.status === 409
+        ? 'Bu lead allaqachon olingan'
+        : claim.error instanceof ApiError && claim.error.status === 400
+          ? claim.error.message
+          : "Xatolik yuz berdi. Qaytadan urinib ko'ring."
+      : null;
 
   async function onClick() {
     try {
@@ -83,6 +90,16 @@ export function ClaimButton({
       </button>
       {errorText && (
         <span className="text-[12.5px] font-semibold text-brand-rose">{errorText}</span>
+      )}
+      {isInsufficient && (
+        // The wallet lives in the cabinet (`apps/agent`) — a separate app — so this
+        // is a plain cross-app navigation, never an import.
+        <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-brand-rose">
+          Balans yetarli emas
+          <a href="/agent/wallet" className="font-extrabold text-accent underline">
+            Hisobni to'ldirish
+          </a>
+        </span>
       )}
     </div>
   );
