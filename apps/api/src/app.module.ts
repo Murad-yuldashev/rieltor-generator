@@ -21,6 +21,7 @@ import { SavedSearchModule } from './saved-search/saved-search.module';
 import { SsrModule } from './ssr/ssr.module';
 import { ValuationModule } from './valuation/valuation.module';
 import { ViewsModule } from './views/views.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ViewsModule } from './views/views.module';
     SavedSearchModule,
     ValuationModule,
     ViewsModule,
+    WalletModule,
     SsrModule,
   ],
   providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],

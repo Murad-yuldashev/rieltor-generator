@@ -72,13 +72,17 @@ export function useDeleteRequest() {
 /**
  * Exclusively claims a lead (`POST /api/leads/:id/claim`, RealtorGuard) — returns
  * the buyer's real `{ phone, name }`, or 409 if another realtor already took it,
- * 400 on a self-claim. On success the feed is invalidated so the now-CLAIMED lead
- * drops out of the OPEN list.
+ * 400 on a self-claim, 402 when the wallet balance can't cover the lead price. On
+ * success the feed is invalidated so the now-CLAIMED lead drops out of the OPEN
+ * list, and the wallet too, since the claim debited the balance.
  */
 export function useClaimLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiPost(`/api/leads/${id}/claim`, LeadClaimResponseSchema),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['leads'] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+    },
   });
 }

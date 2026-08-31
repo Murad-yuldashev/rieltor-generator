@@ -538,6 +538,60 @@ reja: `docs/superpowers/plans/2026-08-28-phase-4.1-lead-foundation.md`.
 - **4.2:** rieltor hamyoni/balansi + claim narxni yechadi + top-up (test-to'lov). **4.3:** conversion
   tracking + analitika. Keyin Phase 5 (developer CRM) — C6 to'liq fixation.
 
+## 4l. Phase 4.2 — Lead sotib olish + hamyon (2026-08-30)
+
+4.1'dagi eksklyuziv claim'ni **monetizatsiya** qiladi: rieltor endi lead narxini (`priceSom`)
+**oldindan to'ldirilgan hamyon balansidan** to'lab oladi. To'lov claim'ning o'zi bilan bitta
+tranzaksiyada — shuning uchun lead hech qachon to'lovsiz olinmaydi, balans manfiy bo'lmaydi va
+ikki marta sarflanmaydi. Real to'lov (Click/Payme) + refund keyinroq, conversion tracking → 4.3.
+Spec: `docs/superpowers/specs/2026-08-30-phase-4.2-lead-purchase-design.md`,
+reja: `docs/superpowers/plans/2026-08-30-phase-4.2-lead-purchase.md`.
+
+### Wallet + WalletTransaction (additiv)
+
+- **`Wallet`** (`userId @unique`, `balanceSom BigInt @default(0)` — keshlangan haqiqat) +
+  **`WalletTransaction`** (`type` `TOPUP`/`LEAD_CLAIM`, `amountSom` doim musbat, `leadId?`) audit
+  daftari. Ikkisi ham har yozuvda bitta tranzaksiyada yangilanadi (3.3b reyting-agregati intizomi).
+  Hamyon **lazily** yaratiladi (birinchi `GET /api/wallet`/top-up/claim'da P2002-bardosh upsert) —
+  backfill yo'q. Migratsiya **additiv** (2 ta yangi jadval, mavjud jadvallar o'zgarmagan).
+
+### Top-up (test-to'lov stub) + hamyon ko'rinishi
+
+- **`TOPUP_PACKAGES`** presetlari (`p100`/`p300`/`p500` = 100 000 / 300 000 / 500 000), serverda
+  bir marta belgilangan. **`POST /api/wallet/topup`** (RealtorGuard) `{ packageId }` — tranzaksiyada
+  `balanceSom += amount` + `TOPUP` yozuvi; gateway yo'q, kredit darhol (3.1 obuna "test to'lov"i
+  kabi). **`GET /api/wallet`** (RealtorGuard) → `{ balanceSom, transactions[] }` (eng yangisi,
+  ≤50). Pul BigInt → **string** (like `priceSom`).
+
+### Pulli claim (4.1 claim tranzaksiyasiga qo'shildi)
+
+- `LeadsService.claim` endi to'lov qadamini o'z ichiga oladi: tranzaksiyadan OLDIN
+  `ensureWallet(realtorId)`; tranzaksiya ichida lead qatori **birinchi** `FOR UPDATE`, self(400)/
+  non-OPEN(409) tekshiruvlaridan KEYIN va CLAIMED'dan OLDIN `debitForClaim(tx, realtorId,
+lead.priceSom, id)` — bu hamyon qatorini `FOR UPDATE` qulflaydi (qulf tartibi **lead→hamyon**,
+  deadlock'ni oldini oladi + bir vaqtli claim'larni serializatsiya qilib over-spend'ni to'sadi),
+  balansni tekshiradi (`balans < narx` → **402** "Balans yetarli emas…", tranzaksiya rollback →
+  lead OPEN qoladi), aks holda balansni kamaytiradi + `LEAD_CLAIM` yozuvini yozadi. Butun claim
+  **all-or-nothing**: yo rieltor to'laydi va eksklyuziv kontaktni oladi, yo hech narsa o'zgarmaydi.
+
+### UI
+
+- **Kabinet (`apps/agent`):** hamyon sahifasi (`/wallet`, CabinetGuard) — balans + top-up preset
+  tugmalari + tranzaksiya tarixi (TOPUP "+", LEAD_CLAIM "−"); kabinet navigatsiyasidan ("Hisobim").
+- **`apps/web` lead doskasi:** rieltor balansi vidjeti + claim **402** qaytarsa "Balans yetarli
+  emas" + **"Hisobni to'ldirish"** havolasi (`<a href="/agent/wallet">` — oddiy ilovalararo
+  navigatsiya, `apps/web` `apps/agent`'ni import qilmaydi). 4.1 claimed-kontakt paneli o'zgarmagan.
+
+### Ma'lumot modeli va env
+
+- Yangi modellar: `Wallet` + `WalletTransaction` (+ `WalletTxType` enum). **Yangi env qo'shilmagan**
+  (test-to'lov stub gateway ishlatmaydi).
+
+### Kelasi
+
+- **4.3:** conversion tracking + analitika. **Keyin:** real to'lov (Click/Payme) + refund; Phase 5
+  (developer CRM) — C6 to'liq fixation.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

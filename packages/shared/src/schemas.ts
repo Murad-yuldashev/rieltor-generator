@@ -544,6 +544,34 @@ export const PresentationViewEventSchema = z.object({
   durationMs: z.number().int().nonnegative().max(3_600_000).optional(), // cap 1h
 });
 
+/** Kind of a wallet ledger entry: a prepaid top-up or a lead-claim debit. */
+export const WalletTxTypeSchema = z.enum(['TOPUP', 'LEAD_CLAIM']);
+
+/** One row in the wallet ledger. `amountSom` is BigInt-as-string; `leadId` is set only for LEAD_CLAIM. */
+export const WalletTxRowSchema = z.object({
+  id: z.string(),
+  type: WalletTxTypeSchema,
+  amountSom: z.string(),
+  leadId: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+/** Cabinet wallet view: current balance plus the transaction ledger. */
+export const WalletViewSchema = z.object({
+  balanceSom: z.string(),
+  transactions: z.array(WalletTxRowSchema),
+});
+
+/** The prepaid top-up packages a realtor can buy, in som (BigInt-as-string). */
+export const TOPUP_PACKAGES = [
+  { id: 'p100', amountSom: '100000' },
+  { id: 'p300', amountSom: '300000' },
+  { id: 'p500', amountSom: '500000' },
+] as const;
+
+/** Body of the wallet top-up request — the chosen package id. */
+export const TopupSchema = z.object({ packageId: z.enum(['p100', 'p300', 'p500']) });
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -604,3 +632,7 @@ export type PublicPresentationItem = z.infer<typeof PublicPresentationItemSchema
 export type PublicPresentation = z.infer<typeof PublicPresentationSchema>;
 export type PresentationCreateResult = z.infer<typeof PresentationCreateResultSchema>;
 export type PresentationViewEvent = z.infer<typeof PresentationViewEventSchema>;
+export type WalletTxType = z.infer<typeof WalletTxTypeSchema>;
+export type WalletTxRow = z.infer<typeof WalletTxRowSchema>;
+export type WalletView = z.infer<typeof WalletViewSchema>;
+export type Topup = z.infer<typeof TopupSchema>;

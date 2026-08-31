@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { type Lead, type LeadClaimResponse, maskPhone } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
 
 type LeadRow = {
   id: string;
@@ -26,7 +27,10 @@ type LeadRow = {
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly wallet: WalletService,
+  ) {}
 
   /** Open leads for the realtor feed, best-scored first; contact stays masked. */
   async feed(): Promise<Lead[]> {
@@ -67,19 +71,29 @@ export class LeadsService {
    * Exclusively claim an OPEN lead: reveal the buyer's contact and close the
    * lead to everyone else. The row is locked FIRST so two concurrent claims
    * serialize on it — the winner flips the status to CLAIMED, the loser then
-   * reads that status and 409s. Claim is free here; payment lands in 4.2.
+   * reads that status and 409s. The claim now debits the lead's priceSom from
+   * the realtor's wallet inside this same transaction (402 if the balance is short).
    */
   async claim(id: string, realtorId: string): Promise<LeadClaimResponse> {
+    // Ensure the wallet row exists (idempotent, race-safe) so the debit can lock it.
+    await this.wallet.ensureWallet(realtorId);
     return this.prisma.$transaction(async (tx) => {
       // Lock the lead row so two concurrent claims serialize; the loser sees CLAIMED.
       await tx.$queryRaw`SELECT 1 FROM "PropertyRequest" WHERE id = ${id} FOR UPDATE`;
       const lead = await tx.propertyRequest.findUnique({
         where: { id },
-        select: { status: true, authorId: true, author: { select: { phone: true, name: true } } },
+        select: {
+          status: true,
+          authorId: true,
+          priceSom: true,
+          author: { select: { phone: true, name: true } },
+        },
       });
       if (!lead) throw new NotFoundException();
       if (lead.authorId === realtorId) throw new BadRequestException("O'z lead'ingizni ololmaysiz");
       if (lead.status !== 'OPEN') throw new ConflictException('Bu lead allaqachon olingan');
+      // Debit the lead's price (locks the wallet row; 402 if short) before claiming.
+      await this.wallet.debitForClaim(tx, realtorId, lead.priceSom, id);
       await tx.propertyRequest.update({
         where: { id },
         data: { status: 'CLAIMED', claimedById: realtorId, claimedAt: new Date() },
