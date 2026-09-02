@@ -2,10 +2,10 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import boundaries from 'eslint-plugin-boundaries';
 
-// Self-contained flat config for the @rieltor/agent workspace. Turbo (and the
+// Self-contained flat config for the @rieltor/crm workspace. Turbo (and the
 // package-scoped `lint` script) runs ESLint with this directory as the cwd, so
 // ESLint resolves THIS file rather than the repo-root eslint.config.mjs. It
-// mirrors the web config's FSD `boundaries` setup, scoped to apps/agent/src.
+// mirrors the web config's FSD `boundaries` setup, scoped to apps/crm/src.
 export default tseslint.config(
   { ignores: ['dist/**', 'node_modules/**', '.turbo/**'] },
   js.configs.recommended,

@@ -34,6 +34,11 @@ export class SubscriptionService {
           },
         }),
       ]);
+    } else {
+      // Symmetric to becomeDeveloper: re-assert REALTOR on the idempotent branch so a user
+      // flipped to DEVELOPER can recover /agent access by re-submitting. (An expired
+      // subscription still routes to the paywall — that is recoverable, not a lockout.)
+      await this.prisma.user.update({ where: { id: userId }, data: { role: 'REALTOR' } });
     }
     return this.view(userId);
   }

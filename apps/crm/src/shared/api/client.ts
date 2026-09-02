@@ -3,7 +3,7 @@ import { AuthTokensSchema } from '@rieltor/shared';
 import { clearTokens, readTokens, writeTokens } from './auth-storage';
 
 /**
- * Fetch wrapper for the cabinet SPA. The agent API lives at /api/* (same origin
+ * Fetch wrapper for the cabinet SPA. The API lives at /api/* (same origin
  * in prod, proxied to :3000 in dev). Every call attaches the stored bearer token
  * and retries once against a freshly refreshed token on a 401 — mirroring the web
  * app's client so the two never drift.
@@ -135,30 +135,4 @@ export function apiPatch<T = void>(path: string, schema?: ZodType<T>, body?: unk
 
 export function apiDelete<T = void>(path: string, schema?: ZodType<T>): Promise<T> {
   return request(path, 'DELETE', schema);
-}
-
-/**
- * Multipart upload (`POST /api/agent/profile/logo`) — `FormData` bodies go through
- * `fetchWithAuth` directly rather than `request()`: no `content-type` header is set here
- * (the browser fills in the multipart boundary itself), and there is nothing to
- * JSON.stringify. Still gets the same bearer-token attach and refresh-once-on-401 retry
- * as every other call.
- */
-export async function apiUpload<T = unknown>(
-  path: string,
-  formData: FormData,
-  schema?: ZodType<T>,
-): Promise<T> {
-  const response = await fetchWithAuth(path, {
-    method: 'POST',
-    headers: { accept: 'application/json' },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new ApiError(response.status, await readErrorMessage(response, 'POST', path));
-  }
-
-  const data: unknown = await response.json();
-  return schema ? schema.parse(data) : (data as T);
 }

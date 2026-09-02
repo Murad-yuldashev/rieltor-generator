@@ -32,7 +32,13 @@ export class DeveloperService {
       where: { userId },
       select: { orgId: true },
     });
-    if (existing) return this.orgView(userId); // idempotent — do not create a second org
+    if (existing) {
+      // Re-assert the role on the idempotent branch: UserRole is a single column, so a user
+      // who became a realtor in between was flipped to REALTOR. Re-submitting become-developer
+      // restores /crm access (self-service recovery) instead of a silent 200 no-op lockout.
+      await this.prisma.user.update({ where: { id: userId }, data: { role: 'DEVELOPER' } });
+      return this.orgView(userId); // idempotent — do not create a second org
+    }
     // One transaction: a crash between the writes would otherwise strand a DEVELOPER
     // with no org — unrecoverable, since the become-developer page is gone once role=DEVELOPER.
     await this.prisma.$transaction(async (tx) => {
