@@ -193,7 +193,7 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
             {complex.buildings.map((building) => (
               <li key={building.id}>
                 <Link
-                  to={`/buildings/${building.id}`}
+                  to={`/buildings/${building.id}?complex=${complex.id}`}
                   className="flex items-center justify-between gap-3 rounded-[14px] border border-line px-4 py-3"
                 >
                   <span className="truncate text-[14px] font-semibold text-ink">

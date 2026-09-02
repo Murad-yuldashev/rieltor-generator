@@ -5,10 +5,14 @@ import {
   ComplexDetailSchema,
   ComplexSchema,
   OrganizationSchema,
+  UnitSchema,
   type BecomeDeveloper,
   type BuildingCreate,
+  type BuildingUpdate,
   type ComplexCreate,
   type ComplexUpdate,
+  type UnitCreate,
+  type UnitUpdate,
 } from '@rieltor/shared';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api/client';
 
@@ -18,6 +22,10 @@ export const ORG_QUERY_KEY = ['crm-org'] as const;
 // query that fills a key and the mutation that invalidates it can never drift.
 export const COMPLEXES_QUERY_KEY = ['crm-complexes'] as const;
 export const complexQueryKey = (id: string) => ['crm-complex', id] as const;
+
+// The per-building units cache. Same named-builder discipline: the query that
+// fills the key and every unit mutation that invalidates it share this builder.
+export const unitsQueryKey = (buildingId: string) => ['crm-units', buildingId] as const;
 
 // `useSession` reads `queryKey: ['session']` (the copied agent hook exports no
 // key constant), so the literal below MUST match it — invalidating it after the
@@ -119,5 +127,75 @@ export function useCreateBuilding(complexId: string) {
     mutationFn: (body: BuildingCreate) =>
       apiPost(`/api/crm/complexes/${complexId}/buildings`, BuildingSchema, body),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: complexQueryKey(complexId) }),
+  });
+}
+
+/**
+ * `PATCH /api/crm/buildings/:id` — rename a building or change its floor count.
+ * Keyed by the parent `complexId` (not the building's own id): the buildings list
+ * lives on the complex's detail, so that is the cache to refresh on success.
+ */
+export function useUpdateBuilding(complexId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ buildingId, ...body }: { buildingId: string } & BuildingUpdate) =>
+      apiPatch(`/api/crm/buildings/${buildingId}`, BuildingSchema, body),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: complexQueryKey(complexId) }),
+  });
+}
+
+/** `DELETE /api/crm/buildings/:id` — remove a building, then refresh its complex. */
+export function useDeleteBuilding(complexId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (buildingId: string) => apiDelete(`/api/crm/buildings/${buildingId}`),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: complexQueryKey(complexId) }),
+  });
+}
+
+/** `GET /api/crm/buildings/:id/units` — every unit in a building. */
+export function useUnits(buildingId: string) {
+  return useQuery({
+    queryKey: unitsQueryKey(buildingId),
+    queryFn: () => apiGet(`/api/crm/buildings/${buildingId}/units`, z.array(UnitSchema)),
+  });
+}
+
+/** `POST /api/crm/buildings/:id/units` — add a unit, then refresh the building's list. */
+export function useCreateUnit(buildingId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body: UnitCreate) =>
+      apiPost(`/api/crm/buildings/${buildingId}/units`, UnitSchema, body),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: unitsQueryKey(buildingId) }),
+  });
+}
+
+/**
+ * `PATCH /api/crm/units/:id` — edit a unit (status change or the numeric fields).
+ * The hook takes the owning `buildingId` for invalidation; the mutate call carries
+ * the `unitId` (units are addressed by their own id server-side) plus the changed
+ * fields.
+ */
+export function useUpdateUnit(buildingId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ unitId, ...body }: { unitId: string } & UnitUpdate) =>
+      apiPatch(`/api/crm/units/${unitId}`, UnitSchema, body),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: unitsQueryKey(buildingId) }),
+  });
+}
+
+/** `DELETE /api/crm/units/:id` — remove a unit, then refresh the building's list. */
+export function useDeleteUnit(buildingId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (unitId: string) => apiDelete(`/api/crm/units/${unitId}`),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: unitsQueryKey(buildingId) }),
   });
 }
