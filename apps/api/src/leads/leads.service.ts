@@ -1,10 +1,17 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { type Lead, type LeadClaimResponse, maskPhone } from '@rieltor/shared';
+import {
+  type Lead,
+  type LeadClaimResponse,
+  type LeadLostReason,
+  type LeadOutcomeStage,
+  maskPhone,
+} from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 
@@ -22,6 +29,9 @@ type LeadRow = {
   priceSom: bigint;
   createdAt: Date;
   claimedById: string | null;
+  outcomeStage: Lead['outcomeStage'];
+  lostReason: Lead['lostReason'];
+  outcomeUpdatedAt: Date | null;
   author: { phone: string };
 };
 
@@ -96,11 +106,48 @@ export class LeadsService {
       await this.wallet.debitForClaim(tx, realtorId, lead.priceSom, id);
       await tx.propertyRequest.update({
         where: { id },
-        data: { status: 'CLAIMED', claimedById: realtorId, claimedAt: new Date() },
+        data: {
+          status: 'CLAIMED',
+          claimedById: realtorId,
+          claimedAt: new Date(),
+          outcomeStage: 'NEW',
+        },
       });
       await tx.contactReveal.create({ data: { requestId: id, userId: realtorId, ip: '' } });
       return { phone: lead.author.phone, name: lead.author.name };
     });
+  }
+
+  /**
+   * The claiming realtor records the outcome of a claimed lead. Ownership +
+   * CLAIMED are the only invariants — the realtor may move the stage freely
+   * (including backward) to correct a mistake. LOST requires a reason.
+   */
+  async setOutcome(
+    id: string,
+    realtorId: string,
+    stage: LeadOutcomeStage,
+    lostReason?: LeadLostReason,
+  ): Promise<Lead> {
+    const lead = await this.prisma.propertyRequest.findUnique({
+      where: { id },
+      select: { claimedById: true, outcomeStage: true },
+    });
+    if (!lead) throw new NotFoundException();
+    if (lead.claimedById !== realtorId) throw new ForbiddenException('Bu lead sizniki emas');
+    if (lead.outcomeStage == null) throw new ConflictException('Bu lead hali olinmagan');
+    if (stage === 'LOST' && !lostReason) {
+      throw new BadRequestException("Yo'qotish sababini tanlang");
+    }
+    await this.prisma.propertyRequest.update({
+      where: { id },
+      data: {
+        outcomeStage: stage,
+        lostReason: stage === 'LOST' ? lostReason : null,
+        outcomeUpdatedAt: new Date(),
+      },
+    });
+    return this.findOne(id, realtorId); // claimer -> contact revealed, outcome fields included
   }
 }
 
@@ -120,5 +167,8 @@ function toLead(row: LeadRow, revealed: boolean): Lead {
     score: row.score,
     priceSom: String(row.priceSom),
     phone: revealed ? row.author.phone : null,
+    outcomeStage: row.outcomeStage,
+    lostReason: row.lostReason,
+    outcomeUpdatedAt: row.outcomeUpdatedAt ? row.outcomeUpdatedAt.toISOString() : null,
   };
 }
