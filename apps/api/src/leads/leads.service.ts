@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  type ConversionSegment,
   type Lead,
   type LeadClaimResponse,
   type LeadFunnel,
@@ -13,11 +14,12 @@ import {
   type LeadLostReasonCounts,
   type LeadOutcomeStage,
   type LeadStats,
+  type PlatformConversion,
   maskPhone,
 } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
-import { winRate } from './lead-scoring';
+import { budgetTier, winRate } from './lead-scoring';
 
 type LeadRow = {
   id: string;
@@ -175,6 +177,41 @@ export class LeadsService {
       if (row.lostReason) lostReasons[row.lostReason] = row._count._all;
     }
     return { funnel, winRate: winRate(funnel.WON, funnel.LOST), lostReasons };
+  }
+
+  /** Platform-wide funnel + per-segment (deal+type+budgetTier) win rates. */
+  async platformConversion(): Promise<PlatformConversion> {
+    const byStage = await this.prisma.propertyRequest.groupBy({
+      by: ['outcomeStage'],
+      where: { outcomeStage: { not: null } },
+      _count: { _all: true },
+    });
+    const funnel = emptyFunnel();
+    for (const row of byStage) {
+      if (row.outcomeStage) funnel[row.outcomeStage] = row._count._all;
+    }
+
+    // Segments: aggregate resolved leads in JS (budgetTier is a computed bucket,
+    // not a column). Resolved leads are a bounded set on this cold read path.
+    const resolved = await this.prisma.propertyRequest.findMany({
+      where: { outcomeStage: { in: ['WON', 'LOST'] } },
+      select: { deal: true, type: true, priceMaxSom: true, outcomeStage: true },
+    });
+    const map = new Map<string, ConversionSegment>();
+    for (const r of resolved) {
+      const tier = budgetTier(r.priceMaxSom);
+      const key = `${r.deal}|${r.type ?? 'null'}|${tier}`;
+      let seg = map.get(key);
+      if (!seg) {
+        seg = { deal: r.deal, type: r.type, budgetTier: tier, won: 0, lost: 0, winRate: null };
+        map.set(key, seg);
+      }
+      if (r.outcomeStage === 'WON') seg.won += 1;
+      else seg.lost += 1;
+    }
+    const segments = [...map.values()].map((s) => ({ ...s, winRate: winRate(s.won, s.lost) }));
+
+    return { funnel, winRate: winRate(funnel.WON, funnel.LOST), segments };
   }
 }
 
