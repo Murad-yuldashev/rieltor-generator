@@ -302,6 +302,18 @@ export const PropertyRequestSummarySchema = z.object({
   authorPhoneMasked: z.string(),
 });
 
+/** Funnel stage of a claimed lead's outcome, recorded by the realtor. */
+export const LeadOutcomeStageSchema = z.enum(['NEW', 'CONTACTED', 'MEETING', 'WON', 'LOST']);
+
+/** Why a lead was lost — set only when the outcome stage is LOST. */
+export const LeadLostReasonSchema = z.enum([
+  'NO_RESPONSE',
+  'WRONG_NUMBER',
+  'NOT_SERIOUS',
+  'BOUGHT_ELSEWHERE',
+  'OTHER',
+]);
+
 /**
  * The realtor feed row: `authorPhoneMasked` always, `phone` null until the caller
  * claims it. `score`/`priceSom` are lead-quality + claim-fee values that live only
@@ -314,6 +326,12 @@ export const LeadSchema = PropertyRequestSummarySchema.extend({
   score: z.number(),
   /** Server-estimated lead price in som — BigInt-as-string, like `priceMaxSom`. */
   priceSom: z.string(),
+  /** Current outcome funnel stage; null until the realtor records an outcome. */
+  outcomeStage: LeadOutcomeStageSchema.nullable(),
+  /** Loss reason; set only when `outcomeStage` is LOST, otherwise null. */
+  lostReason: LeadLostReasonSchema.nullable(),
+  /** ISO timestamp of the last outcome update; null until first recorded. */
+  outcomeUpdatedAt: z.string().nullable(),
 });
 
 /** The buyer's own request row plus whether a realtor has claimed it. */
@@ -325,6 +343,57 @@ export const MyLeadSchema = PropertyRequestSummarySchema.extend({
 export const LeadClaimResponseSchema = z.object({
   phone: z.string(),
   name: z.string().nullable(),
+});
+
+/** Body of `PATCH /api/leads/:id/outcome` — record a claimed lead's outcome. */
+export const LeadOutcomeUpdateSchema = z.object({
+  stage: LeadOutcomeStageSchema,
+  lostReason: LeadLostReasonSchema.optional(),
+});
+
+/** Count of leads at each outcome funnel stage. */
+export const LeadFunnelSchema = z.object({
+  NEW: z.number(),
+  CONTACTED: z.number(),
+  MEETING: z.number(),
+  WON: z.number(),
+  LOST: z.number(),
+});
+
+/** Count of lost leads broken down by loss reason. */
+export const LeadLostReasonCountsSchema = z.object({
+  NO_RESPONSE: z.number(),
+  WRONG_NUMBER: z.number(),
+  NOT_SERIOUS: z.number(),
+  BOUGHT_ELSEWHERE: z.number(),
+  OTHER: z.number(),
+});
+
+/** A single realtor's conversion analytics — funnel, win rate, and loss breakdown. */
+export const LeadStatsSchema = z.object({
+  funnel: LeadFunnelSchema,
+  winRate: z.number().nullable(), // WON/(WON+LOST); null when no resolved leads
+  lostReasons: LeadLostReasonCountsSchema,
+});
+
+/** Budget bucket a lead falls into, derived from `priceMaxSom`. */
+export const BudgetTierSchema = z.enum(['NONE', 'LOW', 'MID', 'HIGH']);
+
+/** One segment of platform-wide conversion, keyed by deal/type/budget tier. */
+export const ConversionSegmentSchema = z.object({
+  deal: LeadSchema.shape.deal, // reuse the Lead deal enum
+  type: LeadSchema.shape.type, // reuse the Lead type (nullable) enum
+  budgetTier: BudgetTierSchema,
+  won: z.number(),
+  lost: z.number(),
+  winRate: z.number().nullable(),
+});
+
+/** Platform-wide conversion analytics — overall funnel plus per-segment breakdown. */
+export const PlatformConversionSchema = z.object({
+  funnel: LeadFunnelSchema,
+  winRate: z.number().nullable(),
+  segments: z.array(ConversionSegmentSchema),
 });
 
 /** Query params for `GET /api/requests` (all optional). `roomsMin` arrives as a string. */
@@ -601,6 +670,15 @@ export type PropertyRequestSummary = z.infer<typeof PropertyRequestSummarySchema
 export type Lead = z.infer<typeof LeadSchema>;
 export type MyLead = z.infer<typeof MyLeadSchema>;
 export type LeadClaimResponse = z.infer<typeof LeadClaimResponseSchema>;
+export type LeadOutcomeStage = z.infer<typeof LeadOutcomeStageSchema>;
+export type LeadLostReason = z.infer<typeof LeadLostReasonSchema>;
+export type LeadOutcomeUpdate = z.infer<typeof LeadOutcomeUpdateSchema>;
+export type LeadFunnel = z.infer<typeof LeadFunnelSchema>;
+export type LeadLostReasonCounts = z.infer<typeof LeadLostReasonCountsSchema>;
+export type LeadStats = z.infer<typeof LeadStatsSchema>;
+export type BudgetTier = z.infer<typeof BudgetTierSchema>;
+export type ConversionSegment = z.infer<typeof ConversionSegmentSchema>;
+export type PlatformConversion = z.infer<typeof PlatformConversionSchema>;
 export type PropertyRequestFilter = z.infer<typeof PropertyRequestFilterSchema>;
 export type SubscriptionStatus = z.infer<typeof SubscriptionStatusSchema>;
 export type SubscriptionView = z.infer<typeof SubscriptionViewSchema>;

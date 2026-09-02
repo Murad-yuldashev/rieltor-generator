@@ -240,6 +240,22 @@ enum RequestStatus {
   EXPIRED
 }
 
+enum LeadOutcomeStage {
+  NEW
+  CONTACTED
+  MEETING
+  WON
+  LOST
+}
+
+enum LeadLostReason {
+  NO_RESPONSE
+  WRONG_NUMBER
+  NOT_SERIOUS
+  BOUGHT_ELSEWHERE
+  OTHER
+}
+
 model PropertyRequest {
   id          String        @id @default(cuid())
   authorId    String
@@ -259,7 +275,12 @@ model PropertyRequest {
   claimedAt   DateTime?
   createdAt   DateTime      @default(now())
 
+  outcomeStage     LeadOutcomeStage?
+  lostReason       LeadLostReason?
+  outcomeUpdatedAt DateTime?
+
   @@index([status, createdAt])
+  @@index([deal, type, outcomeStage])
 }
 
 enum SubscriptionStatus {

@@ -11,12 +11,20 @@ function Shell({ children }: { children: React.ReactNode }) {
     <main className="mx-auto min-h-dvh max-w-content bg-surface px-4 py-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-extrabold text-ink">Sharhlarni tekshirish</h1>
-        <Link
-          to="/moderation/realtors"
-          className="text-[13px] font-bold text-accent hover:underline"
-        >
-          Rieltorlar →
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/moderation/realtors"
+            className="text-[13px] font-bold text-accent hover:underline"
+          >
+            Rieltorlar →
+          </Link>
+          <Link
+            to="/moderation/conversion"
+            className="text-[13px] font-bold text-accent hover:underline"
+          >
+            Konversiya →
+          </Link>
+        </div>
       </div>
       <div className="mt-4">{children}</div>
     </main>
