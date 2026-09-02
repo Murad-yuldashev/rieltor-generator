@@ -5,6 +5,8 @@ import {
   BuildingUpdateSchema,
   ComplexCreateSchema,
   ComplexUpdateSchema,
+  UnitCreateSchema,
+  UnitUpdateSchema,
 } from '@rieltor/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
@@ -79,5 +81,31 @@ export class DeveloperController {
   @UseGuards(DeveloperGuard)
   deleteBuilding(@Param('id') id: string, @CurrentUser() u: { id: string }) {
     return this.dev.deleteBuilding(u.id, id);
+  }
+
+  // ---- Unit CRUD (org-scoped via building -> complex) ----------------------
+
+  @Get('buildings/:id/units')
+  @UseGuards(DeveloperGuard)
+  listUnits(@Param('id') id: string, @CurrentUser() u: { id: string }) {
+    return this.dev.listUnits(u.id, id);
+  }
+
+  @Post('buildings/:id/units')
+  @UseGuards(DeveloperGuard)
+  createUnit(@Param('id') id: string, @CurrentUser() u: { id: string }, @Body() body: unknown) {
+    return this.dev.createUnit(u.id, id, UnitCreateSchema.parse(body));
+  }
+
+  @Patch('units/:id')
+  @UseGuards(DeveloperGuard)
+  updateUnit(@Param('id') id: string, @CurrentUser() u: { id: string }, @Body() body: unknown) {
+    return this.dev.updateUnit(u.id, id, UnitUpdateSchema.parse(body));
+  }
+
+  @Delete('units/:id')
+  @UseGuards(DeveloperGuard)
+  deleteUnit(@Param('id') id: string, @CurrentUser() u: { id: string }) {
+    return this.dev.deleteUnit(u.id, id);
   }
 }

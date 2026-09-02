@@ -8,8 +8,15 @@ import type {
   ComplexDetail,
   ComplexUpdate,
   Organization,
+  Unit,
+  UnitCreate,
+  UnitUpdate,
 } from '@rieltor/shared';
-import type { Building as BuildingRow, Complex as ComplexRow } from '@prisma/client';
+import type {
+  Building as BuildingRow,
+  Complex as ComplexRow,
+  Unit as UnitRow,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -222,6 +229,88 @@ export class DeveloperService {
   async deleteBuilding(userId: string, id: string): Promise<{ ok: true }> {
     await this.buildingOwnedOrThrow(userId, id);
     await this.prisma.building.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  // ---- Unit CRUD (org-scoped via building -> complex) ----------------------
+
+  /** Row -> `Unit` DTO (BigInt `priceSom` -> string, everything else passthrough). */
+  private toUnit(u: UnitRow): Unit {
+    return {
+      id: u.id,
+      buildingId: u.buildingId,
+      number: u.number,
+      floor: u.floor,
+      rooms: u.rooms,
+      areaM2: u.areaM2,
+      priceSom: u.priceSom != null ? String(u.priceSom) : null,
+      status: u.status,
+    };
+  }
+
+  /**
+   * Load a unit the caller's org owns (via building -> complex), or 404.
+   * A foreign unit is indistinguishable from a missing one (no cross-org leak).
+   */
+  private async unitOwnedOrThrow(userId: string, id: string): Promise<UnitRow> {
+    const unit = await this.prisma.unit.findUnique({
+      where: { id },
+      include: { building: { select: { complex: { select: { orgId: true } } } } },
+    });
+    if (!unit || unit.building.complex.orgId !== (await this.orgIdOf(userId))) {
+      throw new NotFoundException('Xonadon topilmadi');
+    }
+    return unit;
+  }
+
+  /** All units of an owned building, ordered by floor then number (foreign building -> 404). */
+  async listUnits(userId: string, buildingId: string): Promise<Unit[]> {
+    await this.buildingOwnedOrThrow(userId, buildingId);
+    const rows = await this.prisma.unit.findMany({
+      where: { buildingId },
+      orderBy: [{ floor: 'asc' }, { number: 'asc' }],
+    });
+    return rows.map((u) => this.toUnit(u));
+  }
+
+  /** Create a unit under an owned building (foreign building -> 404). */
+  async createUnit(userId: string, buildingId: string, input: UnitCreate): Promise<Unit> {
+    await this.buildingOwnedOrThrow(userId, buildingId);
+    const unit = await this.prisma.unit.create({
+      data: {
+        buildingId,
+        number: input.number,
+        floor: input.floor,
+        rooms: input.rooms ?? null,
+        areaM2: input.areaM2 ?? null,
+        priceSom: input.priceSom != null ? BigInt(input.priceSom) : null,
+        status: input.status ?? 'AVAILABLE',
+      },
+    });
+    return this.toUnit(unit);
+  }
+
+  /** Update the provided fields of an owned unit (omitted fields untouched). */
+  async updateUnit(userId: string, id: string, input: UnitUpdate): Promise<Unit> {
+    await this.unitOwnedOrThrow(userId, id);
+    const unit = await this.prisma.unit.update({
+      where: { id },
+      data: {
+        ...(input.number !== undefined && { number: input.number }),
+        ...(input.floor !== undefined && { floor: input.floor }),
+        ...(input.rooms !== undefined && { rooms: input.rooms ?? null }),
+        ...(input.areaM2 !== undefined && { areaM2: input.areaM2 ?? null }),
+        ...(input.priceSom !== undefined && { priceSom: BigInt(input.priceSom) }),
+        ...(input.status !== undefined && { status: input.status }),
+      },
+    });
+    return this.toUnit(unit);
+  }
+
+  /** Delete an owned unit. */
+  async deleteUnit(userId: string, id: string): Promise<{ ok: true }> {
+    await this.unitOwnedOrThrow(userId, id);
+    await this.prisma.unit.delete({ where: { id } });
     return { ok: true };
   }
 }
