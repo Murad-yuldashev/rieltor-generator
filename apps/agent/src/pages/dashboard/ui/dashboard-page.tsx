@@ -14,6 +14,7 @@ import { TrialBanner } from '@/widgets/trial-banner';
 const NAV: { key: string; label: string; icon: IconName; to: string }[] = [
   { key: 'profile', label: 'Profil', icon: 'home', to: '/profile' },
   { key: 'wallet', label: 'Hisobim', icon: 'money', to: '/wallet' },
+  { key: 'leads', label: 'Mening leadlarim', icon: 'chart', to: '/leads' },
   { key: 'browse', label: 'E’lonlar', icon: 'search', to: '/browse' },
   { key: 'notes', label: 'Eslatmalar', icon: 'doc', to: '/notes' },
   { key: 'collections', label: 'To‘plamlar', icon: 'heart', to: '/collections' },
