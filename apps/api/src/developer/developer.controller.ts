@@ -1,5 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { BecomeDeveloperSchema, ComplexCreateSchema, ComplexUpdateSchema } from '@rieltor/shared';
+import {
+  BecomeDeveloperSchema,
+  BuildingCreateSchema,
+  BuildingUpdateSchema,
+  ComplexCreateSchema,
+  ComplexUpdateSchema,
+} from '@rieltor/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
 import { DeveloperGuard } from './developer.guard';
@@ -53,5 +59,25 @@ export class DeveloperController {
   @UseGuards(DeveloperGuard)
   deleteComplex(@Param('id') id: string, @CurrentUser() u: { id: string }) {
     return this.dev.deleteComplex(u.id, id);
+  }
+
+  // ---- Building CRUD (org-scoped via the complex) --------------------------
+
+  @Post('complexes/:id/buildings')
+  @UseGuards(DeveloperGuard)
+  createBuilding(@Param('id') id: string, @CurrentUser() u: { id: string }, @Body() body: unknown) {
+    return this.dev.createBuilding(u.id, id, BuildingCreateSchema.parse(body));
+  }
+
+  @Patch('buildings/:id')
+  @UseGuards(DeveloperGuard)
+  updateBuilding(@Param('id') id: string, @CurrentUser() u: { id: string }, @Body() body: unknown) {
+    return this.dev.updateBuilding(u.id, id, BuildingUpdateSchema.parse(body));
+  }
+
+  @Delete('buildings/:id')
+  @UseGuards(DeveloperGuard)
+  deleteBuilding(@Param('id') id: string, @CurrentUser() u: { id: string }) {
+    return this.dev.deleteBuilding(u.id, id);
   }
 }

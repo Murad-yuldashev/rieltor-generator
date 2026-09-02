@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type {
+  Building,
+  BuildingCreate,
+  BuildingUpdate,
   Complex,
   ComplexCreate,
   ComplexDetail,
   ComplexUpdate,
   Organization,
 } from '@rieltor/shared';
-import type { Complex as ComplexRow } from '@prisma/client';
+import type { Building as BuildingRow, Complex as ComplexRow } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -159,6 +162,66 @@ export class DeveloperService {
   async deleteComplex(userId: string, id: string): Promise<{ ok: true }> {
     await this.complexOwnedOrThrow(userId, id);
     await this.prisma.complex.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  // ---- Building CRUD (org-scoped via the complex) --------------------------
+
+  /** Row -> `Building` DTO (createdAt as ISO string, floors passthrough). */
+  private toBuilding(b: BuildingRow): Building {
+    return {
+      id: b.id,
+      name: b.name,
+      floors: b.floors,
+      createdAt: b.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * Load a building the caller's org owns (via its complex), or 404.
+   * A foreign building is indistinguishable from a missing one (no cross-org leak).
+   */
+  private async buildingOwnedOrThrow(userId: string, id: string): Promise<BuildingRow> {
+    const building = await this.prisma.building.findUnique({
+      where: { id },
+      include: { complex: { select: { orgId: true } } },
+    });
+    if (!building || building.complex.orgId !== (await this.orgIdOf(userId))) {
+      throw new NotFoundException('Bino topilmadi');
+    }
+    return building;
+  }
+
+  /** Create a building under an owned complex (foreign complex -> 404). */
+  async createBuilding(
+    userId: string,
+    complexId: string,
+    input: BuildingCreate,
+  ): Promise<Building> {
+    await this.complexOwnedOrThrow(userId, complexId);
+    const building = await this.prisma.building.create({
+      data: { complexId, name: input.name, floors: input.floors ?? null },
+    });
+    return this.toBuilding(building);
+  }
+
+  /** Update the provided fields of an owned building. */
+  async updateBuilding(userId: string, id: string, input: BuildingUpdate): Promise<Building> {
+    await this.buildingOwnedOrThrow(userId, id);
+    const building = await this.prisma.building.update({
+      where: { id },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.floors !== undefined && { floors: input.floors ?? null }),
+      },
+    });
+    return this.toBuilding(building);
+  }
+
+  /** Delete an owned building (cascades units via schema). */
+  async deleteBuilding(userId: string, id: string): Promise<{ ok: true }> {
+    await this.buildingOwnedOrThrow(userId, id);
+    await this.prisma.building.delete({ where: { id } });
     return { ok: true };
   }
 }
