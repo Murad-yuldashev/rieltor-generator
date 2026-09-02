@@ -11,9 +11,9 @@ import { AuthModalHost } from '@/features/auth';
  * It also gates the whole cabinet on being logged in: without an authenticated
  * session the outlet is withheld and the app-wide login modal is raised. Once
  * `useLogin` seeds the session cache (or a token restore resolves), the query
- * flips to authenticated and the cabinet outlet renders. Role-based routing
- * (become-realtor / paywall) lands in a later Phase 3.1 task — here the only
- * gate is "is there a session".
+ * flips to authenticated and the outlet renders. Role-based routing lives one
+ * layer in, in DeveloperGuard (DEVELOPER → cabinet, else become-developer) —
+ * here the only gate is "is there a session".
  */
 export function RootLayout() {
   const { isAuthenticated, isPending } = useSession();
@@ -36,7 +36,7 @@ export function RootLayout() {
             <p className="text-[15px] font-semibold text-ink-2">Yuklanmoqda...</p>
           ) : (
             <>
-              <h1 className="text-[20px] font-extrabold tracking-tight">Rieltor kabineti</h1>
+              <h1 className="text-[20px] font-extrabold tracking-tight">Quruvchi kabineti</h1>
               <p className="max-w-[280px] text-[14px] text-ink-2">
                 Davom etish uchun tizimga kiring.
               </p>
