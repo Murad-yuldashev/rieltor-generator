@@ -704,13 +704,13 @@ export const UnitSchema = z.object({
   status: UnitStatusSchema,
 });
 
-/** Body of `POST /api/developer/become` — become a developer / create an organization. */
+/** Body of `POST /api/crm/become-developer` — become a developer / create an organization. */
 export const BecomeDeveloperSchema = z.object({
   name: z.string().trim().min(1).max(120),
   district: z.string().optional(),
 });
 
-/** Body of `POST /api/developer/complexes`. */
+/** Body of `POST /api/crm/complexes`. */
 export const ComplexCreateSchema = z.object({
   name: z.string().trim().min(1).max(160),
   district: z.string().trim().min(1),
@@ -720,14 +720,14 @@ export const ComplexCreateSchema = z.object({
 });
 export const ComplexUpdateSchema = ComplexCreateSchema.partial();
 
-/** Body of `POST /api/developer/complexes/:id/buildings`. */
+/** Body of `POST /api/crm/complexes/:id/buildings`. */
 export const BuildingCreateSchema = z.object({
   name: z.string().trim().min(1).max(120),
   floors: z.number().int().positive().max(200).optional(),
 });
 export const BuildingUpdateSchema = BuildingCreateSchema.partial();
 
-/** Body of `POST /api/developer/buildings/:id/units`. */
+/** Body of `POST /api/crm/buildings/:id/units`. */
 export const UnitCreateSchema = z.object({
   number: z.string().trim().min(1).max(40),
   floor: z.number().int().min(0).max(200),
