@@ -592,6 +592,66 @@ lead.priceSom, id)` — bu hamyon qatorini `FOR UPDATE` qulflaydi (qulf tartibi 
 - **4.3:** conversion tracking + analitika. **Keyin:** real to'lov (Click/Payme) + refund; Phase 5
   (developer CRM) — C6 to'liq fixation.
 
+## 4m. Phase 4.3 — Konversiya kuzatuvi + analitika + skoring (2026-09-01)
+
+Lead bozorining fikr-qaytish halqasini yopadi — **shu bilan Phase 4 TO'LIQ TUGADI**. Ilgari lead
+hayoti **CLAIMED**da tugardi (rieltor to'ladi, kontaktni oldi, keyin nima bo'lgani kuzatilmasdi).
+Endi rieltor olingan lead **natijasini** yozadi (voronka: NEW→CONTACTED→MEETING→WON/LOST, LOST
+sababi bilan), bu **analitika**ga aylanadi (rieltorning shaxsiy funneli + moderator platforma
+funneli) va **skoring**ka qaytadi (tarixan konversiya qiladigan segmentdagi yangi leadlar yuqoriroq
+skor oladi, ishonch-vaznli). Refund/dispute **hali keyinga** (natija ma'lumoti kelajakdagi refund
+tizimining poydevori). Spec: `docs/superpowers/specs/2026-09-01-phase-4.3-conversion-tracking-design.md`,
+reja: `docs/superpowers/plans/2026-09-01-phase-4.3-conversion-tracking.md`.
+
+### Natija modeli (additiv)
+
+- `PropertyRequest` += `outcomeStage LeadOutcomeStage?` (NEW/CONTACTED/MEETING/WON/LOST),
+  `lostReason LeadLostReason?` (NO_RESPONSE/WRONG_NUMBER/NOT_SERIOUS/BOUGHT_ELSEWHERE/OTHER),
+  `outcomeUpdatedAt DateTime?` — natija eksklyuziv olingan lead bilan **1:1**, alohida jadval yo'q.
+  Claim (4.2 tranzaksiyasi ichida) `outcomeStage`ni **NEW**ga qo'yadi. Additiv migratsiya + indeks
+  (`[deal, type, outcomeStage]`). WON/LOST — **resolved** (yakuniy) holatlar.
+
+### Natijani yozish
+
+- **`PATCH /api/leads/:id/outcome`** (RealtorGuard + **egalik**: faqat `claimedById === caller`) —
+  `{ stage, lostReason? }`. Qoidalar: lead olingan bo'lishi; `stage=LOST` ⇒ `lostReason` majburiy
+  (400), aks holda `lostReason` null'ga tozalanadi; qat'iy holat-mashinasi yo'q (rieltor xatoni
+  tuzatishi mumkin). Lead `status` CLAIMED bo'lib qoladi (natija voronkasi OPEN/CLAIMED sikliga
+  ortogonal).
+
+### Konversiya-vaznli skoring
+
+- `computeLeadScore` **toza funksiya** bo'lib qoladi (baza). Alohida toza `conversionAdjustment(won,
+lost, globalRate)`: Bayesian silliqlangan segment WON-foizi `rHat = (won + α·p0)/(won+lost+α)`
+  (α=10), `adjustment = clamp(round(40·(rHat−p0)), ±15)`. Namuna kam ⇒ `rHat→p0` ⇒ **adjustment 0**
+  ⇒ toza baza (0 resolved bo'lsa **baza bilan bayt-aynan bir xil** — xavfsizlik invarianti).
+  `RequestsService.create` lead **yaratilganda** segmentni (`deal + type + budgetTier`, tuman YO'Q)
+  aniqlaydi → 4 ta COUNT (segment/global WON/LOST) → `score = clamp(base + adjustment)`. **Faqat
+  yangi leadlar** tuzatiladi; mavjud leadlar qayta skorlanmaydi.
+
+### Analitika
+
+- **Rieltor funneli** — `GET /api/leads/stats` (RealtorGuard): o'z claimed leadlari bo'yicha bosqich
+  hisoblari + WON-foizi + LOST sabablari.
+- **Platforma funneli** — `GET /api/moderation/conversion` (RolesGuard MODERATOR/ADMIN, read-only):
+  umumiy funnel + segment WON-foizlari (skoring ishlatadigan agregatlar).
+
+### UI
+
+- **Kabinet (`apps/agent`):** "Mening leadlarim" (`/agent/leads`, nav) — shaxsiy funnel statistikasi
+  - olingan leadlar ro'yxati, har birida natija steppen (NEW→…→WON/LOST + LOST sababi selecti).
+- **Web (`apps/web`):** `/moderation/conversion` (moderator) — platforma funneli + segment WON-foizi
+  jadvali (read-only), boshqa moderatsiya sahifalaridan havola.
+
+### Ma'lumot modeli va env
+
+- Yangi modellar yo'q (`PropertyRequest` additiv) + 2 enum. **Yangi env qo'shilmagan.**
+
+### Kelasi
+
+- Real to'lov (Click/Payme) + refund/dispute (natija ma'lumoti asosida); Phase 5 (developer CRM) —
+  C6 to'liq cross-CRM fixation.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
