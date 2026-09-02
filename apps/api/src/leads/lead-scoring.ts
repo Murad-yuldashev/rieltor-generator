@@ -41,3 +41,52 @@ export function priceForScore(score: number): bigint {
   if (score <= 70) return 35_000n;
   return 50_000n;
 }
+
+export type BudgetTier = 'NONE' | 'LOW' | 'MID' | 'HIGH';
+
+const LOW_MAX = 300_000_000n; // ≤300 mln so'm
+const MID_MAX = 800_000_000n; // ≤800 mln so'm
+
+/** Coarse budget bucket for lead-conversion segmentation (null budget is its own bucket). */
+export function budgetTier(priceMaxSom: bigint | null): BudgetTier {
+  if (priceMaxSom == null) return 'NONE';
+  if (priceMaxSom <= LOW_MAX) return 'LOW';
+  if (priceMaxSom <= MID_MAX) return 'MID';
+  return 'HIGH';
+}
+
+/** A Prisma `priceMaxSom` filter matching the tier's range (null = IS NULL). */
+export function budgetTierPriceWhere(tier: BudgetTier): null | { gt?: bigint; lte?: bigint } {
+  switch (tier) {
+    case 'NONE':
+      return null; // priceMaxSom: null  ->  IS NULL
+    case 'LOW':
+      return { lte: LOW_MAX };
+    case 'MID':
+      return { gt: LOW_MAX, lte: MID_MAX };
+    case 'HIGH':
+      return { gt: MID_MAX };
+  }
+}
+
+/** WON / (WON + LOST); null when nothing is resolved yet. */
+export function winRate(won: number, lost: number): number | null {
+  const resolved = won + lost;
+  return resolved === 0 ? null : won / resolved;
+}
+
+const PRIOR_STRENGTH = 10; // alpha — the global rate is worth this many prior observations
+const ADJ_MAX = 15; // adjustment bounded to +/- this
+const ADJ_GAIN = 40; // maps a (rate - global) gap to score points
+
+/**
+ * Confidence-weighted score adjustment from a segment's resolved outcomes.
+ * With few/no resolved leads, rHat -> globalRate, so the adjustment -> 0 (pure base).
+ */
+export function conversionAdjustment(won: number, lost: number, globalRate: number): number {
+  const resolved = won + lost;
+  if (resolved === 0) return 0;
+  const rHat = (won + PRIOR_STRENGTH * globalRate) / (resolved + PRIOR_STRENGTH);
+  const raw = Math.round(ADJ_GAIN * (rHat - globalRate));
+  return Math.max(-ADJ_MAX, Math.min(ADJ_MAX, raw));
+}
