@@ -1,5 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Organization } from '@rieltor/shared';
+import type {
+  Complex,
+  ComplexCreate,
+  ComplexDetail,
+  ComplexUpdate,
+  Organization,
+} from '@rieltor/shared';
+import type { Complex as ComplexRow } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -60,5 +67,98 @@ export class DeveloperService {
         phone: m.user.phone,
       })),
     };
+  }
+
+  // ---- Complex CRUD (org-scoped) -------------------------------------------
+
+  /** Row -> `Complex` DTO (createdAt as ISO string). */
+  private toComplex(c: ComplexRow): Complex {
+    return {
+      id: c.id,
+      name: c.name,
+      district: c.district,
+      address: c.address,
+      description: c.description,
+      status: c.status,
+      createdAt: c.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * Load a complex the caller's org owns, or 404.
+   * A foreign complex is indistinguishable from a missing one (no cross-org leak).
+   */
+  private async complexOwnedOrThrow(userId: string, id: string): Promise<ComplexRow> {
+    const orgId = await this.orgIdOf(userId);
+    const complex = await this.prisma.complex.findUnique({ where: { id } });
+    if (!complex || complex.orgId !== orgId) throw new NotFoundException('ЖК topilmadi');
+    return complex;
+  }
+
+  /** All complexes of the caller's org, newest first. */
+  async listComplexes(userId: string): Promise<Complex[]> {
+    const orgId = await this.orgIdOf(userId);
+    const rows = await this.prisma.complex.findMany({
+      where: { orgId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((c) => this.toComplex(c));
+  }
+
+  /** Create a complex in the caller's org. */
+  async createComplex(userId: string, input: ComplexCreate): Promise<Complex> {
+    const orgId = await this.orgIdOf(userId);
+    const complex = await this.prisma.complex.create({
+      data: {
+        orgId,
+        name: input.name,
+        district: input.district,
+        address: input.address ?? null,
+        description: input.description ?? null,
+        status: input.status ?? 'UNDER_CONSTRUCTION',
+      },
+    });
+    return this.toComplex(complex);
+  }
+
+  /** One complex (owned) plus its buildings. */
+  async getComplex(userId: string, id: string): Promise<ComplexDetail> {
+    await this.complexOwnedOrThrow(userId, id);
+    const complex = await this.prisma.complex.findUnique({
+      where: { id },
+      include: { buildings: { orderBy: { createdAt: 'asc' } } },
+    });
+    return {
+      ...this.toComplex(complex!),
+      buildings: complex!.buildings.map((b) => ({
+        id: b.id,
+        name: b.name,
+        floors: b.floors,
+        createdAt: b.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  /** Update the provided fields of an owned complex. */
+  async updateComplex(userId: string, id: string, input: ComplexUpdate): Promise<Complex> {
+    await this.complexOwnedOrThrow(userId, id);
+    const complex = await this.prisma.complex.update({
+      where: { id },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.district !== undefined && { district: input.district }),
+        ...(input.address !== undefined && { address: input.address ?? null }),
+        ...(input.description !== undefined && { description: input.description ?? null }),
+        ...(input.status !== undefined && { status: input.status }),
+      },
+    });
+    return this.toComplex(complex);
+  }
+
+  /** Delete an owned complex (cascades buildings/units via schema). */
+  async deleteComplex(userId: string, id: string): Promise<{ ok: true }> {
+    await this.complexOwnedOrThrow(userId, id);
+    await this.prisma.complex.delete({ where: { id } });
+    return { ok: true };
   }
 }
