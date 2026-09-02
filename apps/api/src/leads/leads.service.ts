@@ -8,12 +8,16 @@ import {
 import {
   type Lead,
   type LeadClaimResponse,
+  type LeadFunnel,
   type LeadLostReason,
+  type LeadLostReasonCounts,
   type LeadOutcomeStage,
+  type LeadStats,
   maskPhone,
 } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
+import { winRate } from './lead-scoring';
 
 type LeadRow = {
   id: string;
@@ -149,6 +153,37 @@ export class LeadsService {
     });
     return this.findOne(id, realtorId); // claimer -> contact revealed, outcome fields included
   }
+
+  /** The caller's own claimed-lead funnel + win rate + loss-reason breakdown. */
+  async stats(realtorId: string): Promise<LeadStats> {
+    const byStage = await this.prisma.propertyRequest.groupBy({
+      by: ['outcomeStage'],
+      where: { claimedById: realtorId, outcomeStage: { not: null } },
+      _count: { _all: true },
+    });
+    const funnel = emptyFunnel();
+    for (const row of byStage) {
+      if (row.outcomeStage) funnel[row.outcomeStage] = row._count._all;
+    }
+    const byReason = await this.prisma.propertyRequest.groupBy({
+      by: ['lostReason'],
+      where: { claimedById: realtorId, outcomeStage: 'LOST', lostReason: { not: null } },
+      _count: { _all: true },
+    });
+    const lostReasons = emptyLostReasons();
+    for (const row of byReason) {
+      if (row.lostReason) lostReasons[row.lostReason] = row._count._all;
+    }
+    return { funnel, winRate: winRate(funnel.WON, funnel.LOST), lostReasons };
+  }
+}
+
+function emptyFunnel(): LeadFunnel {
+  return { NEW: 0, CONTACTED: 0, MEETING: 0, WON: 0, LOST: 0 };
+}
+
+function emptyLostReasons(): LeadLostReasonCounts {
+  return { NO_RESPONSE: 0, WRONG_NUMBER: 0, NOT_SERIOUS: 0, BOUGHT_ELSEWHERE: 0, OTHER: 0 };
 }
 
 function toLead(row: LeadRow, revealed: boolean): Lead {

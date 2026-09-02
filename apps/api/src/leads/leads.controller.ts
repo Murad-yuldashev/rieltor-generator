@@ -21,6 +21,12 @@ export class LeadsController {
     return this.leads.mine(u.id);
   }
 
+  // Declared before `:id` so the literal path is not captured as an id.
+  @Get('stats')
+  stats(@CurrentUser() u: { id: string }) {
+    return this.leads.stats(u.id);
+  }
+
   @Get(':id')
   one(@Param('id') id: string, @CurrentUser() u: { id: string }) {
     return this.leads.findOne(id, u.id);
