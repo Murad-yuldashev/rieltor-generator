@@ -74,6 +74,17 @@ export class ComplexesPublicService {
     });
     if (!complex) throw new NotFoundException();
 
+    // A targeted unit must belong to THIS complex: reject a cross-complex/draft
+    // unitId (integrity) and turn a nonexistent id into a clean 404 rather than a
+    // Prisma FK 500 in requests.create.
+    if (input.unitId) {
+      const unit = await this.prisma.unit.findFirst({
+        where: { id: input.unitId, building: { complexId: complex.id } },
+        select: { id: true },
+      });
+      if (!unit) throw new NotFoundException('Xonadon topilmadi');
+    }
+
     return this.requests.create(userId, {
       deal: 'SALE',
       type: 'NEW_BUILD',
