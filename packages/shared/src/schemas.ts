@@ -692,6 +692,38 @@ export const ComplexDetailSchema = ComplexSchema.extend({
   buildings: z.array(BuildingSchema),
 });
 
+// --- Developer CRM: booking + shaxmatka (Phase 5.2) ---
+
+/** Lifecycle of a unit booking / hold. */
+export const BookingStatusSchema = z.enum(['ACTIVE', 'CANCELLED', 'EXPIRED', 'CONVERTED']);
+
+/** Compact booking view embedded in a unit (the active hold, if any). */
+export const BookingSummarySchema = z.object({
+  id: z.string(),
+  clientName: z.string(),
+  clientPhone: z.string(),
+  holdUntil: z.string(),
+});
+
+/** A full booking record. */
+export const BookingSchema = z.object({
+  id: z.string(),
+  unitId: z.string(),
+  clientName: z.string(),
+  clientPhone: z.string(),
+  holdUntil: z.string(),
+  status: BookingStatusSchema,
+  note: z.string().nullable(),
+  cancelReason: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+/** A booking row for org-wide lists — adds unit + building context. */
+export const BookingRowSchema = BookingSchema.extend({
+  unitNumber: z.string(),
+  buildingName: z.string(),
+});
+
 /** A single unit within a building. */
 export const UnitSchema = z.object({
   id: z.string(),
@@ -702,6 +734,7 @@ export const UnitSchema = z.object({
   areaM2: z.number().nullable(),
   priceSom: z.string().nullable(), // BigInt-as-string
   status: UnitStatusSchema,
+  activeBooking: BookingSummarySchema.nullable(),
 });
 
 /** Body of `POST /api/crm/become-developer` — become a developer / create an organization. */
@@ -737,6 +770,32 @@ export const UnitCreateSchema = z.object({
   status: UnitStatusSchema.optional(),
 });
 export const UnitUpdateSchema = UnitCreateSchema.partial();
+
+/** Body of `POST /api/crm/units/:id/book` — create a hold on a unit. */
+export const BookingCreateSchema = z.object({
+  clientName: z.string().trim().min(1).max(120),
+  clientPhone: z.string().trim().min(3).max(30),
+  holdDays: z.number().int().min(1).max(90).optional(),
+  note: z.string().trim().max(1000).optional(),
+});
+
+/** Body of `PATCH /api/crm/bookings/:id` — cancel / convert / extend a hold. */
+export const BookingActionSchema = z.object({
+  action: z.enum(['cancel', 'convert', 'extend']),
+  cancelReason: z.string().trim().max(500).optional(),
+  holdDays: z.number().int().min(1).max(90).optional(),
+});
+
+/** Body of a shaxmatka bulk edit — set status and/or price on many units at once. */
+export const UnitBulkUpdateSchema = z
+  .object({
+    unitIds: z.array(z.string()).min(1).max(500),
+    status: UnitStatusSchema.optional(),
+    priceSom: z.string().regex(/^\d+$/).optional(),
+  })
+  .refine((v) => v.status !== undefined || v.priceSom !== undefined, {
+    message: 'status yoki priceSom kerak',
+  });
 
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
@@ -827,3 +886,10 @@ export type BuildingCreate = z.infer<typeof BuildingCreateSchema>;
 export type BuildingUpdate = z.infer<typeof BuildingUpdateSchema>;
 export type UnitCreate = z.infer<typeof UnitCreateSchema>;
 export type UnitUpdate = z.infer<typeof UnitUpdateSchema>;
+export type BookingStatus = z.infer<typeof BookingStatusSchema>;
+export type BookingSummary = z.infer<typeof BookingSummarySchema>;
+export type Booking = z.infer<typeof BookingSchema>;
+export type BookingRow = z.infer<typeof BookingRowSchema>;
+export type BookingCreate = z.infer<typeof BookingCreateSchema>;
+export type BookingAction = z.infer<typeof BookingActionSchema>;
+export type UnitBulkUpdate = z.infer<typeof UnitBulkUpdateSchema>;

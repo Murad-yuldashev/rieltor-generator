@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router';
+import { BookingsPage } from '@/pages/bookings';
 import { BuildingDetailPage } from '@/pages/building-detail';
 import { ComplexDetailPage } from '@/pages/complex-detail';
 import { ComplexesPage } from '@/pages/complexes';
@@ -24,6 +25,7 @@ export const router = createBrowserRouter(
             { path: 'complexes', element: <ComplexesPage /> },
             { path: 'complexes/:id', element: <ComplexDetailPage /> },
             { path: 'buildings/:id', element: <BuildingDetailPage /> },
+            { path: 'bookings', element: <BookingsPage /> },
           ],
         },
       ],

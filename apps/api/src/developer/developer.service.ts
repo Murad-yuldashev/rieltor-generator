@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   Building,
   BuildingCreate,
@@ -9,6 +9,7 @@ import type {
   ComplexUpdate,
   Organization,
   Unit,
+  UnitBulkUpdate,
   UnitCreate,
   UnitUpdate,
 } from '@rieltor/shared';
@@ -18,6 +19,11 @@ import type {
   Unit as UnitRow,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+/** A unit row optionally carrying its active booking (populated by `listUnits`). */
+type UnitRowWithBookings = UnitRow & {
+  bookings?: { id: string; clientName: string; clientPhone: string; holdUntil: Date }[];
+};
 
 @Injectable()
 export class DeveloperService {
@@ -240,8 +246,8 @@ export class DeveloperService {
 
   // ---- Unit CRUD (org-scoped via building -> complex) ----------------------
 
-  /** Row -> `Unit` DTO (BigInt `priceSom` -> string, everything else passthrough). */
-  private toUnit(u: UnitRow): Unit {
+  /** Row -> `Unit` DTO (BigInt `priceSom` -> string, active booking summary when present). */
+  private toUnit(u: UnitRowWithBookings): Unit {
     return {
       id: u.id,
       buildingId: u.buildingId,
@@ -251,6 +257,15 @@ export class DeveloperService {
       areaM2: u.areaM2,
       priceSom: u.priceSom != null ? String(u.priceSom) : null,
       status: u.status,
+      activeBooking:
+        u.bookings && u.bookings[0]
+          ? {
+              id: u.bookings[0].id,
+              clientName: u.bookings[0].clientName,
+              clientPhone: u.bookings[0].clientPhone,
+              holdUntil: u.bookings[0].holdUntil.toISOString(),
+            }
+          : null,
     };
   }
 
@@ -269,12 +284,28 @@ export class DeveloperService {
     return unit;
   }
 
+  /**
+   * Public ownership assertion for a unit (via building -> complex), or 404.
+   * Exposes the private `unitOwnedOrThrow` chain check for sibling services (e.g. BookingService).
+   */
+  async assertUnitOwned(userId: string, id: string): Promise<void> {
+    await this.unitOwnedOrThrow(userId, id);
+  }
+
   /** All units of an owned building, ordered by floor then number (foreign building -> 404). */
   async listUnits(userId: string, buildingId: string): Promise<Unit[]> {
     await this.buildingOwnedOrThrow(userId, buildingId);
     const rows = await this.prisma.unit.findMany({
       where: { buildingId },
       orderBy: [{ floor: 'asc' }, { number: 'asc' }],
+      include: {
+        bookings: {
+          where: { status: 'ACTIVE' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { id: true, clientName: true, clientPhone: true, holdUntil: true },
+        },
+      },
     });
     return rows.map((u) => this.toUnit(u));
   }
@@ -299,6 +330,18 @@ export class DeveloperService {
   /** Update the provided fields of an owned unit (omitted fields untouched). */
   async updateUnit(userId: string, id: string, input: UnitUpdate): Promise<Unit> {
     await this.unitOwnedOrThrow(userId, id);
+    // A status change must not strand an active hold: reject flipping the status of a unit that
+    // still has an ACTIVE booking (the hold-guard the lock-based book() enforces, applied here too).
+    if (input.status !== undefined) {
+      const activeHold = await this.prisma.booking.count({
+        where: { unitId: id, status: 'ACTIVE' },
+      });
+      if (activeHold > 0) {
+        throw new ConflictException(
+          "Band xonadon statusini o'zgartirib bo'lmaydi — avval bandni bekor qiling",
+        );
+      }
+    }
     const unit = await this.prisma.unit.update({
       where: { id },
       data: {
@@ -318,5 +361,52 @@ export class DeveloperService {
     await this.unitOwnedOrThrow(userId, id);
     await this.prisma.unit.delete({ where: { id } });
     return { ok: true };
+  }
+
+  /**
+   * Bulk edit units from the shaxmatka grid: set `status` and/or `priceSom` on many units at once.
+   *
+   * Ownership is all-or-nothing: if any id is foreign to the caller's org (or missing) the whole
+   * call 404s and NOTHING is written — no partial cross-org edit. A status change must NOT strand
+   * an active hold, so units with an ACTIVE booking are skipped for the status change (`skippedBooked`);
+   * a price change, when present, still applies to ALL owned units (booked ones included).
+   */
+  async bulkUpdateUnits(
+    userId: string,
+    input: UnitBulkUpdate,
+  ): Promise<{ updated: number; skippedBooked: number }> {
+    const orgId = await this.orgIdOf(userId);
+    // All-or-nothing ownership: a single foreign/missing id fails the whole call before any write.
+    const owned = await this.prisma.unit.count({
+      where: { id: { in: input.unitIds }, building: { complex: { orgId } } },
+    });
+    if (owned !== input.unitIds.length) throw new NotFoundException('Xonadon topilmadi');
+    const priceSom = input.priceSom !== undefined ? BigInt(input.priceSom) : undefined;
+    let skippedBooked = 0;
+    if (input.status !== undefined) {
+      // Atomic skip: the DB evaluates "no ACTIVE booking" at write time, so a unit booked
+      // concurrently is skipped for the status change (never stranding its hold).
+      const statusRes = await this.prisma.unit.updateMany({
+        where: { id: { in: input.unitIds }, bookings: { none: { status: 'ACTIVE' } } },
+        data: { status: input.status, ...(priceSom !== undefined ? { priceSom } : {}) },
+      });
+      skippedBooked = input.unitIds.length - statusRes.count;
+      // Price still applies to the skipped (active-booked) units.
+      if (priceSom !== undefined && skippedBooked > 0) {
+        await this.prisma.unit.updateMany({
+          where: { id: { in: input.unitIds }, bookings: { some: { status: 'ACTIVE' } } },
+          data: { priceSom },
+        });
+      }
+    } else {
+      // Price-only: applies to every owned unit.
+      await this.prisma.unit.updateMany({
+        where: { id: { in: input.unitIds } },
+        data: { priceSom: priceSom! },
+      });
+    }
+    const updated =
+      input.status !== undefined ? input.unitIds.length - skippedBooked : input.unitIds.length;
+    return { updated, skippedBooked };
   }
 }

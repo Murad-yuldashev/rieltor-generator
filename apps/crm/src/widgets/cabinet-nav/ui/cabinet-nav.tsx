@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib/cn';
 const LINKS = [
   { to: '/', label: 'Tashkilot', end: true },
   { to: '/complexes', label: 'Majmualar', end: false },
+  { to: '/bookings', label: 'Bandlar', end: false },
 ];
 
 /** Persistent section switcher shown at the top of every cabinet page. */
