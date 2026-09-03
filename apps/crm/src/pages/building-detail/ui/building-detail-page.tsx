@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { formatPriceSom, type Unit, type UnitStatus } from '@rieltor/shared';
-import { useBookUnit, useBookingAction } from '@/features/booking';
+import { useBookUnit, useBookingAction, useBulkUpdateUnits } from '@/features/booking';
 import {
   UNIT_STATUS_BADGE,
   UNIT_STATUS_LABELS,
@@ -67,10 +67,36 @@ export function BuildingDetailPage() {
 
   const { data: units, isPending, isError } = useUnits(id);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  // Bulk-edit mode: the same cells become a multi-select. `selectMode` swaps the
+  // click behaviour (toggle membership instead of opening the panel); `selectedIds`
+  // holds the chosen units for `PATCH /api/crm/units/bulk`.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Derive the selected unit from the live list (not a stored copy) so it always
   // reflects the latest refetch — a booking action recolours the cell AND updates
   // the open panel's status-conditional actions.
   const selectedUnit = units?.find((unit) => unit.id === selectedUnitId) ?? null;
+  const hasUnits = !isPending && !isError && !!units && units.length > 0;
+
+  function toggleSelectMode() {
+    setSelectMode((on) => {
+      const next = !on;
+      // Entering select mode closes the single-cell panel; leaving it clears the
+      // multi-selection so the two modes never carry state into each other.
+      if (next) setSelectedUnitId(null);
+      else setSelectedIds(new Set());
+      return next;
+    });
+  }
+
+  function toggleUnitSelected(unitId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(unitId)) next.delete(unitId);
+      else next.add(unitId);
+      return next;
+    });
+  }
 
   return (
     <main className={SHELL}>
@@ -80,7 +106,23 @@ export function BuildingDetailPage() {
       </Link>
 
       <section className="rounded-card bg-card p-5 shadow-card">
-        <h1 className="text-[18px] font-extrabold tracking-tight text-ink">Shaxmatka</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-[18px] font-extrabold tracking-tight text-ink">Shaxmatka</h1>
+          {hasUnits && (
+            <button
+              type="button"
+              onClick={toggleSelectMode}
+              className={cn(
+                'shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors',
+                selectMode
+                  ? 'border-accent bg-accent text-white'
+                  : 'border-line bg-surface text-ink-2',
+              )}
+            >
+              {selectMode ? 'Tanlashni yakunlash' : 'Tanlash'}
+            </button>
+          )}
+        </div>
         <StatusLegend />
 
         {isPending ? (
@@ -93,12 +135,22 @@ export function BuildingDetailPage() {
           <p className="mt-4 text-[14px] text-ink-3">Hozircha xonadon yo'q</p>
         ) : (
           <>
+            {selectMode && (
+              <BulkEditBar
+                buildingId={id}
+                unitIds={[...selectedIds]}
+                onClear={() => setSelectedIds(new Set())}
+              />
+            )}
             <ShaxmatkaGrid
               units={units}
+              selectMode={selectMode}
               selectedUnitId={selectedUnitId}
+              selectedIds={selectedIds}
               onSelect={setSelectedUnitId}
+              onToggleSelect={toggleUnitSelected}
             />
-            {selectedUnit && (
+            {!selectMode && selectedUnit && (
               <CellPanel
                 key={selectedUnit.id}
                 buildingId={id}
@@ -149,12 +201,18 @@ function StatusLegend() {
  */
 function ShaxmatkaGrid({
   units,
+  selectMode,
   selectedUnitId,
+  selectedIds,
   onSelect,
+  onToggleSelect,
 }: {
   units: Unit[];
+  selectMode: boolean;
   selectedUnitId: string | null;
+  selectedIds: Set<string>;
   onSelect: (unitId: string) => void;
+  onToggleSelect: (unitId: string) => void;
 }) {
   const floors = groupUnitsByFloorDesc(units);
 
@@ -171,8 +229,10 @@ function ShaxmatkaGrid({
                 <ShaxmatkaCell
                   key={unit.id}
                   unit={unit}
-                  selected={unit.id === selectedUnitId}
+                  selectMode={selectMode}
+                  selected={selectMode ? selectedIds.has(unit.id) : unit.id === selectedUnitId}
                   onSelect={onSelect}
+                  onToggleSelect={onToggleSelect}
                 />
               ))}
             </div>
@@ -183,15 +243,23 @@ function ShaxmatkaGrid({
   );
 }
 
-/** One shaxmatka cell — number on top, status/client label below, tinted by status. */
+/**
+ * One shaxmatka cell — number on top, status/client label below, tinted by status.
+ * In select mode a click toggles the cell's membership in the bulk selection
+ * (marked by a check badge) instead of opening the detail panel.
+ */
 function ShaxmatkaCell({
   unit,
+  selectMode,
   selected,
   onSelect,
+  onToggleSelect,
 }: {
   unit: Unit;
+  selectMode: boolean;
   selected: boolean;
   onSelect: (unitId: string) => void;
+  onToggleSelect: (unitId: string) => void;
 }) {
   const subtitle =
     unit.status === 'BOOKED'
@@ -201,18 +269,122 @@ function ShaxmatkaCell({
   return (
     <button
       type="button"
-      onClick={() => onSelect(unit.id)}
+      aria-pressed={selectMode ? selected : undefined}
+      onClick={() => (selectMode ? onToggleSelect(unit.id) : onSelect(unit.id))}
       className={cn(
-        'flex h-16 w-20 shrink-0 flex-col items-start justify-between rounded-[12px] border px-2 py-1.5 text-left transition',
+        'relative flex h-16 w-20 shrink-0 flex-col items-start justify-between rounded-[12px] border px-2 py-1.5 text-left transition',
         CELL_TONE[unit.status],
         selected && 'ring-2 ring-accent ring-offset-1 ring-offset-card',
       )}
     >
+      {selectMode && (
+        <span
+          aria-hidden
+          className={cn(
+            'absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-[6px] border text-[10px] font-bold leading-none',
+            selected ? 'border-accent bg-accent text-white' : 'border-current bg-card/70',
+          )}
+        >
+          {selected ? '✓' : ''}
+        </span>
+      )}
       <span className="text-[14px] font-bold leading-none">{unit.number}</span>
       <span className="w-full truncate text-[11px] font-semibold leading-tight opacity-80">
         {subtitle}
       </span>
     </button>
+  );
+}
+
+/**
+ * The bulk-edit bar shown while select mode is on. Applies a status and/or a price
+ * to every selected unit at once. Booked units are skipped server-side; when any
+ * are, we surface how many were left unchanged. On success the selection clears
+ * (the grid refetches to the new colours) while the bar stays open for more edits.
+ */
+function BulkEditBar({
+  buildingId,
+  unitIds,
+  onClear,
+}: {
+  buildingId: string;
+  unitIds: string[];
+  onClear: () => void;
+}) {
+  const bulk = useBulkUpdateUnits(buildingId);
+  const [status, setStatus] = useState<UnitStatus | ''>('');
+  const [priceSom, setPriceSom] = useState('');
+
+  const hasChange = status !== '' || priceSom.trim().length > 0;
+  const canApply = unitIds.length > 0 && hasChange && !bulk.isPending;
+
+  async function handleApply() {
+    if (!canApply) return;
+    await bulk.mutateAsync({
+      unitIds,
+      status: status === '' ? undefined : status,
+      priceSom: priceSom.trim() ? priceSom.trim() : undefined,
+    });
+    onClear();
+    setStatus('');
+    setPriceSom('');
+  }
+
+  const skipped = bulk.data?.skippedBooked ?? 0;
+
+  return (
+    <div className="mt-4 rounded-card border border-accent/40 bg-accent-soft/40 p-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="text-[13px] font-semibold text-ink-2">
+          Tanlangan: <span className="font-extrabold text-ink">{unitIds.length}</span>
+        </div>
+        <label className="block">
+          <span className={LABEL}>Holat</span>
+          <select
+            aria-label="Holat"
+            value={status}
+            onChange={(event) => setStatus(event.target.value as UnitStatus | '')}
+            className={PANEL_INPUT}
+          >
+            <option value="">O'zgartirmaslik</option>
+            {UNIT_STATUS_OPTIONS.map((value) => (
+              <option key={value} value={value}>
+                {UNIT_STATUS_LABELS[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className={LABEL}>Narx, so'm</span>
+          <input
+            inputMode="numeric"
+            value={priceSom}
+            onChange={(event) => setPriceSom(event.target.value.replace(/\D/g, ''))}
+            placeholder="O'zgartirmaslik"
+            className={PANEL_INPUT}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={handleApply}
+          disabled={!canApply}
+          className="rounded-[12px] bg-accent px-4 py-2.5 text-[14px] font-extrabold text-white disabled:opacity-60"
+        >
+          {bulk.isPending ? 'Qo‘llanmoqda...' : "Qo'llash"}
+        </button>
+      </div>
+
+      {bulk.isSuccess && skipped > 0 && (
+        <p className="mt-2 text-[13px] font-semibold text-brand-amber">
+          {skipped} ta band xonadon o'zgartirilmadi
+        </p>
+      )}
+      {bulk.isError && (
+        <p className="mt-2 text-[13px] font-semibold text-brand-rose">
+          Qo'llashda xatolik. Qayta urinib ko'ring.
+        </p>
+      )}
+    </div>
   );
 }
 
