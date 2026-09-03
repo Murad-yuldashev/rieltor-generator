@@ -7,6 +7,7 @@ import { AgentModule } from './agent/agent.module';
 import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { BotModule } from './bot/bot.module';
+import { ComplexesPublicModule } from './complexes-public/complexes-public.module';
 import { envSchema } from './config/env';
 import { DeveloperModule } from './developer/developer.module';
 import { HealthModule } from './health/health.module';
@@ -38,6 +39,7 @@ import { WalletModule } from './wallet/wallet.module';
     AiModule,
     AuthModule,
     BotModule,
+    ComplexesPublicModule,
     DeveloperModule,
     HealthModule,
     LeadsModule,

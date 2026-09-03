@@ -76,6 +76,10 @@ export class RequestsService {
         note: body.note ?? null,
         score,
         priceSom,
+        // Marketplace inquiry provenance (5.3): persisted only when present, so the
+        // plain seeker flow is unchanged.
+        ...(body.complexId && { complexId: body.complexId }),
+        ...(body.unitId && { unitId: body.unitId }),
       },
       include: { author: { select: { phone: true } } },
     });
