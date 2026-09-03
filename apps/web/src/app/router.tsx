@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router';
+import { ComplexesPage } from '@/pages/complexes';
 import { ContactPage } from '@/pages/contact';
 import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
@@ -31,6 +32,8 @@ export const router = createBrowserRouter([
         children: [
           { path: '/', element: <HomePage /> },
           { path: '/search', element: <SearchPage /> },
+          // Public ЖК browse — shares the tab chrome so the nav highlights (T9 adds /jk/:slug outside).
+          { path: '/jk', element: <ComplexesPage /> },
           { path: '/favorites', element: <FavoritesPage /> },
           { path: '/my/listings', element: <MyListingsPage /> },
           { path: '/my/properties', element: <MyPropertiesPage /> },
