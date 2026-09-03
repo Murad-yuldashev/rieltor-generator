@@ -5,6 +5,8 @@ import {
   COMPLEX_STATUS_BADGE,
   COMPLEX_STATUS_LABELS,
   COMPLEX_STATUS_OPTIONS,
+  PUBLISH_STATE_BADGE,
+  PUBLISH_STATE_LABELS,
   useComplexes,
   useCreateComplex,
 } from '@/features/developer';
@@ -64,10 +66,17 @@ export function ComplexesPage() {
                   </span>
                   <span className="mt-0.5 block text-[13px] text-ink-2">{complex.district}</span>
                 </span>
-                <span
-                  className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold ${COMPLEX_STATUS_BADGE[complex.status]}`}
-                >
-                  {COMPLEX_STATUS_LABELS[complex.status]}
+                <span className="flex shrink-0 flex-col items-end gap-1">
+                  <span
+                    className={`rounded-full px-3 py-1 text-[12px] font-bold ${PUBLISH_STATE_BADGE[complex.publishStatus]}`}
+                  >
+                    {PUBLISH_STATE_LABELS[complex.publishStatus]}
+                  </span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-[12px] font-bold ${COMPLEX_STATUS_BADGE[complex.status]}`}
+                  >
+                    {COMPLEX_STATUS_LABELS[complex.status]}
+                  </span>
                 </span>
               </Link>
             </li>

@@ -64,6 +64,21 @@ export function useBecomeDeveloper() {
   });
 }
 
+/**
+ * `POST /api/crm/organization/verification-request` — the org asks a moderator to
+ * grant its verified badge. Returns the org self-view (now with
+ * `verificationRequestedAt` set), so we refresh the org query to flip the status
+ * to "Kutilmoqda". No body.
+ */
+export function useRequestVerification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => apiPost('/api/crm/organization/verification-request', OrganizationSchema),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ORG_QUERY_KEY }),
+  });
+}
+
 /** `GET /api/crm/complexes` — every complex owned by the caller's organization. */
 export function useComplexes() {
   return useQuery({
@@ -99,6 +114,26 @@ export function useUpdateComplex(id: string) {
 
   return useMutation({
     mutationFn: (body: ComplexUpdate) => apiPatch(`/api/crm/complexes/${id}`, ComplexSchema, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: COMPLEXES_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) });
+    },
+  });
+}
+
+/**
+ * `PATCH /api/crm/complexes/:id/publish` — flip a complex between DRAFT and
+ * PUBLISHED. The server gates publish on org verification, at least one image and
+ * a priced available unit; a failed gate comes back as a 409 whose Uzbek `message`
+ * the caller surfaces (ApiError carries it). Refreshes the list (the badge changed)
+ * and this complex's detail.
+ */
+export function usePublishComplex(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (publish: boolean) =>
+      apiPatch(`/api/crm/complexes/${id}/publish`, ComplexSchema, { publish }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: COMPLEXES_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) });

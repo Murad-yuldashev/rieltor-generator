@@ -4,11 +4,15 @@ import type { ComplexDetail, ComplexStatus } from '@rieltor/shared';
 import {
   COMPLEX_STATUS_LABELS,
   COMPLEX_STATUS_OPTIONS,
+  PUBLISH_STATE_BADGE,
+  PUBLISH_STATE_LABELS,
   useComplex,
   useCreateBuilding,
   useDeleteComplex,
+  usePublishComplex,
   useUpdateComplex,
 } from '@/features/developer';
+import { ApiError } from '@/shared/api/client';
 import { CabinetNav } from '@/widgets/cabinet-nav';
 
 const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
@@ -50,6 +54,7 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
   const navigate = useNavigate();
   const update = useUpdateComplex(complex.id);
   const remove = useDeleteComplex();
+  const publish = usePublishComplex(complex.id);
   const createBuilding = useCreateBuilding(complex.id);
 
   const [name, setName] = useState(complex.name);
@@ -57,7 +62,24 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
   const [address, setAddress] = useState(complex.address ?? '');
   const [description, setDescription] = useState(complex.description ?? '');
   const [status, setStatus] = useState<ComplexStatus>(complex.status);
+  // Geo pin — number inputs held as strings; blank means "leave as-is" on save.
+  const [latitude, setLatitude] = useState(
+    complex.latitude != null ? String(complex.latitude) : '',
+  );
+  const [longitude, setLongitude] = useState(
+    complex.longitude != null ? String(complex.longitude) : '',
+  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const isPublished = complex.publishStatus === 'PUBLISHED';
+  // A failed publish gate returns 409 with an Uzbek reason (verify org / add an
+  // image / price an available unit) — show it verbatim; anything else is generic.
+  const publishError =
+    publish.error instanceof ApiError && publish.error.status === 409
+      ? publish.error.message
+      : publish.isError
+        ? "E'lon holatini o'zgartirishda xatolik. Qayta urinib ko'ring."
+        : null;
 
   const [buildingName, setBuildingName] = useState('');
   const [buildingFloors, setBuildingFloors] = useState('');
@@ -67,14 +89,19 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
     const trimmedName = name.trim();
     const trimmedDistrict = district.trim();
     if (!trimmedName || !trimmedDistrict) return;
-    // `address`/`description` are optional on the DTO — an empty field is omitted
-    // (the server keeps the current value) rather than sent as a blank string.
+    // `address`/`description`/`latitude`/`longitude` are optional on the DTO — a
+    // blank field is omitted (the server keeps the current value) rather than sent
+    // as a blank string. A non-numeric geo value parses to NaN and is dropped too.
+    const latValue = latitude.trim() ? Number(latitude) : undefined;
+    const lngValue = longitude.trim() ? Number(longitude) : undefined;
     await update.mutateAsync({
       name: trimmedName,
       district: trimmedDistrict,
       status,
       address: address.trim() || undefined,
       description: description.trim() || undefined,
+      latitude: Number.isFinite(latValue) ? latValue : undefined,
+      longitude: Number.isFinite(lngValue) ? lngValue : undefined,
     });
   }
 
@@ -168,6 +195,36 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
           ))}
         </select>
 
+        <label className={LABEL} htmlFor="edit-latitude">
+          Kenglik (latitude)
+        </label>
+        <input
+          id="edit-latitude"
+          type="number"
+          step="any"
+          min={-90}
+          max={90}
+          value={latitude}
+          onChange={(event) => setLatitude(event.target.value)}
+          placeholder="Ixtiyoriy, masalan: 41.311"
+          className={FIELD}
+        />
+
+        <label className={LABEL} htmlFor="edit-longitude">
+          Uzunlik (longitude)
+        </label>
+        <input
+          id="edit-longitude"
+          type="number"
+          step="any"
+          min={-180}
+          max={180}
+          value={longitude}
+          onChange={(event) => setLongitude(event.target.value)}
+          placeholder="Ixtiyoriy, masalan: 69.279"
+          className={FIELD}
+        />
+
         <button
           type="submit"
           disabled={update.isPending || name.trim().length === 0 || district.trim().length === 0}
@@ -182,6 +239,39 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
           </p>
         )}
       </form>
+
+      <section className="rounded-card bg-card p-5 shadow-card">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-ink">Marketpleysda e'lon</h2>
+          <span
+            className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold ${PUBLISH_STATE_BADGE[complex.publishStatus]}`}
+          >
+            {PUBLISH_STATE_LABELS[complex.publishStatus]}
+          </span>
+        </div>
+        <p className="mt-1 text-[13px] text-ink-2">
+          {isPublished
+            ? "Majmua marketpleysda ko'rinmoqda. E'londan olsangiz, xaridorlar uni ko'ra olmaydi."
+            : "E'lon qilish uchun tashkilot tasdiqdan o'tgan, kamida bitta rasm va narxli bo'sh xonadon bo'lishi kerak."}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => publish.mutate(!isPublished)}
+          disabled={publish.isPending}
+          className={
+            isPublished
+              ? 'mt-4 w-full rounded-[14px] border border-line px-6 py-3 text-[15px] font-extrabold text-ink-2 disabled:opacity-60'
+              : 'mt-4 w-full rounded-[14px] bg-brand-green px-6 py-3.5 text-[15px] font-extrabold text-white disabled:opacity-60'
+          }
+        >
+          {publish.isPending ? 'Bajarilmoqda...' : isPublished ? "E'londan olish" : "E'lon qilish"}
+        </button>
+
+        {publishError && (
+          <p className="mt-3 text-[13px] font-semibold text-brand-rose">{publishError}</p>
+        )}
+      </section>
 
       <section className="rounded-card bg-card p-5 shadow-card">
         <h2 className="text-[15px] font-bold text-ink">Binolar</h2>
