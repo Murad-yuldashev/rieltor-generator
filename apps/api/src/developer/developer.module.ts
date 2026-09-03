@@ -3,13 +3,14 @@ import { AuthModule } from '../auth/auth.module';
 import { BookingController } from './booking.controller';
 import { BookingExpiryCron } from './booking-expiry.cron';
 import { BookingService } from './booking.service';
+import { ComplexImageController } from './complex-image.controller';
 import { DeveloperController } from './developer.controller';
 import { DeveloperGuard } from './developer.guard';
 import { DeveloperService } from './developer.service';
 
 @Module({
   imports: [AuthModule], // JwtGuard/JwtService
-  controllers: [DeveloperController, BookingController],
+  controllers: [DeveloperController, BookingController, ComplexImageController],
   providers: [DeveloperService, DeveloperGuard, BookingService, BookingExpiryCron],
   exports: [DeveloperGuard],
 })

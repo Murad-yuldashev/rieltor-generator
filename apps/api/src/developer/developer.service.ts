@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   Building,
@@ -20,8 +21,16 @@ import type {
   ComplexImage as ComplexImageRow,
   Unit as UnitRow,
 } from '@prisma/client';
+import { processImage } from '../listings/process-image';
 import { PrismaService } from '../prisma/prisma.service';
 import { slugify } from './slug';
+
+// Same directory bootstrap.ts serves '/images' from, resolved the same way as
+// ListingsService (relative to the API root, not this file after compilation).
+const PUBLIC_DIR = resolve(__dirname, '..', '..', 'public');
+
+// Per-complex gallery cap — the guarded upload endpoint refuses beyond this.
+const MAX_COMPLEX_IMAGES = 20;
 
 /** A unit row optionally carrying its active booking (populated by `listUnits`). */
 type UnitRowWithBookings = UnitRow & {
@@ -310,6 +319,78 @@ export class DeveloperService {
     await this.complexOwnedOrThrow(userId, id);
     await this.prisma.complex.delete({ where: { id } });
     return { ok: true };
+  }
+
+  // ---- ComplexImage upload/delete (org-scoped via the complex) -------------
+
+  /**
+   * Add one gallery image to an owned complex (foreign complex -> 404).
+   *
+   * Enforces a per-complex cap (409 once full), then runs the shared sharp
+   * pipeline — `processImage` writes variants under `public/images/complex/<id>/`
+   * and returns the `{ base, ogUrl, width, height }` stored on the row. `position`
+   * is (max existing position) + 1 so the gallery keeps append order; the first
+   * image also gets an OG crop (it is the cover). Returns the fresh `ComplexDetail`
+   * so the client re-renders the whole gallery from one response.
+   */
+  async addComplexImage(
+    userId: string,
+    complexId: string,
+    file: Express.Multer.File,
+  ): Promise<ComplexDetail> {
+    await this.complexOwnedOrThrow(userId, complexId);
+
+    const existing = await this.prisma.complexImage.findMany({
+      where: { complexId },
+      select: { position: true },
+    });
+    if (existing.length >= MAX_COMPLEX_IMAGES) {
+      throw new ConflictException("Rasmlar chegarasi to'ldi");
+    }
+
+    const position = existing.reduce((max, img) => Math.max(max, img.position), -1) + 1;
+    const result = await processImage({
+      source: file.buffer,
+      outputRoot: PUBLIC_DIR,
+      // A path segment only: base becomes "/images/complex/<complexId>/<nn>".
+      listingId: `complex/${complexId}`,
+      position,
+      makeOg: existing.length === 0, // first image is the cover
+    });
+
+    await this.prisma.complexImage.create({
+      data: {
+        complexId,
+        base: result.base,
+        ogUrl: result.ogUrl,
+        width: result.width,
+        height: result.height,
+        position,
+      },
+    });
+
+    return this.getComplex(userId, complexId);
+  }
+
+  /**
+   * Delete one gallery image from an owned complex (foreign complex -> 404).
+   * The delete is scoped to `{ id, complexId }`, so an imageId from another
+   * complex can neither match nor delete this one's row (missing/foreign -> 404).
+   * Returns the fresh `ComplexDetail`.
+   */
+  async removeComplexImage(
+    userId: string,
+    complexId: string,
+    imageId: string,
+  ): Promise<ComplexDetail> {
+    await this.complexOwnedOrThrow(userId, complexId);
+
+    const { count } = await this.prisma.complexImage.deleteMany({
+      where: { id: imageId, complexId },
+    });
+    if (count === 0) throw new NotFoundException('Rasm topilmadi');
+
+    return this.getComplex(userId, complexId);
   }
 
   // ---- Building CRUD (org-scoped via the complex) --------------------------
