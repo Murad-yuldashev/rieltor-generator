@@ -8,10 +8,12 @@ import { ComplexesPublicService } from './complexes-public.service';
 // unguarded and slug-gated; AuthModule supplies JwtService/JwtGuard for the single
 // method-level @UseGuards(JwtGuard) on the inquiry write. RequestsService is provided
 // directly (it only depends on the global Prisma) so the inquiry can mint a scored lead
-// without touching RequestsModule's provider set.
+// without touching RequestsModule's provider set. ComplexesPublicService is exported so
+// the SSR filter (NotFoundShellFilter) can inject it to build /jk og-meta.
 @Module({
   imports: [AuthModule],
   controllers: [ComplexesPublicController],
   providers: [ComplexesPublicService, RequestsService],
+  exports: [ComplexesPublicService],
 })
 export class ComplexesPublicModule {}
