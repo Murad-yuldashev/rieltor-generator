@@ -136,4 +136,23 @@ export class BookingService {
       buildingName: b.unit.building.name,
     }));
   }
+
+  /** Expire ACTIVE bookings past holdUntil; free a unit only if it is STILL BOOKED. */
+  async expireOverdue(): Promise<{ expired: number }> {
+    const now = new Date();
+    const overdue = await this.prisma.booking.findMany({
+      where: { status: 'ACTIVE', holdUntil: { lt: now } },
+      select: { id: true, unitId: true },
+    });
+    for (const b of overdue) {
+      await this.prisma.$transaction([
+        this.prisma.booking.update({ where: { id: b.id }, data: { status: 'EXPIRED' } }),
+        this.prisma.unit.updateMany({
+          where: { id: b.unitId, status: 'BOOKED' }, // only free a still-BOOKED unit
+          data: { status: 'AVAILABLE' },
+        }),
+      ]);
+    }
+    return { expired: overdue.length };
+  }
 }
