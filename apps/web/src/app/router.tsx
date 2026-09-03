@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router';
+import { ComplexPage } from '@/pages/complex';
 import { ComplexesPage } from '@/pages/complexes';
 import { ContactPage } from '@/pages/contact';
 import { FavoritesPage } from '@/pages/favorites';
@@ -50,6 +51,9 @@ export const router = createBrowserRouter([
       },
       // The listing page sits outside TabLayout: full-bleed gallery and its own sticky CTA.
       { path: '/obj/:id', element: <ListingPage /> },
+      // The public ЖК detail sits outside TabLayout too: full-bleed gallery + its own
+      // sticky inquiry CTA, mirroring /obj/:id and /r/:slug (own chrome, no bottom nav).
+      { path: '/jk/:slug', element: <ComplexPage /> },
       // Public client presentation — token-gated, no auth, no bottom nav.
       { path: '/p/:token', element: <PresentationPage /> },
       // Public realtor microsite — slug-gated, no auth, no bottom nav.
