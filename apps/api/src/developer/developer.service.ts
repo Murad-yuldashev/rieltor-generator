@@ -7,6 +7,7 @@ import type {
   ComplexCreate,
   ComplexDetail,
   ComplexUpdate,
+  Image,
   Organization,
   Unit,
   UnitBulkUpdate,
@@ -16,6 +17,7 @@ import type {
 import type {
   Building as BuildingRow,
   Complex as ComplexRow,
+  ComplexImage as ComplexImageRow,
   Unit as UnitRow,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -24,6 +26,9 @@ import { PrismaService } from '../prisma/prisma.service';
 type UnitRowWithBookings = UnitRow & {
   bookings?: { id: string; clientName: string; clientPhone: string; holdUntil: Date }[];
 };
+
+/** A complex row carrying its ordered images (populated by the complex read queries). */
+type ComplexRowWithImages = ComplexRow & { images: ComplexImageRow[] };
 
 @Injectable()
 export class DeveloperService {
@@ -73,6 +78,9 @@ export class DeveloperService {
         id: true,
         name: true,
         district: true,
+        verified: true,
+        verificationRequestedAt: true,
+        verifiedAt: true,
         members: {
           select: { userId: true, role: true, user: { select: { name: true, phone: true } } },
         },
@@ -82,6 +90,9 @@ export class DeveloperService {
       id: org!.id,
       name: org!.name,
       district: org!.district,
+      verified: org!.verified,
+      verificationRequestedAt: org!.verificationRequestedAt?.toISOString() ?? null,
+      verifiedAt: org!.verifiedAt?.toISOString() ?? null,
       members: org!.members.map((m) => ({
         userId: m.userId,
         role: m.role,
@@ -93,8 +104,23 @@ export class DeveloperService {
 
   // ---- Complex CRUD (org-scoped) -------------------------------------------
 
-  /** Row -> `Complex` DTO (createdAt as ISO string). */
-  private toComplex(c: ComplexRow): Complex {
+  /** `ComplexImage` row -> shared `Image` DTO. */
+  private toImage(img: ComplexImageRow): Image {
+    return {
+      base: img.base,
+      ogUrl: img.ogUrl,
+      width: img.width,
+      height: img.height,
+      position: img.position,
+    };
+  }
+
+  /**
+   * Row (+ ordered images) -> `Complex` DTO. Dates as ISO strings; `coverImage`
+   * is the first image by position (images are queried ordered), `imageCount`
+   * the gallery size.
+   */
+  private toComplex(c: ComplexRowWithImages): Complex {
     return {
       id: c.id,
       name: c.name,
@@ -103,6 +129,13 @@ export class DeveloperService {
       description: c.description,
       status: c.status,
       createdAt: c.createdAt.toISOString(),
+      slug: c.slug,
+      publishStatus: c.publishStatus,
+      publishedAt: c.publishedAt?.toISOString() ?? null,
+      latitude: c.latitude,
+      longitude: c.longitude,
+      coverImage: c.images[0] ? this.toImage(c.images[0]) : null,
+      imageCount: c.images.length,
     };
   }
 
@@ -123,6 +156,7 @@ export class DeveloperService {
     const rows = await this.prisma.complex.findMany({
       where: { orgId },
       orderBy: { createdAt: 'desc' },
+      include: { images: { orderBy: { position: 'asc' } }, org: true },
     });
     return rows.map((c) => this.toComplex(c));
   }
@@ -139,6 +173,7 @@ export class DeveloperService {
         description: input.description ?? null,
         status: input.status ?? 'UNDER_CONSTRUCTION',
       },
+      include: { images: { orderBy: { position: 'asc' } }, org: true },
     });
     return this.toComplex(complex);
   }
@@ -148,7 +183,11 @@ export class DeveloperService {
     await this.complexOwnedOrThrow(userId, id);
     const complex = await this.prisma.complex.findUnique({
       where: { id },
-      include: { buildings: { orderBy: { createdAt: 'asc' } } },
+      include: {
+        buildings: { orderBy: { createdAt: 'asc' } },
+        images: { orderBy: { position: 'asc' } },
+        org: true,
+      },
     });
     return {
       ...this.toComplex(complex!),
@@ -158,6 +197,7 @@ export class DeveloperService {
         floors: b.floors,
         createdAt: b.createdAt.toISOString(),
       })),
+      gallery: complex!.images.map((img) => this.toImage(img)),
     };
   }
 
@@ -173,6 +213,7 @@ export class DeveloperService {
         ...(input.description !== undefined && { description: input.description ?? null }),
         ...(input.status !== undefined && { status: input.status }),
       },
+      include: { images: { orderBy: { position: 'asc' } }, org: true },
     });
     return this.toComplex(complex);
   }
