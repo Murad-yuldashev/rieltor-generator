@@ -132,6 +132,7 @@ model User {
   writtenReviews    Review[]          @relation("WrittenReviews")
   wallet            Wallet?
   memberships       Membership[]
+  bookings          Booking[]
 }
 
 model Session {
@@ -464,6 +465,13 @@ enum UnitStatus {
   SOLD
 }
 
+enum BookingStatus {
+  ACTIVE // holding the unit now
+  CANCELLED // released by the developer (cancelReason set)
+  EXPIRED // holdUntil passed; freed by the cron
+  CONVERTED // turned into a sale (unit -> SOLD)
+}
+
 model Organization {
   id        String       @id @default(cuid())
   name      String
@@ -533,6 +541,26 @@ model Unit {
   status     UnitStatus @default(AVAILABLE)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
+  bookings   Booking[]
 
   @@index([buildingId])
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  unitId       String
+  unit         Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  clientName   String
+  clientPhone  String
+  holdUntil    DateTime
+  status       BookingStatus @default(ACTIVE)
+  note         String?
+  cancelReason String? // set when status = CANCELLED
+  createdById  String // the org member who booked (a User id)
+  createdBy    User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([unitId])
+  @@index([status, holdUntil]) // the expiry cron scans ACTIVE + overdue
 }
