@@ -374,9 +374,12 @@ export class DeveloperService {
 
   /**
    * Delete one gallery image from an owned complex (foreign complex -> 404).
-   * The delete is scoped to `{ id, complexId }`, so an imageId from another
-   * complex can neither match nor delete this one's row (missing/foreign -> 404).
-   * Returns the fresh `ComplexDetail`.
+   *
+   * The `:imageId` route param carries the image's `position`, not its cuid: the
+   * shared `Image` DTO the CRM renders exposes no `id`, so the client sends
+   * `String(position)`. Position is unique per complex (assigned max+1), so the
+   * delete is scoped to `{ complexId, position }`. A non-numeric or unmatched
+   * position -> 404. Returns the fresh `ComplexDetail`.
    */
   async removeComplexImage(
     userId: string,
@@ -385,8 +388,11 @@ export class DeveloperService {
   ): Promise<ComplexDetail> {
     await this.complexOwnedOrThrow(userId, complexId);
 
+    const position = Number(imageId);
+    if (!Number.isInteger(position)) throw new NotFoundException('Rasm topilmadi');
+
     const { count } = await this.prisma.complexImage.deleteMany({
-      where: { id: imageId, complexId },
+      where: { complexId, position },
     });
     if (count === 0) throw new NotFoundException('Rasm topilmadi');
 
