@@ -19,6 +19,11 @@ import type {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** A unit row optionally carrying its active booking (populated by `listUnits`). */
+type UnitRowWithBookings = UnitRow & {
+  bookings?: { id: string; clientName: string; clientPhone: string; holdUntil: Date }[];
+};
+
 @Injectable()
 export class DeveloperService {
   constructor(private readonly prisma: PrismaService) {}
@@ -240,8 +245,8 @@ export class DeveloperService {
 
   // ---- Unit CRUD (org-scoped via building -> complex) ----------------------
 
-  /** Row -> `Unit` DTO (BigInt `priceSom` -> string, everything else passthrough). */
-  private toUnit(u: UnitRow): Unit {
+  /** Row -> `Unit` DTO (BigInt `priceSom` -> string, active booking summary when present). */
+  private toUnit(u: UnitRowWithBookings): Unit {
     return {
       id: u.id,
       buildingId: u.buildingId,
@@ -251,6 +256,15 @@ export class DeveloperService {
       areaM2: u.areaM2,
       priceSom: u.priceSom != null ? String(u.priceSom) : null,
       status: u.status,
+      activeBooking:
+        u.bookings && u.bookings[0]
+          ? {
+              id: u.bookings[0].id,
+              clientName: u.bookings[0].clientName,
+              clientPhone: u.bookings[0].clientPhone,
+              holdUntil: u.bookings[0].holdUntil.toISOString(),
+            }
+          : null,
     };
   }
 
@@ -269,12 +283,28 @@ export class DeveloperService {
     return unit;
   }
 
+  /**
+   * Public ownership assertion for a unit (via building -> complex), or 404.
+   * Exposes the private `unitOwnedOrThrow` chain check for sibling services (e.g. BookingService).
+   */
+  async assertUnitOwned(userId: string, id: string): Promise<void> {
+    await this.unitOwnedOrThrow(userId, id);
+  }
+
   /** All units of an owned building, ordered by floor then number (foreign building -> 404). */
   async listUnits(userId: string, buildingId: string): Promise<Unit[]> {
     await this.buildingOwnedOrThrow(userId, buildingId);
     const rows = await this.prisma.unit.findMany({
       where: { buildingId },
       orderBy: [{ floor: 'asc' }, { number: 'asc' }],
+      include: {
+        bookings: {
+          where: { status: 'ACTIVE' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { id: true, clientName: true, clientPhone: true, holdUntil: true },
+        },
+      },
     });
     return rows.map((u) => this.toUnit(u));
   }
