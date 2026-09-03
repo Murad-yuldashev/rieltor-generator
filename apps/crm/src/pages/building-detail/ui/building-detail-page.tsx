@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { formatPriceSom, type Unit, type UnitStatus } from '@rieltor/shared';
+import { useBookUnit, useBookingAction } from '@/features/booking';
 import {
   UNIT_STATUS_BADGE,
   UNIT_STATUS_LABELS,
@@ -23,6 +24,33 @@ const CELL = 'whitespace-nowrap px-3 py-2.5 text-[13px] text-ink';
 const HEAD = 'whitespace-nowrap px-3 py-2.5 text-left text-[12px] font-semibold text-ink-3';
 const TABLE_INPUT =
   'w-full min-w-[72px] rounded-[10px] border border-line bg-surface px-2 py-1.5 text-[13px] text-ink outline-none focus:border-accent';
+const PANEL_INPUT =
+  'mt-1 w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-[14px] text-ink outline-none focus:border-accent';
+
+/** Shaxmatka cell tint per status — a bordered colour block for the floor grid. */
+const CELL_TONE: Record<UnitStatus, string> = {
+  AVAILABLE: 'border-brand-green/30 bg-brand-green/10 text-brand-green',
+  BOOKED: 'border-brand-amber/40 bg-brand-amber/15 text-brand-amber',
+  SOLD: 'border-brand-rose/30 bg-brand-rose/10 text-brand-rose',
+};
+
+/** Group units into floor rows, top floor first, each row ordered by number. */
+function groupUnitsByFloorDesc(units: Unit[]): { floor: number; rowUnits: Unit[] }[] {
+  const byFloor = new Map<number, Unit[]>();
+  for (const unit of units) {
+    const bucket = byFloor.get(unit.floor);
+    if (bucket) bucket.push(unit);
+    else byFloor.set(unit.floor, [unit]);
+  }
+  return [...byFloor.entries()]
+    .sort(([a], [b]) => b - a)
+    .map(([floor, rowUnits]) => ({
+      floor,
+      rowUnits: [...rowUnits].sort((a, b) =>
+        a.number.localeCompare(b.number, undefined, { numeric: true }),
+      ),
+    }));
+}
 
 /**
  * Building detail (`/buildings/:id`). The parent complex id is not derivable from
@@ -38,6 +66,11 @@ export function BuildingDetailPage() {
   const backTo = complexId ? `/complexes/${complexId}` : '/complexes';
 
   const { data: units, isPending, isError } = useUnits(id);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  // Derive the selected unit from the live list (not a stored copy) so it always
+  // reflects the latest refetch — a booking action recolours the cell AND updates
+  // the open panel's status-conditional actions.
+  const selectedUnit = units?.find((unit) => unit.id === selectedUnitId) ?? null;
 
   return (
     <main className={SHELL}>
@@ -47,7 +80,7 @@ export function BuildingDetailPage() {
       </Link>
 
       <section className="rounded-card bg-card p-5 shadow-card">
-        <h1 className="text-[18px] font-extrabold tracking-tight text-ink">Xonadonlar</h1>
+        <h1 className="text-[18px] font-extrabold tracking-tight text-ink">Shaxmatka</h1>
         <StatusLegend />
 
         {isPending ? (
@@ -56,10 +89,33 @@ export function BuildingDetailPage() {
           <p className="mt-4 text-[14px] font-semibold text-brand-rose">
             Xonadonlarni yuklab bo'lmadi. Qayta urinib ko'ring.
           </p>
+        ) : units.length === 0 ? (
+          <p className="mt-4 text-[14px] text-ink-3">Hozircha xonadon yo'q</p>
         ) : (
-          <UnitsTable buildingId={id} units={units} />
+          <>
+            <ShaxmatkaGrid
+              units={units}
+              selectedUnitId={selectedUnitId}
+              onSelect={setSelectedUnitId}
+            />
+            {selectedUnit && (
+              <CellPanel
+                key={selectedUnit.id}
+                buildingId={id}
+                unit={selectedUnit}
+                onClose={() => setSelectedUnitId(null)}
+              />
+            )}
+          </>
         )}
       </section>
+
+      {!isPending && !isError && units && units.length > 0 && (
+        <section className="rounded-card bg-card p-5 shadow-card">
+          <h2 className="text-[15px] font-bold text-ink">Xonadonlar ro'yxati</h2>
+          <UnitsTable buildingId={id} units={units} />
+        </section>
+      )}
 
       <AddUnitForm buildingId={id} />
       <BuildingSettings buildingId={id} complexId={complexId} backTo={backTo} />
@@ -82,6 +138,384 @@ function StatusLegend() {
           {UNIT_STATUS_LABELS[status]}
         </span>
       ))}
+    </div>
+  );
+}
+
+/**
+ * The shaxmatka: one row per floor (top floor first), each row a horizontal strip
+ * of status-coloured unit cells. Scrolls sideways on narrow screens so a wide floor
+ * never squeezes the page.
+ */
+function ShaxmatkaGrid({
+  units,
+  selectedUnitId,
+  onSelect,
+}: {
+  units: Unit[];
+  selectedUnitId: string | null;
+  onSelect: (unitId: string) => void;
+}) {
+  const floors = groupUnitsByFloorDesc(units);
+
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <div className="flex w-max min-w-full flex-col gap-2">
+        {floors.map(({ floor, rowUnits }) => (
+          <div key={floor} className="flex items-stretch gap-2">
+            <div className="flex w-10 shrink-0 items-center justify-end pr-1 text-[12px] font-semibold text-ink-3">
+              {floor}
+            </div>
+            <div className="flex gap-2">
+              {rowUnits.map((unit) => (
+                <ShaxmatkaCell
+                  key={unit.id}
+                  unit={unit}
+                  selected={unit.id === selectedUnitId}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** One shaxmatka cell — number on top, status/client label below, tinted by status. */
+function ShaxmatkaCell({
+  unit,
+  selected,
+  onSelect,
+}: {
+  unit: Unit;
+  selected: boolean;
+  onSelect: (unitId: string) => void;
+}) {
+  const subtitle =
+    unit.status === 'BOOKED'
+      ? (unit.activeBooking?.clientName ?? UNIT_STATUS_LABELS.BOOKED)
+      : UNIT_STATUS_LABELS[unit.status];
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(unit.id)}
+      className={cn(
+        'flex h-16 w-20 shrink-0 flex-col items-start justify-between rounded-[12px] border px-2 py-1.5 text-left transition',
+        CELL_TONE[unit.status],
+        selected && 'ring-2 ring-accent ring-offset-1 ring-offset-card',
+      )}
+    >
+      <span className="text-[14px] font-bold leading-none">{unit.number}</span>
+      <span className="w-full truncate text-[11px] font-semibold leading-tight opacity-80">
+        {subtitle}
+      </span>
+    </button>
+  );
+}
+
+/**
+ * The cell detail panel: the selected unit's editable fields plus its
+ * status-conditional booking controls (book / cancel / convert).
+ */
+function CellPanel({
+  buildingId,
+  unit,
+  onClose,
+}: {
+  buildingId: string;
+  unit: Unit;
+  onClose: () => void;
+}) {
+  return (
+    <div className="mt-5 rounded-card border border-line bg-surface p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-[16px] font-extrabold text-ink">Xonadon {unit.number}</h2>
+          <span
+            className={cn(
+              'rounded-full px-2.5 py-1 text-[12px] font-semibold',
+              UNIT_STATUS_BADGE[unit.status],
+            )}
+          >
+            {UNIT_STATUS_LABELS[unit.status]}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Yopish"
+          className="rounded-[10px] border border-line px-2.5 py-1 text-[13px] font-semibold text-ink-2"
+        >
+          ✕
+        </button>
+      </div>
+
+      <UnitEditForm buildingId={buildingId} unit={unit} />
+
+      <div className="mt-4 border-t border-line pt-4">
+        {unit.status === 'AVAILABLE' && <BookForm buildingId={buildingId} unitId={unit.id} />}
+        {unit.status === 'BOOKED' && <BookedActions buildingId={buildingId} unit={unit} />}
+        {unit.status === 'SOLD' && (
+          <p className="text-[13px] font-semibold text-ink-3">Bu xonadon sotilgan.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Editable unit fields inside the panel — reuses `useUpdateUnit` (5.1). */
+function UnitEditForm({ buildingId, unit }: { buildingId: string; unit: Unit }) {
+  const update = useUpdateUnit(buildingId);
+
+  const [number, setNumber] = useState(unit.number);
+  const [floor, setFloor] = useState(String(unit.floor));
+  const [rooms, setRooms] = useState(unit.rooms != null ? String(unit.rooms) : '');
+  const [areaM2, setAreaM2] = useState(unit.areaM2 != null ? String(unit.areaM2) : '');
+  const [priceSom, setPriceSom] = useState(unit.priceSom ?? '');
+
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedNumber = number.trim();
+    if (!trimmedNumber) return;
+    await update.mutateAsync({
+      unitId: unit.id,
+      number: trimmedNumber,
+      floor: Number(floor) || 0,
+      rooms: rooms.trim() ? Number(rooms) : undefined,
+      areaM2: areaM2.trim() ? Number(areaM2) : undefined,
+      priceSom: priceSom.trim() ? priceSom.trim() : undefined,
+    });
+  }
+
+  return (
+    <form onSubmit={handleSave} className="mt-4 grid grid-cols-2 gap-3">
+      <label className="block">
+        <span className={LABEL}>Raqam</span>
+        <input
+          value={number}
+          onChange={(event) => setNumber(event.target.value)}
+          maxLength={40}
+          className={PANEL_INPUT}
+        />
+      </label>
+      <label className="block">
+        <span className={LABEL}>Qavat</span>
+        <input
+          type="number"
+          min={0}
+          max={200}
+          value={floor}
+          onChange={(event) => setFloor(event.target.value)}
+          className={PANEL_INPUT}
+        />
+      </label>
+      <label className="block">
+        <span className={LABEL}>Xonalar</span>
+        <input
+          type="number"
+          min={0}
+          max={50}
+          value={rooms}
+          onChange={(event) => setRooms(event.target.value)}
+          placeholder="Ixtiyoriy"
+          className={PANEL_INPUT}
+        />
+      </label>
+      <label className="block">
+        <span className={LABEL}>Maydon, m²</span>
+        <input
+          type="number"
+          min={0}
+          step="0.1"
+          value={areaM2}
+          onChange={(event) => setAreaM2(event.target.value)}
+          placeholder="Ixtiyoriy"
+          className={PANEL_INPUT}
+        />
+      </label>
+      <label className="col-span-2 block">
+        <span className={LABEL}>Narx, so'm</span>
+        <input
+          inputMode="numeric"
+          value={priceSom}
+          onChange={(event) => setPriceSom(event.target.value.replace(/\D/g, ''))}
+          placeholder="Ixtiyoriy"
+          className={PANEL_INPUT}
+        />
+      </label>
+
+      <button
+        type="submit"
+        disabled={update.isPending || number.trim().length === 0}
+        className="col-span-2 mt-1 rounded-[12px] border border-accent bg-accent-soft px-4 py-2.5 text-[14px] font-bold text-accent disabled:opacity-60"
+      >
+        {update.isPending ? 'Saqlanmoqda...' : 'Maʼlumotlarni saqlash'}
+      </button>
+
+      {update.isError && (
+        <p className="col-span-2 text-[13px] font-semibold text-brand-rose">
+          Saqlashda xatolik. Qayta urinib ko'ring.
+        </p>
+      )}
+    </form>
+  );
+}
+
+/** The "Band qilish" form shown for an AVAILABLE unit. */
+function BookForm({ buildingId, unitId }: { buildingId: string; unitId: string }) {
+  const book = useBookUnit(buildingId);
+
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [holdDays, setHoldDays] = useState('');
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!clientName.trim() || !clientPhone.trim()) return;
+    // On success the unit flips to BOOKED and the panel re-renders into BookedActions.
+    await book.mutateAsync({
+      unitId,
+      clientName: clientName.trim(),
+      clientPhone: clientPhone.trim(),
+      holdDays: holdDays.trim() ? Number(holdDays) : undefined,
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h3 className="text-[14px] font-bold text-ink">Band qilish</h3>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className={LABEL}>Mijoz ismi</span>
+          <input
+            value={clientName}
+            onChange={(event) => setClientName(event.target.value)}
+            maxLength={120}
+            className={PANEL_INPUT}
+          />
+        </label>
+        <label className="block">
+          <span className={LABEL}>Telefon</span>
+          <input
+            value={clientPhone}
+            onChange={(event) => setClientPhone(event.target.value)}
+            maxLength={30}
+            placeholder="+998..."
+            className={PANEL_INPUT}
+          />
+        </label>
+        <label className="col-span-2 block">
+          <span className={LABEL}>Band muddati (kun)</span>
+          <input
+            type="number"
+            min={1}
+            max={90}
+            value={holdDays}
+            onChange={(event) => setHoldDays(event.target.value)}
+            placeholder="Ixtiyoriy"
+            className={PANEL_INPUT}
+          />
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        disabled={book.isPending || !clientName.trim() || !clientPhone.trim()}
+        className="mt-3 w-full rounded-[12px] bg-brand-amber px-4 py-2.5 text-[14px] font-extrabold text-white disabled:opacity-60"
+      >
+        {book.isPending ? 'Band qilinmoqda...' : 'Band qilish'}
+      </button>
+
+      {book.isError && (
+        <p className="mt-2 text-[13px] font-semibold text-brand-rose">
+          Band qilishda xatolik. Qayta urinib ko'ring.
+        </p>
+      )}
+    </form>
+  );
+}
+
+/** The active-hold summary + cancel/convert actions shown for a BOOKED unit. */
+function BookedActions({ buildingId, unit }: { buildingId: string; unit: Unit }) {
+  const action = useBookingAction(buildingId);
+  const [cancelReason, setCancelReason] = useState('');
+  const booking = unit.activeBooking;
+
+  if (!booking) {
+    return <p className="text-[13px] font-semibold text-ink-3">Faol band topilmadi.</p>;
+  }
+  const bookingId = booking.id;
+
+  function handleCancel() {
+    action.mutate({
+      bookingId,
+      action: 'cancel',
+      cancelReason: cancelReason.trim() ? cancelReason.trim() : undefined,
+    });
+  }
+
+  function handleConvert() {
+    action.mutate({ bookingId, action: 'convert' });
+  }
+
+  return (
+    <div>
+      <h3 className="text-[14px] font-bold text-ink">Band</h3>
+      <dl className="mt-2 space-y-1 text-[13px] text-ink-2">
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-3">Mijoz</dt>
+          <dd className="font-semibold text-ink">{booking.clientName}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-3">Telefon</dt>
+          <dd className="font-semibold text-ink">{booking.clientPhone}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-3">Muddat</dt>
+          <dd className="font-semibold text-ink">
+            {new Date(booking.holdUntil).toLocaleDateString('uz-UZ')}
+          </dd>
+        </div>
+      </dl>
+
+      <label className="mt-3 block">
+        <span className={LABEL}>Bekor qilish sababi</span>
+        <input
+          value={cancelReason}
+          onChange={(event) => setCancelReason(event.target.value)}
+          maxLength={500}
+          placeholder="Ixtiyoriy"
+          className={PANEL_INPUT}
+        />
+      </label>
+
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={action.isPending}
+          className="flex-1 rounded-[12px] border border-brand-rose px-4 py-2.5 text-[14px] font-bold text-brand-rose disabled:opacity-60"
+        >
+          {action.isPending ? '...' : 'Bekor qilish'}
+        </button>
+        <button
+          type="button"
+          onClick={handleConvert}
+          disabled={action.isPending}
+          className="flex-1 rounded-[12px] bg-brand-green px-4 py-2.5 text-[14px] font-extrabold text-white disabled:opacity-60"
+        >
+          {action.isPending ? '...' : 'Sotildi'}
+        </button>
+      </div>
+
+      {action.isError && (
+        <p className="mt-2 text-[13px] font-semibold text-brand-rose">
+          Amalni bajarishda xatolik. Qayta urinib ko'ring.
+        </p>
+      )}
     </div>
   );
 }
