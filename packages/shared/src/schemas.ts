@@ -771,7 +771,7 @@ export const UnitCreateSchema = z.object({
 });
 export const UnitUpdateSchema = UnitCreateSchema.partial();
 
-/** Body of `POST /api/crm/units/:id/bookings` — create a hold on a unit. */
+/** Body of `POST /api/crm/units/:id/book` — create a hold on a unit. */
 export const BookingCreateSchema = z.object({
   clientName: z.string().trim().min(1).max(120),
   clientPhone: z.string().trim().min(3).max(30),
@@ -779,7 +779,7 @@ export const BookingCreateSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 });
 
-/** Body of `POST /api/crm/bookings/:id/actions` — cancel / convert / extend a hold. */
+/** Body of `PATCH /api/crm/bookings/:id` — cancel / convert / extend a hold. */
 export const BookingActionSchema = z.object({
   action: z.enum(['cancel', 'convert', 'extend']),
   cancelReason: z.string().trim().max(500).optional(),
