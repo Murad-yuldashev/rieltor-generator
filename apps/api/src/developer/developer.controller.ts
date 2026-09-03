@@ -5,6 +5,7 @@ import {
   BuildingUpdateSchema,
   ComplexCreateSchema,
   ComplexUpdateSchema,
+  UnitBulkUpdateSchema,
   UnitCreateSchema,
   UnitUpdateSchema,
 } from '@rieltor/shared';
@@ -95,6 +96,14 @@ export class DeveloperController {
   @UseGuards(DeveloperGuard)
   createUnit(@Param('id') id: string, @CurrentUser() u: { id: string }, @Body() body: unknown) {
     return this.dev.createUnit(u.id, id, UnitCreateSchema.parse(body));
+  }
+
+  // Declared BEFORE `units/:id`: Nest matches routes in declaration order, so the literal
+  // `units/bulk` must come first or `PATCH units/bulk` is captured as `units/:id` with id='bulk'.
+  @Patch('units/bulk')
+  @UseGuards(DeveloperGuard)
+  bulkUpdateUnits(@CurrentUser() u: { id: string }, @Body() body: unknown) {
+    return this.dev.bulkUpdateUnits(u.id, UnitBulkUpdateSchema.parse(body));
   }
 
   @Patch('units/:id')

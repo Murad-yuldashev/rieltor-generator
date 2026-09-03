@@ -9,6 +9,7 @@ import type {
   ComplexUpdate,
   Organization,
   Unit,
+  UnitBulkUpdate,
   UnitCreate,
   UnitUpdate,
 } from '@rieltor/shared';
@@ -348,5 +349,55 @@ export class DeveloperService {
     await this.unitOwnedOrThrow(userId, id);
     await this.prisma.unit.delete({ where: { id } });
     return { ok: true };
+  }
+
+  /**
+   * Bulk edit units from the shaxmatka grid: set `status` and/or `priceSom` on many units at once.
+   *
+   * Ownership is all-or-nothing: if any id is foreign to the caller's org (or missing) the whole
+   * call 404s and NOTHING is written — no partial cross-org edit. A status change must NOT strand
+   * an active hold, so units with an ACTIVE booking are skipped for the status change (`skippedBooked`);
+   * a price change, when present, still applies to ALL owned units (booked ones included).
+   */
+  async bulkUpdateUnits(
+    userId: string,
+    input: UnitBulkUpdate,
+  ): Promise<{ updated: number; skippedBooked: number }> {
+    const orgId = await this.orgIdOf(userId);
+    // All-or-nothing ownership: a single foreign/missing id fails the whole call before any write.
+    const owned = await this.prisma.unit.count({
+      where: { id: { in: input.unitIds }, building: { complex: { orgId } } },
+    });
+    if (owned !== input.unitIds.length) throw new NotFoundException('Xonadon topilmadi');
+    const priceSom = input.priceSom !== undefined ? BigInt(input.priceSom) : undefined;
+    let skippedBooked = 0;
+    if (input.status !== undefined) {
+      // A status change must not strand an ACTIVE hold — skip those units for the status write.
+      const bookedIds = (
+        await this.prisma.unit.findMany({
+          where: { id: { in: input.unitIds }, bookings: { some: { status: 'ACTIVE' } } },
+          select: { id: true },
+        })
+      ).map((u) => u.id);
+      skippedBooked = bookedIds.length;
+      const statusIds = input.unitIds.filter((id) => !bookedIds.includes(id));
+      await this.prisma.unit.updateMany({
+        where: { id: { in: statusIds } },
+        data: { status: input.status, ...(priceSom !== undefined ? { priceSom } : {}) },
+      });
+      // Price still applies to the skipped booked units (price is org-wide, status is hold-safe).
+      if (priceSom !== undefined && bookedIds.length) {
+        await this.prisma.unit.updateMany({ where: { id: { in: bookedIds } }, data: { priceSom } });
+      }
+    } else {
+      // Price-only: applies to every owned unit.
+      await this.prisma.unit.updateMany({
+        where: { id: { in: input.unitIds } },
+        data: { priceSom: priceSom! },
+      });
+    }
+    const updated =
+      input.status !== undefined ? input.unitIds.length - skippedBooked : input.unitIds.length;
+    return { updated, skippedBooked };
   }
 }
