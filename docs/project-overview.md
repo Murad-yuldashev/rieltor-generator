@@ -708,6 +708,59 @@ Cascade` butun zanjir bo'ylab). `ComplexStatus` (PLANNED/UNDER_CONSTRUCTION/DONE
   tasdiqlangan-quruvchi nishoni. **5.4:** C6 cross-CRM fixation + komissiya (C7/C8). **Phase 6:**
   kontraktlar/moliya/KPI. Keyinroq: a'zo taklif qilish, multi-org, monetizatsiya (§4.7).
 
+## 4o. Phase 5.2 — Shaxmatka + booking (2026-09-03)
+
+Phase 5 ning ikkinchi qadami: 5.1 inventarini **shaxmatka**ga aylantiradi — quruvchi bino
+xonadonlarini qavat bo'yicha, status-ranglari bilan ko'radigan sotuv-yadro to'ri, va **booking**
+(xonadonni mijoz uchun ushlab turish). Booking xonadonni BOOKED qiladi; bekor qilish yoki muddat
+o'tishi uni AVAILABLE'ga qaytaradi; "sotildi" SOLD qiladi. Spec:
+`docs/superpowers/specs/2026-09-03-phase-5.2-shaxmatka-booking-design.md`,
+reja: `docs/superpowers/plans/2026-09-03-phase-5.2-shaxmatka-booking.md`.
+
+### Booking (yangi model, additiv)
+
+- **`Booking`** (unitId Cascade, **erkin-matn mijoz** clientName/clientPhone, `holdUntil`,
+  `BookingStatus` ACTIVE/CANCELLED/EXPIRED/CONVERTED, note?/cancelReason?, createdBy) — xonadon bilan
+  bog'liq ushlab-turish. Xonadonda **bir vaqtda ko'pi 1 ACTIVE** booking. Mijoz platforma User/lead'iga
+  bog'lanmaydi (C6 fixation → 5.4). `Unit` view'iga `activeBooking` xulosasi qo'shildi (grid uni
+  o'qiydi).
+
+### Booking oqimi (`/api/crm/*`, DeveloperGuard + org-scoped)
+
+- **`POST /api/crm/units/:id/book`** — xonadon AVAILABLE bo'lsa: bitta tranzaksiyada xonadon qatorini
+  `SELECT..FOR UPDATE` qulflaydi, statusni qayta o'qiydi, ACTIVE booking yaratadi + unit → BOOKED;
+  band bo'lsa **409** (ikki bir vaqtli booking → bittasi yutadi, ikkinchisi 409). **`PATCH
+/api/crm/bookings/:id`** — `cancel` (→ AVAILABLE) / `convert` (→ SOLD) / `extend` (holdUntil),
+  faqat ACTIVE'da (aks holda 409), transactional. **`GET /api/crm/bookings`** — org bandlari ro'yxati.
+  Foreign unit/booking → **404** (unit→building→complex→org zanjiri).
+- **Avto-muddat:** soatlik cron (`@Cron('0 * * * *')`) — overdue ACTIVE bookinglar → EXPIRED, hali
+  BOOKED bo'lgan xonadonni AVAILABLE qiladi (hand-SOLD tegilmaydi, idempotent).
+
+### Bulk edit
+
+- **`PATCH /api/crm/units/bulk`** — bir necha xonadon status/narxini birga o'zgartirish. Egalik
+  **all-or-nothing** (foreign id → 404, hech narsa yozilmaydi); narx hammaga, **status faqat
+  active-booking'siz xonadonlarga** (booked skip → `skippedBooked` qaytadi, hech qanday ushlab-turish
+  strand bo'lmaydi).
+
+### UI (`apps/crm`)
+
+- **Shaxmatka** (building-detail): qavat-satrlar (yuqori qavat tepada) × xonadon-kataklari, status
+  ranglari (Bo'sh yashil / Band sariq / Sotilgan qizil); band katak mijoz ismini ko'rsatadi; katakka
+  bosib book/cancel/convert + tahrir. **Ko'p-belgilash** ("Tanlash") → bulk status/narx paneli.
+  **Bandlar** sahifasi (`/bookings`, nav) — org bandlari + active'da bekor/sotildi.
+
+### Ma'lumot modeli va env
+
+- Yangi model: `Booking` (+ `BookingStatus` enum). **Yangi env yo'q**; cron `@nestjs/schedule`
+  (ScheduleModule allaqachon global).
+
+### Kelasi
+
+- **5.3:** marketplace publishing (ЖК sahifalari A12) + tasdiqlangan-quruvchi. **5.4:** C6 cross-CRM
+  fixation + komissiya (C7/C8). **Phase 6:** kontraktlar/moliya. Keyinroq: line/podъezd o'lchovi,
+  per-org default hold, booking-mijozni User/lead'ga bog'lash.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
