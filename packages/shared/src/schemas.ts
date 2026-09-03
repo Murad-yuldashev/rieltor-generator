@@ -285,9 +285,9 @@ export const PropertyRequestCreateSchema = z.object({
   priceMaxSom: z.string().regex(/^\d+$/).nullable().optional(),
   areaMinM2: z.number().positive().max(10_000).nullable().optional(),
   note: z.string().max(500).nullable().optional(),
-  /** When the request is an inquiry about a published complex (5.3); persisted in a later phase. */
+  /** When the request is an inquiry about a published complex (5.3). */
   complexId: z.string().optional(),
-  /** When the inquiry targets a specific unit within that complex (5.3); persisted later. */
+  /** When the inquiry targets a specific unit within that complex (5.3). */
   unitId: z.string().optional(),
 });
 
@@ -874,13 +874,13 @@ export const PublicComplexDetailSchema = PublicComplexSummarySchema.extend({
   unitsTotal: z.number().int(),
 });
 
-/** Body of `POST /api/complexes/:slug/inquiry` — a buyer's interest in a published complex. */
+/** Body of `POST /api/jk/:slug/inquiry` — a buyer's interest in a published complex. */
 export const ComplexInquirySchema = z.object({
   note: z.string().trim().max(1000).optional(),
   unitId: z.string().optional(),
 });
 
-/** Body of `POST /api/moderation/developers/:orgId/verify` — grant/revoke a developer's badge. */
+/** Body of `PATCH /api/moderation/developers/:orgId` — grant/revoke a developer's badge. */
 export const DeveloperVerifySchema = z.object({
   verified: z.boolean(),
   note: z.string().trim().max(500).optional(),

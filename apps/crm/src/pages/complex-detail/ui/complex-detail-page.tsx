@@ -483,7 +483,7 @@ function ComplexMedia({ complex }: { complex: ComplexDetail }) {
           ? 'Yuklanmoqda...'
           : atCap
             ? "Rasmlar chegarasi to'ldi"
-            : 'Rasm qo‘shish'}
+            : "Rasm qo'shish"}
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
