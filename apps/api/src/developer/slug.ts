@@ -59,8 +59,12 @@ export function slugify(input: string): string {
   const base = transliterate(input.toLowerCase())
     .normalize('NFKD')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 38);
+    // Strip LEADING dashes first, then truncate, then strip a TRAILING dash the
+    // slice may have re-introduced at a word boundary — so no output ever ends
+    // (or begins) with a dash and the public URL stays canonical.
+    .replace(/^-+/, '')
+    .slice(0, 38)
+    .replace(/-+$/, '');
   if (base.length >= 3) return base;
   // Short/empty base: prefix with 'jk'. NEVER emit a trailing dash — when the base
   // is empty (all-symbol or now-transliterated-away input) fall back to plain 'jk'.

@@ -32,20 +32,31 @@ export class ComplexesPublicService {
     private readonly requests: RequestsService,
   ) {}
 
-  /** The marketplace list — every PUBLISHED complex as a summary card. */
+  /**
+   * The marketplace list — every PUBLISHED complex as a summary card.
+   *
+   * `org: { is: { verified: true } }` is a LIVE gate, not just the badge: a
+   * developer's `publishStatus` is their stored intent, but the public surface
+   * additionally requires their org be currently verified. Revoking verification
+   * (setVerified(orgId, false)) instantly hides all their complexes; re-verifying
+   * restores them with no re-publish. No Complex row is mutated on revoke.
+   */
   async listPublished(): Promise<PublicComplexSummary[]> {
     const rows = await this.prisma.complex.findMany({
-      where: { publishStatus: 'PUBLISHED' },
+      where: { publishStatus: 'PUBLISHED', org: { is: { verified: true } } },
       include: PUBLIC_COMPLEX_INCLUDE,
       orderBy: { publishedAt: 'desc' },
     });
     return rows.map((c) => this.toSummary(c));
   }
 
-  /** The full public complex page, by slug. Unknown/unpublished slug -> 404. */
+  /**
+   * The full public complex page, by slug. Unknown/unpublished slug -> 404, and
+   * (via the live org.verified gate) an unverified org's complex 404s too.
+   */
   async getBySlug(slug: string): Promise<PublicComplexDetail> {
     const complex = await this.prisma.complex.findFirst({
-      where: { slug, publishStatus: 'PUBLISHED' },
+      where: { slug, publishStatus: 'PUBLISHED', org: { is: { verified: true } } },
       include: PUBLIC_COMPLEX_INCLUDE,
     });
     if (!complex) throw new NotFoundException();
@@ -69,7 +80,9 @@ export class ComplexesPublicService {
    */
   async inquiry(userId: string, slug: string, input: ComplexInquiry) {
     const complex = await this.prisma.complex.findFirst({
-      where: { slug, publishStatus: 'PUBLISHED' },
+      // Same live org.verified gate as the reads: an inquiry on an unverified
+      // org's complex 404s, so a revoked developer accrues no paid NEW_BUILD leads.
+      where: { slug, publishStatus: 'PUBLISHED', org: { is: { verified: true } } },
       select: { id: true, district: true },
     });
     if (!complex) throw new NotFoundException();
