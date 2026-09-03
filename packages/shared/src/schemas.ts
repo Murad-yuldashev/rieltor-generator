@@ -117,7 +117,7 @@ export const AuthUserSchema = z.object({
   phone: z.string(),
   name: z.string().nullable(),
   photoUrl: z.string().nullable(),
-  role: z.enum(['USER', 'REALTOR', 'MODERATOR', 'ADMIN']),
+  role: z.enum(['USER', 'REALTOR', 'DEVELOPER', 'MODERATOR', 'ADMIN']),
 });
 
 export const AuthTokensSchema = z.object({
@@ -641,6 +641,103 @@ export const TOPUP_PACKAGES = [
 /** Body of the wallet top-up request — the chosen package id. */
 export const TopupSchema = z.object({ packageId: z.enum(['p100', 'p300', 'p500']) });
 
+// --- Developer CRM: organization + inventory (Phase 5.1) ---
+
+/** A member's role within a developer organization. */
+export const OrgRoleSchema = z.enum(['OWNER', 'MANAGER']);
+
+/** Build lifecycle of a residential complex. */
+export const ComplexStatusSchema = z.enum(['PLANNED', 'UNDER_CONSTRUCTION', 'DONE']);
+
+/** Sales lifecycle of a single unit. */
+export const UnitStatusSchema = z.enum(['AVAILABLE', 'BOOKED', 'SOLD']);
+
+/** One member of a developer organization. */
+export const OrgMemberSchema = z.object({
+  userId: z.string(),
+  role: OrgRoleSchema,
+  name: z.string().nullable(),
+  phone: z.string(),
+});
+
+/** A developer organization plus its members. */
+export const OrganizationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  district: z.string().nullable(),
+  members: z.array(OrgMemberSchema),
+});
+
+/** A residential complex owned by an organization. */
+export const ComplexSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  district: z.string(),
+  address: z.string().nullable(),
+  description: z.string().nullable(),
+  status: ComplexStatusSchema,
+  createdAt: z.string(),
+});
+
+/** A building within a complex. */
+export const BuildingSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  floors: z.number().int().nullable(),
+  createdAt: z.string(),
+});
+
+/** A complex plus its buildings. */
+export const ComplexDetailSchema = ComplexSchema.extend({
+  buildings: z.array(BuildingSchema),
+});
+
+/** A single unit within a building. */
+export const UnitSchema = z.object({
+  id: z.string(),
+  buildingId: z.string(),
+  number: z.string(),
+  floor: z.number().int(),
+  rooms: z.number().int().nullable(),
+  areaM2: z.number().nullable(),
+  priceSom: z.string().nullable(), // BigInt-as-string
+  status: UnitStatusSchema,
+});
+
+/** Body of `POST /api/crm/become-developer` — become a developer / create an organization. */
+export const BecomeDeveloperSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  district: z.string().optional(),
+});
+
+/** Body of `POST /api/crm/complexes`. */
+export const ComplexCreateSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  district: z.string().trim().min(1),
+  address: z.string().trim().max(300).optional(),
+  description: z.string().trim().max(2000).optional(),
+  status: ComplexStatusSchema.optional(),
+});
+export const ComplexUpdateSchema = ComplexCreateSchema.partial();
+
+/** Body of `POST /api/crm/complexes/:id/buildings`. */
+export const BuildingCreateSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  floors: z.number().int().positive().max(200).optional(),
+});
+export const BuildingUpdateSchema = BuildingCreateSchema.partial();
+
+/** Body of `POST /api/crm/buildings/:id/units`. */
+export const UnitCreateSchema = z.object({
+  number: z.string().trim().min(1).max(40),
+  floor: z.number().int().min(0).max(200),
+  rooms: z.number().int().min(0).max(50).optional(),
+  areaM2: z.number().positive().max(100000).optional(),
+  priceSom: z.string().regex(/^\d+$/).optional(), // digits only; parsed to BigInt server-side
+  status: UnitStatusSchema.optional(),
+});
+export const UnitUpdateSchema = UnitCreateSchema.partial();
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -714,3 +811,19 @@ export type WalletTxType = z.infer<typeof WalletTxTypeSchema>;
 export type WalletTxRow = z.infer<typeof WalletTxRowSchema>;
 export type WalletView = z.infer<typeof WalletViewSchema>;
 export type Topup = z.infer<typeof TopupSchema>;
+export type OrgRole = z.infer<typeof OrgRoleSchema>;
+export type ComplexStatus = z.infer<typeof ComplexStatusSchema>;
+export type UnitStatus = z.infer<typeof UnitStatusSchema>;
+export type OrgMember = z.infer<typeof OrgMemberSchema>;
+export type Organization = z.infer<typeof OrganizationSchema>;
+export type Complex = z.infer<typeof ComplexSchema>;
+export type Building = z.infer<typeof BuildingSchema>;
+export type ComplexDetail = z.infer<typeof ComplexDetailSchema>;
+export type Unit = z.infer<typeof UnitSchema>;
+export type BecomeDeveloper = z.infer<typeof BecomeDeveloperSchema>;
+export type ComplexCreate = z.infer<typeof ComplexCreateSchema>;
+export type ComplexUpdate = z.infer<typeof ComplexUpdateSchema>;
+export type BuildingCreate = z.infer<typeof BuildingCreateSchema>;
+export type BuildingUpdate = z.infer<typeof BuildingUpdateSchema>;
+export type UnitCreate = z.infer<typeof UnitCreateSchema>;
+export type UnitUpdate = z.infer<typeof UnitUpdateSchema>;

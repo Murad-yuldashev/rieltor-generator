@@ -86,4 +86,39 @@ export function configureApp(app: NestExpressApplication): void {
       next();
     });
   }
+
+  // The developer CRM SPA (@rieltor/crm) is a SEPARATE Vite bundle served at
+  // /crm/*, mirroring the agent cabinet above. Served at the Express level (below
+  // the global prefix) for the same reasons: a `@Controller('crm')` or a
+  // setGlobalPrefix exclude would collide with / strip the /api prefix off the
+  // real /api/crm/* CrmController. It matches ONLY paths that start with /crm
+  // (never /api/crm, which starts with /api).
+  const crmDist = process.env.CRM_DIST ?? resolve(apiRoot, '..', 'crm', 'dist');
+  if (existsSync(crmDist)) {
+    // Hashed assets (built with Vite base '/crm/') live under /crm/assets/*.
+    // Registered before the SPA fallback so real files always win. `redirect:false`
+    // stops serve-static from 301-ing a bare `/crm` to `/crm/`.
+    app.useStaticAssets(crmDist, {
+      prefix: '/crm',
+      index: false,
+      redirect: false,
+      maxAge: '1y',
+      immutable: true,
+    });
+
+    // SPA fallback: any GET /crm or /crm/<client-route> that is not a static file
+    // returns the crm index.html (no SSR — a plain shell is correct here). Runs
+    // before Nest's router, so /crm never falls through to the web SsrController or
+    // NotFoundShellFilter. The HTML is read once at boot to avoid a per-request
+    // filesystem lookup.
+    const crmHtml = readFileSync(join(crmDist, 'index.html'), 'utf-8');
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      const isCrmPath = req.path === '/crm' || req.path.startsWith('/crm/');
+      if (isCrmPath && (req.method === 'GET' || req.method === 'HEAD')) {
+        res.type('html').send(crmHtml);
+        return;
+      }
+      next();
+    });
+  }
 }

@@ -1,0 +1,165 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+@theme {
+  /* ---- Accent colours. Components never spell out a hex value (spec §10). ---- */
+  --color-accent: #6d28d9;
+  --color-accent-dark: #5b21b6;
+  --color-accent-soft: #f3eefe;
+
+  /* Text hierarchy: primary → secondary → muted. */
+  --color-ink: #111827;
+  --color-ink-2: #4b5563;
+  --color-ink-3: #9ca3af;
+
+  /* Surfaces: grey page background, white cards — that is the mockup's layering. */
+  --color-surface: #f4f4f7;
+  --color-card: #ffffff;
+  --color-line: #e5e7eb;
+
+  /* Badge and action colours. */
+  --color-brand-green: #059669;
+  --color-brand-amber: #d97706;
+  --color-brand-rose: #e11d48;
+  --color-telegram: #2aabee;
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 18px;
+
+  --shadow-card: 0 1px 2px rgb(17 24 39 / 0.05), 0 6px 20px rgb(17 24 39 / 0.06);
+
+  /* Content width — mobile-first, centred on desktop (spec §10). */
+  /* max-w-* utilities come from the `--container-*` namespace, NOT `--spacing-*`.
+     Naming this `--spacing-content` would stop `max-w-content` being generated at
+     all, and the 480px desktop constraint would silently do nothing. */
+  --container-content: 30rem; /* 480px — phone/base content cap */
+  --container-tablet: 45rem; /* 720px — md (768) content cap */
+  --container-laptop: 65rem; /* 1040px — lg (1024) content cap */
+
+  /* Three responsive tiers layered under the CIAN desktop. `md`/`lg` match
+     Tailwind's defaults but are declared explicitly so the tablet/laptop tiers
+     are intentional and visible; `desk` (1440) stays the CIAN breakpoint.
+     Phone (<768) and CIAN (>=1440) rules are frozen — new work is md:/lg: only. */
+  --breakpoint-md: 48rem; /* 768px — tablet tier */
+  --breakpoint-lg: 64rem; /* 1024px — laptop tier */
+  --breakpoint-desk: 90rem; /* 1440px — CIAN desktop */
+  --container-desk: 90rem; /* the widest the desktop content ever gets */
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  /* The content column is 480px; everything outside it is slightly darker, for a "phone" look. */
+  background-color: #e9e9ee;
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* From 1440px the layout stops pretending to be a phone: the content fills the
+   window, so the darker frame around the column has nothing left to frame. */
+@media (width >= 90rem) {
+  body {
+    background-color: var(--color-surface);
+  }
+}
+
+/* Stop Android/iOS painting a blue-grey rectangle on tap. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Tailwind v4's preflight gives buttons `cursor: default` (v3 used `pointer`), so
+   the cursor made chips, the segment, hearts and every other button read as
+   unclickable. Restored in one place — the alternative is spelling out
+   `cursor-pointer` on every single button. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+:root {
+  /* Height of the bottom layers, so page content never ends up hidden underneath. */
+  --cta-height: 4.5rem;
+  --bottom-nav-height: 4.25rem;
+}
+
+/* A 3px scrollbar. The default one is wide enough to eat into the 480px column
+   and reads as desktop chrome on what is meant to look like a phone screen.
+   Lives in `base` so the `no-scrollbar` utility below still wins where it is used. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-3) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-ink-3);
+    border-radius: 3px;
+  }
+
+  /* On a real desktop a 3px scrollbar is just a hard-to-grab scrollbar — the
+     reason for shrinking it (the 480px column) no longer applies. */
+  @media (width >= 90rem) {
+    * {
+      scrollbar-width: auto;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+  }
+}
+
+/* Hide the scrollbar on the chip row and the gallery strip. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Room for the fixed bottom tab bar. It is a utility rather than an inline style
+   because the bar disappears at 1440px and an inline `paddingBottom` cannot carry
+   a media query. */
+@utility pb-bottom-nav {
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+
+  @media (width >= 90rem) {
+    padding-bottom: 0;
+  }
+}
+
+/* Same idea for the listing page's fixed call/Telegram bar. */
+@utility pb-cta {
+  padding-bottom: calc(var(--cta-height) + env(safe-area-inset-bottom));
+
+  @media (width >= 90rem) {
+    padding-bottom: 0;
+  }
+}
+
+/* The call/Telegram bar's own bottom padding: clears the iOS home indicator
+   while it is fixed, plain card padding once it becomes a sidebar block. */
+@utility pb-cta-safe {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+
+  @media (width >= 90rem) {
+    padding-bottom: 1rem;
+  }
+}

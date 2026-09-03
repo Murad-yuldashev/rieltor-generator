@@ -652,6 +652,62 @@ lost, globalRate)`: Bayesian silliqlangan segment WON-foizi `rHat = (won + α·p
 - Real to'lov (Click/Payme) + refund/dispute (natija ma'lumoti asosida); Phase 5 (developer CRM) —
   C6 to'liq cross-CRM fixation.
 
+## 4n. Phase 5.1 — Developer CRM: tashkilot + inventar (2026-09-02)
+
+Phase 5 (Product B — Quruvchi/застройщик CRM) ning birinchi qadami: **yangi `apps/crm` SPA** —
+quruvchi kompaniya o'z inventarini (ЖК komplekslar, binolar, xonadonlar) boshqaradigan kabinet.
+"Developers put real inventory in" — bu keyingi barcha developer funksiyalari (shaxmatka+booking 5.2,
+marketplace publishing 5.3, C6 cross-CRM fixation 5.4) uchun poydevor. Rieltordan farqli, quruvchi
+**Organization** (kompaniya) sifatida modellashtirildi (bir necha a'zoli); onboarding 5.1'da **bepul**
+(to'lov devori yo'q — kirish huquqi = faol membership). Spec:
+`docs/superpowers/specs/2026-09-02-phase-5.1-developer-inventory-design.md`,
+reja: `docs/superpowers/plans/2026-09-02-phase-5.1-developer-inventory.md`.
+
+### Ma'lumot modeli (additiv)
+
+- **`Organization`** + **`Membership`** (`OrgRole` OWNER/MANAGER; **5.1: 1 user = 1 org** —
+  `Membership.userId @unique`) + inventar iyerarxiyasi **`Complex → Building → Unit`** (`onDelete:
+Cascade` butun zanjir bo'ylab). `ComplexStatus` (PLANNED/UNDER_CONSTRUCTION/DONE), `UnitStatus`
+  (AVAILABLE/BOOKED/SOLD). `Unit.priceSom BigInt?` (string end-to-end). `UserRole` += **`DEVELOPER`**.
+  Alohida `Floor` jadvali yo'q (Unit.floor Int — shaxmatka 5.2'da guruhlaydi). Additiv migratsiya
+  (`ALTER TYPE ADD VALUE` + 3 CREATE TYPE + 5 CREATE TABLE).
+
+### Kirish + org-scoping
+
+- **`POST /api/crm/become-developer`** (JwtGuard) — bitta `$transaction`da role→DEVELOPER + Organization
+  - OWNER Membership (idempotent — takroriy chaqiruv ikkinchi org yaratmaydi). **`DeveloperGuard`**
+    (DB-fresh: role DEVELOPER + faol membership, **to'lov yo'q**). Har inventar so'rovi caller'ning
+    org'iga scoped — `DeveloperService` `userId`dan `orgId`ni membershipdan aniqlaydi va butun zanjirni
+    (unit→building→complex→org) tekshiradi; boshqa org'ning qatoriga → **404** (foreign == missing).
+
+### API (`DeveloperModule`, `/api/crm/*`)
+
+- `GET /api/crm/org` (org + a'zolar); kompleks `GET/POST /complexes`, `GET/PATCH/DELETE /complexes/:id`;
+  bino `POST /complexes/:id/buildings`, `PATCH/DELETE /buildings/:id`; xonadon
+  `GET/POST /buildings/:id/units`, `PATCH/DELETE /units/:id` — barchasi DeveloperGuard + org-scoped.
+  Shared Zod DTOlar (Organization/Complex/Building/Unit + create/update; pul string).
+
+### `apps/crm` SPA (`/crm`da)
+
+- Yangi `@rieltor/crm` workspace (Vite/React/RR7/TanStack, FSD), `apps/agent`'ning auth/session/shell
+  qatlamini aynan takrorlaydi (bir xil `rieltor.auth` JWT → **bir marta login, roldan kelib chiqib
+  kabinet**). `bootstrap.ts` uni `/crm`da Express-darajasida beradi (`/api/crm/*` bilan to'qnashmaydi).
+  **Sahifalar:** become-developer (org yaratish) · tashkilot profili + a'zolar · komplekslar
+  ro'yxati+yaratish · kompleks detali (tahrir + binolar) · bino detali (xonadonlar jadvali:
+  qo'shish/tahrir/o'chirish, status/narx). Client `DeveloperGuard` (rol asosida).
+
+### Deploy
+
+- `Dockerfile` `@rieltor/crm` ni build qiladi + `apps/crm/dist` ni ko'chiradi (server/Docker runtime).
+  **Netlify pariteti** (`/crm` rewrite + `CRM_DIST`) — hujjatlashtirilgan follow-up (agent bilan bir
+  xil holat). Yangi env: `CRM_DIST` (validatsiyasiz, `AGENT_DIST` kabi).
+
+### Kelasi
+
+- **5.2:** shaxmatka grid + booking. **5.3:** marketplace publishing (A12 ЖК sahifalari) +
+  tasdiqlangan-quruvchi nishoni. **5.4:** C6 cross-CRM fixation + komissiya (C7/C8). **Phase 6:**
+  kontraktlar/moliya/KPI. Keyinroq: a'zo taklif qilish, multi-org, monetizatsiya (§4.7).
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

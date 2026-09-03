@@ -35,38 +35,38 @@ model Agent {
 }
 
 model Listing {
-  id              String        @id
-  title           String
+  id                String             @id
+  title             String
   /// An Int overflows at 2.1 bn so'm, and a house can cost more than that.
   /// For a RENT listing this is the price per month.
-  priceSom        BigInt
-  priceUsd        Int
+  priceSom          BigInt
+  priceUsd          Int
   /// Commercial premises are not measured in rooms — OLX omits the field too.
-  rooms           Int?
-  areaM2          Float
+  rooms             Int?
+  areaM2            Float
   /// Houses have no floor.
-  floor           String?
-  district        String
-  address         String
-  landmark        String
-  description     String
-  type            ListingType
+  floor             String?
+  district          String
+  address           String
+  landmark          String
+  description       String
+  type              ListingType
   /// The ten listings that predate this column were all sales.
-  deal            Deal          @default(SALE)
-  views           Int           @default(0)
-  listedAt        DateTime      @db.Date
-  agentId         String
-  agent           Agent         @relation(fields: [agentId], references: [id])
-  images          Image[]
+  deal              Deal               @default(SALE)
+  views             Int                @default(0)
+  listedAt          DateTime           @db.Date
+  agentId           String
+  agent             Agent              @relation(fields: [agentId], references: [id])
+  images            Image[]
   /// Null for the seeded demo rows, which predate accounts.
-  ownerId         String?
-  owner           User?         @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId           String?
+  owner             User?              @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   /// Seeded demo rows are published; anything a user creates starts as DRAFT.
-  status          ListingStatus @default(PUBLISHED)
-  rejectionReason String?
-  publishedAt     DateTime?
-  notes           Note[]
-  collectionItems CollectionItem[]
+  status            ListingStatus      @default(PUBLISHED)
+  rejectionReason   String?
+  publishedAt       DateTime?
+  notes             Note[]
+  collectionItems   CollectionItem[]
   presentationItems PresentationItem[]
 
   @@index([type])
@@ -101,6 +101,7 @@ model Image {
 enum UserRole {
   USER
   REALTOR
+  DEVELOPER
   MODERATOR
   ADMIN
 }
@@ -130,6 +131,7 @@ model User {
   receivedReviews   Review[]          @relation("ReceivedReviews")
   writtenReviews    Review[]          @relation("WrittenReviews")
   wallet            Wallet?
+  memberships       Membership[]
 }
 
 model Session {
@@ -441,4 +443,96 @@ model WalletTransaction {
   createdAt DateTime     @default(now())
 
   @@index([walletId, createdAt])
+}
+
+/// Developer (застройщик) organization roles. A member is either the OWNER
+/// (created the org) or a MANAGER (invited later — deferred past 5.1).
+enum OrgRole {
+  OWNER
+  MANAGER
+}
+
+enum ComplexStatus {
+  PLANNED
+  UNDER_CONSTRUCTION
+  DONE
+}
+
+enum UnitStatus {
+  AVAILABLE
+  BOOKED
+  SOLD
+}
+
+model Organization {
+  id        String       @id @default(cuid())
+  name      String
+  /// Tashkent district (marketplace list); optional at 5.1.
+  district  String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  members   Membership[]
+  complexes Complex[]
+}
+
+model Membership {
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  /// 5.1: one org per user.
+  userId    String       @unique
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      OrgRole      @default(OWNER)
+  createdAt DateTime     @default(now())
+
+  @@unique([orgId, userId])
+  @@index([orgId])
+}
+
+model Complex {
+  id          String        @id @default(cuid())
+  orgId       String
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name        String
+  district    String
+  address     String?
+  description String?
+  status      ComplexStatus @default(UNDER_CONSTRUCTION)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  buildings   Building[]
+
+  @@index([orgId])
+}
+
+model Building {
+  id        String   @id @default(cuid())
+  complexId String
+  complex   Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  name      String
+  /// Total floor count (helps the 5.2 shaxmatka).
+  floors    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  units     Unit[]
+
+  @@index([complexId])
+}
+
+model Unit {
+  id         String     @id @default(cuid())
+  buildingId String
+  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  /// Unit number/label, e.g. "42".
+  number     String
+  floor      Int
+  rooms      Int?
+  areaM2     Float?
+  /// BigInt money, string end-to-end.
+  priceSom   BigInt?
+  status     UnitStatus @default(AVAILABLE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([buildingId])
 }
