@@ -7,6 +7,7 @@ import { HomePage } from '@/pages/home';
 import { ListingPage } from '@/pages/listing';
 import { ListingCreatePage } from '@/pages/listing-create';
 import { ModerationConversionPage } from '@/pages/moderation-conversion';
+import { ModerationDevelopersPage } from '@/pages/moderation-developers';
 import { ModerationRealtorsPage } from '@/pages/moderation-realtors';
 import { ModerationReviewsPage } from '@/pages/moderation-reviews';
 import { MyListingsPage } from '@/pages/my-listings';
@@ -68,6 +69,8 @@ export const router = createBrowserRouter([
       { path: '/moderation/reviews', element: <ModerationReviewsPage /> },
       // Moderator-only platform conversion overview — same admin surface, role-gated in-page.
       { path: '/moderation/conversion', element: <ModerationConversionPage /> },
+      // Moderator-only developer verification queue — same admin surface, role-gated in-page.
+      { path: '/moderation/developers', element: <ModerationDevelopersPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

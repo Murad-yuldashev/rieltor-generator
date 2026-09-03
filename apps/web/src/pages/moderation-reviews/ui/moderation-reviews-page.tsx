@@ -19,6 +19,12 @@ function Shell({ children }: { children: React.ReactNode }) {
             Rieltorlar →
           </Link>
           <Link
+            to="/moderation/developers"
+            className="text-[13px] font-bold text-accent hover:underline"
+          >
+            Quruvchilar →
+          </Link>
+          <Link
             to="/moderation/conversion"
             className="text-[13px] font-bold text-accent hover:underline"
           >
