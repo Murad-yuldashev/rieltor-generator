@@ -12,6 +12,7 @@ import { DeveloperModule } from './developer/developer.module';
 import { HealthModule } from './health/health.module';
 import { LeadsModule } from './leads/leads.module';
 import { ListingsModule } from './listings/listings.module';
+import { ModerationDevelopersModule } from './moderation-developers/moderation-developers.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PresentationsModule } from './presentations/presentations.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -41,6 +42,7 @@ import { WalletModule } from './wallet/wallet.module';
     HealthModule,
     LeadsModule,
     ListingsModule,
+    ModerationDevelopersModule,
     NotificationsModule,
     PresentationsModule,
     PropertiesModule,
