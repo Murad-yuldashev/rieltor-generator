@@ -21,6 +21,7 @@ import type {
   Unit as UnitRow,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { slugify } from './slug';
 
 /** A unit row optionally carrying its active booking (populated by `listUnits`). */
 type UnitRowWithBookings = UnitRow & {
@@ -212,10 +213,96 @@ export class DeveloperService {
         ...(input.address !== undefined && { address: input.address ?? null }),
         ...(input.description !== undefined && { description: input.description ?? null }),
         ...(input.status !== undefined && { status: input.status }),
+        ...(input.latitude !== undefined && { latitude: input.latitude }),
+        ...(input.longitude !== undefined && { longitude: input.longitude }),
       },
       include: { images: { orderBy: { position: 'asc' } }, org: true },
     });
     return this.toComplex(complex);
+  }
+
+  /**
+   * Compute a unique complex slug from `name`, appending `-2`, `-3`, … until no
+   * OTHER complex holds it (the current complex `selfId` is excluded so republishing
+   * keeps its slug).
+   */
+  private async uniqueComplexSlug(name: string, selfId: string): Promise<string> {
+    const baseSlug = slugify(name);
+    for (let n = 1; ; n++) {
+      const candidate = n === 1 ? baseSlug : `${baseSlug}-${n}`.slice(0, 40);
+      const clash = await this.prisma.complex.findFirst({
+        where: { slug: candidate, NOT: { id: selfId } },
+        select: { id: true },
+      });
+      if (!clash) return candidate;
+    }
+  }
+
+  /**
+   * Publish / unpublish an owned complex (foreign complex -> 404).
+   *
+   * Publishing is gated: the first failing check throws a 409 with its Uzbek message —
+   * org unverified, then no image, then no priced-available unit. On success the slug is
+   * minted once (kept across republishes) and the complex goes PUBLISHED with `publishedAt`.
+   * Unpublishing just flips back to DRAFT (the slug is retained).
+   */
+  async setPublish(userId: string, complexId: string, publish: boolean): Promise<Complex> {
+    const existing = await this.complexOwnedOrThrow(userId, complexId);
+    if (publish) {
+      // Gate 1: the organization must be verified.
+      const org = await this.prisma.organization.findUnique({
+        where: { id: existing.orgId },
+        select: { verified: true },
+      });
+      if (org?.verified !== true) {
+        throw new ConflictException("Avval tashkilotni tasdiqdan o'tkazing");
+      }
+      // Gate 2: at least one gallery image.
+      const imageCount = await this.prisma.complexImage.count({ where: { complexId } });
+      if (imageCount === 0) {
+        throw new ConflictException('Kamida bitta rasm yuklang');
+      }
+      // Gate 3: at least one AVAILABLE unit that carries a price.
+      const pricedAvailable = await this.prisma.unit.count({
+        where: { building: { complexId }, status: 'AVAILABLE', priceSom: { not: null } },
+      });
+      if (pricedAvailable === 0) {
+        throw new ConflictException("Kamida bitta narxli bo'sh xonadon kerak");
+      }
+      const slug = existing.slug ?? (await this.uniqueComplexSlug(existing.name, complexId));
+      const complex = await this.prisma.complex.update({
+        where: { id: complexId },
+        data: { slug, publishStatus: 'PUBLISHED', publishedAt: new Date() },
+        include: { images: { orderBy: { position: 'asc' } }, org: true },
+      });
+      return this.toComplex(complex);
+    }
+    const complex = await this.prisma.complex.update({
+      where: { id: complexId },
+      data: { publishStatus: 'DRAFT' },
+      include: { images: { orderBy: { position: 'asc' } }, org: true },
+    });
+    return this.toComplex(complex);
+  }
+
+  /**
+   * Request marketplace verification for the caller's org (idempotent).
+   * Already-verified orgs are returned unchanged; otherwise `verificationRequestedAt`
+   * is stamped so a moderator can review.
+   */
+  async requestVerification(userId: string): Promise<Organization> {
+    const orgId = await this.orgIdOf(userId);
+    const org = await this.prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { verified: true },
+    });
+    if (org?.verified !== true) {
+      await this.prisma.organization.update({
+        where: { id: orgId },
+        data: { verificationRequestedAt: new Date() },
+      });
+    }
+    return this.orgView(userId);
   }
 
   /** Delete an owned complex (cascades buildings/units via schema). */

@@ -778,6 +778,10 @@ export const ComplexCreateSchema = z.object({
   address: z.string().trim().max(300).optional(),
   description: z.string().trim().max(2000).optional(),
   status: ComplexStatusSchema.optional(),
+  /** Map pin latitude (5.3); WGS84 −90..90. */
+  latitude: z.number().min(-90).max(90).optional(),
+  /** Map pin longitude (5.3); WGS84 −180..180. */
+  longitude: z.number().min(-180).max(180).optional(),
 });
 export const ComplexUpdateSchema = ComplexCreateSchema.partial();
 
