@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   Building,
   BuildingCreate,
@@ -330,6 +330,18 @@ export class DeveloperService {
   /** Update the provided fields of an owned unit (omitted fields untouched). */
   async updateUnit(userId: string, id: string, input: UnitUpdate): Promise<Unit> {
     await this.unitOwnedOrThrow(userId, id);
+    // A status change must not strand an active hold: reject flipping the status of a unit that
+    // still has an ACTIVE booking (the hold-guard the lock-based book() enforces, applied here too).
+    if (input.status !== undefined) {
+      const activeHold = await this.prisma.booking.count({
+        where: { unitId: id, status: 'ACTIVE' },
+      });
+      if (activeHold > 0) {
+        throw new ConflictException(
+          "Band xonadon statusini o'zgartirib bo'lmaydi — avval bandni bekor qiling",
+        );
+      }
+    }
     const unit = await this.prisma.unit.update({
       where: { id },
       data: {
@@ -372,22 +384,19 @@ export class DeveloperService {
     const priceSom = input.priceSom !== undefined ? BigInt(input.priceSom) : undefined;
     let skippedBooked = 0;
     if (input.status !== undefined) {
-      // A status change must not strand an ACTIVE hold — skip those units for the status write.
-      const bookedIds = (
-        await this.prisma.unit.findMany({
-          where: { id: { in: input.unitIds }, bookings: { some: { status: 'ACTIVE' } } },
-          select: { id: true },
-        })
-      ).map((u) => u.id);
-      skippedBooked = bookedIds.length;
-      const statusIds = input.unitIds.filter((id) => !bookedIds.includes(id));
-      await this.prisma.unit.updateMany({
-        where: { id: { in: statusIds } },
+      // Atomic skip: the DB evaluates "no ACTIVE booking" at write time, so a unit booked
+      // concurrently is skipped for the status change (never stranding its hold).
+      const statusRes = await this.prisma.unit.updateMany({
+        where: { id: { in: input.unitIds }, bookings: { none: { status: 'ACTIVE' } } },
         data: { status: input.status, ...(priceSom !== undefined ? { priceSom } : {}) },
       });
-      // Price still applies to the skipped booked units (price is org-wide, status is hold-safe).
-      if (priceSom !== undefined && bookedIds.length) {
-        await this.prisma.unit.updateMany({ where: { id: { in: bookedIds } }, data: { priceSom } });
+      skippedBooked = input.unitIds.length - statusRes.count;
+      // Price still applies to the skipped (active-booked) units.
+      if (priceSom !== undefined && skippedBooked > 0) {
+        await this.prisma.unit.updateMany({
+          where: { id: { in: input.unitIds }, bookings: { some: { status: 'ACTIVE' } } },
+          data: { priceSom },
+        });
       }
     } else {
       // Price-only: applies to every owned unit.

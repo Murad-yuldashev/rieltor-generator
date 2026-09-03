@@ -376,7 +376,7 @@ function BulkEditBar({
 
       {bulk.isSuccess && skipped > 0 && (
         <p className="mt-2 text-[13px] font-semibold text-brand-amber">
-          {skipped} ta band xonadon o'zgartirilmadi
+          {skipped} ta band xonadonning statusi o'zgartirilmadi
         </p>
       )}
       {bulk.isError && (

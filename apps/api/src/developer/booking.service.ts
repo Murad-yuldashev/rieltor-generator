@@ -137,22 +137,39 @@ export class BookingService {
     }));
   }
 
-  /** Expire ACTIVE bookings past holdUntil; free a unit only if it is STILL BOOKED. */
+  /** Expire ACTIVE bookings past holdUntil; free a unit only if it has NO remaining ACTIVE hold. */
   async expireOverdue(): Promise<{ expired: number }> {
     const now = new Date();
     const overdue = await this.prisma.booking.findMany({
       where: { status: 'ACTIVE', holdUntil: { lt: now } },
       select: { id: true, unitId: true },
     });
+    let expired = 0;
     for (const b of overdue) {
-      await this.prisma.$transaction([
-        this.prisma.booking.update({ where: { id: b.id }, data: { status: 'EXPIRED' } }),
-        this.prisma.unit.updateMany({
-          where: { id: b.unitId, status: 'BOOKED' }, // only free a still-BOOKED unit
-          data: { status: 'AVAILABLE' },
-        }),
-      ]);
+      const done = await this.prisma.$transaction(async (tx) => {
+        // Lock the unit so a concurrent book/cancel/convert/extend serialises against us.
+        await tx.$queryRaw`SELECT 1 FROM "Unit" WHERE id = ${b.unitId} FOR UPDATE`;
+        // Expire ONLY if this booking is still ACTIVE and still overdue (a concurrent
+        // cancel/convert/extend may have changed status or pushed holdUntil forward).
+        const res = await tx.booking.updateMany({
+          where: { id: b.id, status: 'ACTIVE', holdUntil: { lt: now } },
+          data: { status: 'EXPIRED' },
+        });
+        if (res.count === 0) return false;
+        // Free the unit only if it has NO remaining ACTIVE booking (so a rebooked unit stays BOOKED).
+        const stillActive = await tx.booking.count({
+          where: { unitId: b.unitId, status: 'ACTIVE' },
+        });
+        if (stillActive === 0) {
+          await tx.unit.updateMany({
+            where: { id: b.unitId, status: 'BOOKED' },
+            data: { status: 'AVAILABLE' },
+          });
+        }
+        return true;
+      });
+      if (done) expired += 1;
     }
-    return { expired: overdue.length };
+    return { expired };
   }
 }
