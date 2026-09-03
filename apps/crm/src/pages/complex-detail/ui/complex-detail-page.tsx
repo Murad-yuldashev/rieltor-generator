@@ -1,19 +1,24 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import type { ComplexDetail, ComplexStatus } from '@rieltor/shared';
+import { imageVariantSrc, type ComplexDetail, type ComplexStatus } from '@rieltor/shared';
 import {
   COMPLEX_STATUS_LABELS,
   COMPLEX_STATUS_OPTIONS,
   PUBLISH_STATE_BADGE,
   PUBLISH_STATE_LABELS,
   useComplex,
+  useComplexImages,
   useCreateBuilding,
   useDeleteComplex,
   usePublishComplex,
   useUpdateComplex,
 } from '@/features/developer';
 import { ApiError } from '@/shared/api/client';
+import { cn } from '@/shared/lib/cn';
 import { CabinetNav } from '@/widgets/cabinet-nav';
+
+/** Per-complex gallery cap — mirrors the API's MAX_COMPLEX_IMAGES (upload 409s past it). */
+const MAX_COMPLEX_IMAGES = 20;
 
 const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
 const FIELD =
@@ -240,6 +245,8 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
         )}
       </form>
 
+      <ComplexMedia complex={complex} />
+
       <section className="rounded-card bg-card p-5 shadow-card">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-[15px] font-bold text-ink">Marketpleysda e'lon</h2>
@@ -384,5 +391,116 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
         )}
       </section>
     </>
+  );
+}
+
+/**
+ * Cover + gallery media manager. Selecting a file uploads it immediately, then the
+ * input is cleared so re-picking the same file still fires `change`. The gallery is
+ * re-rendered straight from the `ComplexDetail` each mutation returns; the first
+ * image (position 0) is the cover. The upload cap (20) answers with a 409 whose
+ * Uzbek reason is shown verbatim.
+ *
+ * NOTE: the delete endpoint is keyed by the image's `position` here — the shared
+ * `Image` DTO exposes no row id, and position is its only stable per-complex
+ * identifier (it equals the `<nn>` segment of `base`).
+ */
+function ComplexMedia({ complex }: { complex: ComplexDetail }) {
+  const { uploadImage, deleteImage } = useComplexImages(complex.id);
+
+  const atCap = complex.imageCount >= MAX_COMPLEX_IMAGES;
+
+  function handleSelect(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    // Clear the input right away so picking the same file again still fires `change`.
+    event.target.value = '';
+    if (file) uploadImage.mutate(file);
+  }
+
+  // A full gallery returns 409 with the Uzbek reason ("Rasmlar chegarasi to'ldi") —
+  // show it verbatim; any other failure is generic.
+  const uploadError =
+    uploadImage.error instanceof ApiError && uploadImage.error.status === 409
+      ? uploadImage.error.message
+      : uploadImage.isError
+        ? "Rasm yuklashda xatolik. Qayta urinib ko'ring."
+        : null;
+
+  return (
+    <section className="rounded-card bg-card p-5 shadow-card">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[15px] font-bold text-ink">Rasmlar</h2>
+        <span className="shrink-0 text-[13px] font-semibold text-ink-3">
+          {complex.imageCount} / {MAX_COMPLEX_IMAGES}
+        </span>
+      </div>
+      <p className="mt-1 text-[13px] text-ink-2">
+        E'lon qilish uchun kamida bitta rasm kerak. Birinchi rasm muqova bo'ladi.
+      </p>
+
+      {complex.gallery.length === 0 ? (
+        <p className="mt-3 text-[14px] text-ink-3">Hozircha rasm yo'q</p>
+      ) : (
+        <ul className="mt-4 grid grid-cols-3 gap-3">
+          {complex.gallery.map((image, index) => (
+            <li
+              key={image.base}
+              className="relative overflow-hidden rounded-[14px] border border-line"
+            >
+              <img
+                src={imageVariantSrc(image.base, 360)}
+                alt={`Majmua rasmi ${index + 1}`}
+                width={image.width}
+                height={image.height}
+                loading="lazy"
+                className="aspect-[4/3] w-full object-cover"
+              />
+              {index === 0 && (
+                <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white">
+                  Muqova
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => deleteImage.mutate(String(image.position))}
+                disabled={deleteImage.isPending}
+                className="absolute right-2 top-2 rounded-full bg-brand-rose px-2 py-0.5 text-[11px] font-bold text-white disabled:opacity-60"
+              >
+                O'chirish
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <label
+        className={cn(
+          'mt-4 flex w-full cursor-pointer items-center justify-center rounded-[14px] border border-accent bg-accent-soft px-6 py-3 text-[15px] font-extrabold text-accent',
+          (uploadImage.isPending || atCap) && 'pointer-events-none opacity-60',
+        )}
+      >
+        {uploadImage.isPending
+          ? 'Yuklanmoqda...'
+          : atCap
+            ? "Rasmlar chegarasi to'ldi"
+            : 'Rasm qo‘shish'}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleSelect}
+          disabled={uploadImage.isPending || atCap}
+          className="hidden"
+        />
+      </label>
+
+      {uploadError && (
+        <p className="mt-3 text-[13px] font-semibold text-brand-rose">{uploadError}</p>
+      )}
+      {deleteImage.isError && (
+        <p className="mt-3 text-[13px] font-semibold text-brand-rose">
+          Rasmni o'chirishda xatolik. Qayta urinib ko'ring.
+        </p>
+      )}
+    </section>
   );
 }

@@ -14,7 +14,7 @@ import {
   type UnitCreate,
   type UnitUpdate,
 } from '@rieltor/shared';
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api/client';
+import { apiDelete, apiGet, apiPatch, apiPost, apiUpload } from '@/shared/api/client';
 
 export const ORG_QUERY_KEY = ['crm-org'] as const;
 
@@ -139,6 +139,36 @@ export function usePublishComplex(id: string) {
       void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) });
     },
   });
+}
+
+/**
+ * Cover + gallery media for one complex. `uploadImage` posts the raw `File` as
+ * multipart (`POST /api/crm/complexes/:id/images`, field `file`); `deleteImage`
+ * removes one gallery image (`DELETE /api/crm/complexes/:id/images/:imageId`).
+ * Both endpoints answer with the full `ComplexDetail` (fresh gallery), and both
+ * invalidate this complex's detail so the media manager re-renders from server
+ * truth. A full gallery (cap 20) answers the upload with a 409 whose Uzbek
+ * `message` ("Rasmlar chegarasi to'ldi") the caller surfaces (ApiError carries it).
+ */
+export function useComplexImages(id: string) {
+  const queryClient = useQueryClient();
+
+  const uploadImage = useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiUpload(`/api/crm/complexes/${id}/images`, formData, ComplexDetailSchema);
+    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) }),
+  });
+
+  const deleteImage = useMutation({
+    mutationFn: (imageId: string) =>
+      apiDelete(`/api/crm/complexes/${id}/images/${imageId}`, ComplexDetailSchema),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) }),
+  });
+
+  return { uploadImage, deleteImage };
 }
 
 /** `DELETE /api/crm/complexes/:id` — remove a complex, then refresh the list. */

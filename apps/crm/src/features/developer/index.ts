@@ -6,6 +6,7 @@ export {
   useBecomeDeveloper,
   useComplex,
   useComplexes,
+  useComplexImages,
   useCreateBuilding,
   useCreateComplex,
   useCreateUnit,
