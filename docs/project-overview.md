@@ -947,6 +947,88 @@ UPDATE` lock YO'Q, balans qorovuli YO'Q, hech qachon **402** tashlamaydi. Hamyon
   hamyoni → **6.2** kontraktlar → **6.3** komissiya clawback/reconciliation → **6.4** to'lov
   jadvallari/qarzdorlar/moliya-KPI. **Keyingi: 6.2 — Contracts.**
 
+## 4s. Phase 6.2 — Kontraktlar (Contracts) (2026-09-04)
+
+Phase 6 ning ikkinchi qadami: yopilgan sotuvning **davomiy, avto-raqamlangan yozuvi** — `Contract`. 6.2
+gacha yopilgan bitimning yagona izi `CONVERTED` Booking + `SOLD` Unit + (lead yo'lida) `CONVERTED`
+Fixation edi; kontrakt entiteti yo'q edi. 6.2 kontraktni **bitim yopilgan payt** (Booking
+`convert`→SOLD) — o'sha bir atomik `count===1` darvozasi ichida — yaratadi, shunda har bir keyingi
+sub-faza (6.3 clawback, 6.4 to'lov jadvallari) osiladigan barqaror yozuvga ega bo'ladi.
+
+### Ma'lumot modeli (additiv migratsiya `phase_6_2_contracts`)
+
+- Yangi **`Contract`** — `{id, number, orgId, unitId, bookingId @unique, fixationId?, buyerId?,
+buyerName, buyerPhone, agreedAmount BigInt?, currency, status, signedAt?, createdAt}`;
+  `@@unique([orgId, number])` + `@@index([orgId, createdAt])`. Convert paytida, `count===1` darvozasi
+  ichida yaratiladi — **har konvertlangan booking uchun bitta** (`bookingId @unique` = idempotentlik
+  zaxira qorovuli).
+- Yangi **`OrgContractCounter`** — `{orgId, year, lastSeq}`, kompozit PK `@@id([orgId, year])`;
+  `number` ni backing qiluvchi org-bo'yicha-yil-bo'yicha monoton hisoblagich. FK/back-relation yo'q —
+  yalang'och hisoblagich.
+- Yangi enumlar: **`enum Currency { SOM }`** (bugun faqat SOM; FX yo'q, `ALTER TYPE ADD VALUE` bilan
+  kengaytiriladi) va **`enum ContractStatus { ACTIVE | CANCELLED }`** (`CANCELLED` 6.3 clawback/unwind
+  uchun zaxirada, 6.2 da yozilmaydi). Barchasi additiv (CREATE TYPE/TABLE) — mavjud jadvalga **hech
+  qanday ALTER yo'q**, har FK yangi `Contract` qatorida yashaydi. Virtual back-relation'lar:
+  `Organization.contracts`, `Unit.contracts`, `Booking.contract?` (1:1), `Fixation.contracts`,
+  `User.buyerContracts`. DTO: `agreedAmount` string `^\d+$` nullable, pul string uchidan-uchgacha.
+
+### Avto-raqamlash — org-bo'yicha, yil-bo'yicha (`2026-0001`)
+
+- `cuid()` id'lar orasida sequence primitivi yo'q; `OrgContractCounter` convert tx ichida atomik
+  inkrement qilinadi, `number = ${year}-${padStart(lastSeq, 4)}`.
+- Inkrement **xom `INSERT … ON CONFLICT ("orgId","year") DO UPDATE SET "lastSeq" = … + 1 RETURNING
+"lastSeq"`** (`$queryRaw`) — poyga-xavfsiz, birinchi insertni ham atomik qamrab oladi (`book()` ning
+  `$queryRaw` idiomasi ko'zgusi). Prisma kompozit-kalit `upsert`i native ON CONFLICT'ga kompilyatsiya
+  BO'LMAYDI — u find-then-insert emulyatsiya qiladi, shu bois (org, year) ning birinchi bir vaqtli ikki
+  convertida P2002 tashlab **butun convertni rollback** qilardi. `@@unique([orgId, number])` — qoldiq
+  to'qnashuv uchun baland qorovul.
+
+### Xaridor identifikatsiyasi + narx snapshot'i
+
+- **`buyerId User?`** — qattiq buyer `User` FAQAT fixation yo'lida mavjud (`Fixation → PropertyRequest
+→ author`); walk-in booking'da faqat erkin-matnli `clientName/clientPhone` bor. Shu bois `buyerId`
+  faqat lead muallifi orqali to'ldiriladi (shadow-User upsert yo'q).
+- **`buyerName`/`buyerPhone` doim snapshot** qilinadi (lead muallifidan, bo'lmasa booking
+  erkin-matnidan) — keyingi profil tahriri yoki o'chirilgan lead'dan omon qoladi.
+- **`agreedAmount`** = convert paytidagi `unit.priceSom` snapshot'i, **null-bardoshli** (narxsiz unit
+  ham konvertlanadi → `agreedAmount = null`, hech qachon convertni bloklamaydi) — FK emas, snapshot;
+  narx BOOKED unit'da convert'gacha tahrirlanadi.
+- **`currency`** SOM default (FX kechiktirilgan); **`signedAt`** stub — quruvchi harakati bilan bosiladi
+  (haqiqiy JSHSHIR kechiktirilgan); `status` ACTIVE default.
+
+### `ContractService` + convert wiring
+
+- `create(tx, input)` chaqiruvchining tranzaksiyasida ishlaydi, o'zi tx ochmaydi
+  (`OrgWalletService.debitForCommission` idiomasi); `DeveloperModule`da provider (alohida modul/
+  forwardRef yo'q). Convert `$transaction`ida, **`count===1` darvozasi ichida**, komissiya blokidan
+  keyin **har convertda** (fixation ham, walk-in ham) chaqiriladi. Buyer = fixation lead muallifi yoki
+  null; ism/telefon booking'ga fall-back qiladi; SOLD flip + rieltor kredit + org debit bilan atomik.
+- Read/sign metodlari o'z tx'i, org-scoped (`orgIdOf(caller)`, begona/yo'q id → 404): `list` →
+  `ContractRow[]` (unit + building konteksti bilan), `getOne`, `sign` (`signedAt` null bo'lsa bosadi,
+  ikkinchi imzo idempotent; `CANCELLED` kontrakt → Conflict; status ACTIVE qoladi).
+
+### API + quruvchi CRM (`apps/crm`)
+
+- **`GET /api/crm/contracts`** + **`GET /api/crm/contracts/:id`** + **`POST /api/crm/contracts/:id/sign`**
+  (`JwtGuard` + `DeveloperGuard`, org-scoped).
+- **Shartnomalar** ro'yxat sahifasi (raqam / xaridor ism+telefon / unit `buildingName`+`unitNumber` /
+  summa yoki "—" / status nishoni / sana) + kontrakt detali (`Imzolash` tugmasi `signedAt` null va status
+  ACTIVE bo'lganda, imzolangach sanani ko'rsatadi). **"Shartnomalar"** navigatsiya bandi.
+
+### Non-goals (Phase 6 ichida keyinroq)
+
+- `PaymentSchedule`/`Payment`/`Invoice` + qarzdorlar reestri + moliya-KPI (**6.4**); komissiya
+  clawback/reconciliation (**6.3**); **haqiqiy** JSHSHIR/onlayn imzo; multi-valyuta **FX
+  konvertatsiyasi**; kontrakt **shablon/variatsiya** dvigateli; 6.2 gacha konvertlangan booking'lar
+  uchun **backfill**; rieltor-tomon (apps/agent) kontrakt ko'rinishi.
+
+### Kelasi
+
+- **6.2 yakunlandi** (Contract + avto-raqamlash + convert'da yaratish + CRM Shartnomalar ro'yxat/detal +
+  imzo stubi). Phase 6 dekompozitsiyasi: **6.1** org hamyoni → **6.2** kontraktlar → **6.3** komissiya
+  clawback/reconciliation → **6.4** to'lov jadvallari/qarzdorlar/moliya-KPI. **Keyingi: 6.3 —
+  clawback/reconciliation.**
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
