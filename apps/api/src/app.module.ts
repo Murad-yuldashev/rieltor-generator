@@ -15,6 +15,7 @@ import { LeadsModule } from './leads/leads.module';
 import { ListingsModule } from './listings/listings.module';
 import { ModerationDevelopersModule } from './moderation-developers/moderation-developers.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { OrgWalletModule } from './org-wallet/org-wallet.module';
 import { PresentationsModule } from './presentations/presentations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PropertiesModule } from './properties/properties.module';
@@ -46,6 +47,7 @@ import { WalletModule } from './wallet/wallet.module';
     ListingsModule,
     ModerationDevelopersModule,
     NotificationsModule,
+    OrgWalletModule,
     PresentationsModule,
     PropertiesModule,
     RealtorPublicModule,

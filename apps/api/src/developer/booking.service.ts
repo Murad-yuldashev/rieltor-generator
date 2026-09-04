@@ -4,6 +4,7 @@ import { canonicalizePhone } from '@rieltor/shared';
 import type { Booking as BookingRecord } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
+import { OrgWalletService } from '../org-wallet/org-wallet.service';
 import { DeveloperService } from './developer.service';
 
 /** Default hold length (days) when the caller does not specify `holdDays`. */
@@ -17,6 +18,7 @@ export class BookingService {
     private readonly prisma: PrismaService,
     private readonly dev: DeveloperService,
     private readonly wallet: WalletService,
+    private readonly orgWallet: OrgWalletService,
   ) {}
 
   /** Row -> `Booking` DTO (holdUntil/createdAt as ISO strings, note/cancelReason passthrough). */
@@ -153,6 +155,13 @@ export class BookingService {
               await this.wallet.credit(tx, fixation.realtorId, commissionSom, {
                 fixationId: fixation.id,
               });
+              // Fund that commission from the owning org's wallet (may go negative — a recorded debt).
+              await this.orgWallet.debitForCommission(
+                tx,
+                booking.unit.building.complex.orgId,
+                commissionSom,
+                { fixationId: fixation.id },
+              );
             }
           }
         }

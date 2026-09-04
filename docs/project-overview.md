@@ -889,6 +889,64 @@ createdAt/convertedAt?/cancelledAt?}`. `@unique propertyRequestId` = bir lead'ga
   komissiya). **Keyingi: Phase 6 — kontraktlar/moliya:** quruvchi hamyoni + escrow, kontraktlar,
   komissiya clawback/reconciliation, KPI. Keyinroq: yuqoridagi non-goal'lar.
 
+## 4r. Phase 6.1 — Quruvchi hamyoni + moliyalashtirilgan komissiya (2026-09-04)
+
+Phase 6 (kontraktlar/moliya) ning birinchi qadami va uning **moliyaviy poydevori**: 5.4 da rieltor
+komissiyasini **platforma o'z zimmasiga olib** (float) to'lardi — endi o'sha to'lovni **quruvchi
+tashkilotining hamyoni moliyalashtiradi**. Bu Phase 6 ni oldinga (6.2 kontraktlar → 6.3
+clawback/reconciliation → 6.4 to'lov jadvallari/qarzdorlar/moliya-KPI) surishning kirish nuqtasi.
+
+### Ma'lumot modeli (additiv migratsiya `phase_6_1_org_wallet`)
+
+- Yangi **`OrgWallet`** — `{orgId @unique, balanceSom BigInt (DEFAULT 0), transactions}`.
+  `balanceSom` **manfiy bo'lishi MUMKIN** = qarz; klamplanmaydi. `Organization`ga cascade FK.
+- Yangi **`OrgWalletTransaction`** — `{type OrgWalletTxType, amountSom BigInt (doim musbat),
+fixationId?}` — yo'nalishni tur ko'taradi. Yangi **`enum OrgWalletTxType { TOPUP
+COMMISSION_DEBIT }`**. Barchasi additiv (CREATE); rieltor **`Wallet`/`WalletTransaction`ga
+  umuman tegilmagan**. DTO: `balanceSom` string `^-?\d+$` (minus ruxsat), `amountSom` string
+  `^\d+$` (manfiymas).
+
+### `OrgWalletService` (rieltor `WalletService` idiomalarining ko'zgusi)
+
+- **`ensureOrgWallet`** — birinchi teginishda lazy upsert (noyob `orgId` ostida idempotent, P2002
+  yutiladi). **`view`** — balans + oxirgi 50 qatorli leger (CRM kabineti uchun; balans **klamplanmaydi**).
+  **`topup`** — test-to'lov stubi, `TOPUP_PACKAGES` ni qayta ishlatadi (atomik `increment`, lock kerak emas).
+- **`debitForCommission(tx, orgId, amountSom, {fixationId?})`** — chaqiruvchining tranzaksiyasida
+  ishlaydi, o'zi tranzaksiya ochmaydi. **SHARTSIZ**: rieltor `debitForClaim` dan farqli — `FOR
+UPDATE` lock YO'Q, balans qorovuli YO'Q, hech qachon **402** tashlamaydi. Hamyonni in-tx upsert
+  bilan o'zi ta'minlaydi (yangi org tug'ilishidayoq `-amountSom` qarzda), mavjudi dekrement qilinadi,
+  balans manfiy ketishi mumkin. `amountSom` **musbat** saqlanadi; `COMMISSION_DEBIT` turi yo'nalishni beradi.
+
+### Moliyalashtirilgan komissiya — convert paytida
+
+- Mavjud `booking.act()` convert `$transaction`ida, **`count===1` atomik darvozasi ichida**,
+  `commissionSom > 0n` bo'lganda: fiksatsiyalangan rieltor kreditlangandan **darhol keyin** egalik
+  qiluvchi org hamyoni **aynan o'sha `commissionSom`ga** debitlanadi (`orgId` =
+  `booking.unit.building.complex.orgId`). SOLD flip + rieltor kredit bilan **atomik** va **idempotent**
+  (qayta otilgan convert hech nima debitlamaydi). Agar org balansi yetmasa → **sotuv baribir bajariladi
+  va rieltor baribir to'lanadi**, org hamyoni **manfiy** ketadi (yozib qo'yilgan qarz). Modul sikli
+  bir tomonlama yechildi: `OrgWalletController` `DeveloperModule`ga ko'chirildi, `OrgWalletModule` faqat
+  servisni export qiladi (forwardRef yo'q).
+
+### API + quruvchi CRM (`apps/crm`)
+
+- **`GET /api/crm/wallet`** + **`POST /api/crm/wallet/topup`** (`JwtGuard` + `DeveloperGuard`, org-scoped,
+  stub). Yo'l `crm/wallet` — `/api/wallet` (rieltor hamyoni) bilan to'qnashmaydi.
+- **Quruvchi hamyoni sahifasi**: balans + balans manfiy bo'lganda qizil **"Qarz"** indikatori + stub
+  to'ldirish paketlari + leger. **"Hisob"** navigatsiya bandi.
+
+### Non-goals (Phase 6 ichida keyinroq)
+
+- Escrow/held-balance/pre-funding; **`Contract`** (6.2); komissiya clawback/reconciliation (6.3); to'lov
+  jadvallari/qarzdorlar/hisob-fakturalar/moliya-KPI (6.4); haqiqiy to'lov-provayder integratsiyalari +
+  JSHSHIR (keyinroq).
+
+### Kelasi
+
+- **6.1 yakunlandi** (org hamyoni + moliyalashtirilgan komissiya). Phase 6 dekompozitsiyasi: **6.1** org
+  hamyoni → **6.2** kontraktlar → **6.3** komissiya clawback/reconciliation → **6.4** to'lov
+  jadvallari/qarzdorlar/moliya-KPI. **Keyingi: 6.2 — Contracts.**
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

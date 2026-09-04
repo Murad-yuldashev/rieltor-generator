@@ -445,19 +445,46 @@ enum WalletTxType {
 }
 
 model WalletTransaction {
-  id        String       @id @default(cuid())
-  walletId  String
-  wallet    Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  type      WalletTxType
+  id         String       @id @default(cuid())
+  walletId   String
+  wallet     Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type       WalletTxType
   /// Always positive; `type` gives the direction.
-  amountSom BigInt
+  amountSom  BigInt
   /// The claimed PropertyRequest, for LEAD_CLAIM.
-  leadId    String?
+  leadId     String?
   /// The converted Fixation, for COMMISSION.
   fixationId String?
-  createdAt DateTime     @default(now())
+  createdAt  DateTime     @default(now())
 
   @@index([walletId, createdAt])
+}
+
+enum OrgWalletTxType {
+  TOPUP
+  COMMISSION_DEBIT
+}
+
+model OrgWallet {
+  id           String                 @id @default(cuid())
+  orgId        String                 @unique
+  org          Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  balanceSom   BigInt                 @default(0) // cached = sum(transactions); MAY be negative (debt)
+  transactions OrgWalletTransaction[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+}
+
+model OrgWalletTransaction {
+  id          String          @id @default(cuid())
+  orgWalletId String
+  orgWallet   OrgWallet       @relation(fields: [orgWalletId], references: [id], onDelete: Cascade)
+  type        OrgWalletTxType
+  amountSom   BigInt // always positive; direction implied by `type`
+  fixationId  String?
+  createdAt   DateTime        @default(now())
+
+  @@index([orgWalletId, createdAt])
 }
 
 /// Developer (застройщик) organization roles. A member is either the OWNER
@@ -502,6 +529,7 @@ model Organization {
   updatedAt DateTime     @updatedAt
   members   Membership[]
   complexes Complex[]
+  orgWallet OrgWallet?
 
   /// Marketplace trust (5.3): a moderator flips `verified` on after review.
   verified                Boolean   @default(false)

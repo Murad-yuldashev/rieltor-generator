@@ -954,6 +954,30 @@ export const ModeratorDeveloperRowSchema = z.object({
 /** Body of the fixation request — an optional target unit within the complex. */
 export const FixateInputSchema = z.object({ unitId: z.string().optional() });
 
+// --- Organization wallet (Phase 6.1) — mirrors the realtor wallet, but org balance MAY be negative. ---
+
+/** Kind of an org-wallet ledger entry: a prepaid top-up, or a fixation-commission debit. */
+export const OrgWalletTxTypeSchema = z.enum(['TOPUP', 'COMMISSION_DEBIT']);
+
+/**
+ * One row in the org-wallet ledger. `amountSom` is a non-negative BigInt-as-string —
+ * direction is carried by `type` (TOPUP credits, COMMISSION_DEBIT debits). `fixationId`
+ * is set only for a COMMISSION_DEBIT.
+ */
+export const OrgWalletTxRowSchema = z.object({
+  id: z.string(),
+  type: OrgWalletTxTypeSchema,
+  amountSom: z.string().regex(/^\d+$/), // always non-negative (direction by type)
+  fixationId: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+/** CRM wallet view: current balance plus the transaction ledger. */
+export const OrgWalletViewSchema = z.object({
+  balanceSom: z.string().regex(/^-?\d+$/), // MAY be negative — a debt; the leading minus is REQUIRED
+  transactions: z.array(OrgWalletTxRowSchema),
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -1061,3 +1085,6 @@ export type ModeratorDeveloperRow = z.infer<typeof ModeratorDeveloperRowSchema>;
 export type FixationStatus = z.infer<typeof FixationStatusSchema>;
 export type Fixation = z.infer<typeof FixationSchema>;
 export type FixateInput = z.infer<typeof FixateInputSchema>;
+export type OrgWalletTxType = z.infer<typeof OrgWalletTxTypeSchema>;
+export type OrgWalletTxRow = z.infer<typeof OrgWalletTxRowSchema>;
+export type OrgWalletView = z.infer<typeof OrgWalletViewSchema>;

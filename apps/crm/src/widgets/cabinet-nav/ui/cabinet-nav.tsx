@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router';
 import { cn } from '@/shared/lib/cn';
 
-// The cabinet's two top-level sections. `end` keeps the Organization tab from
+// The cabinet's top-level sections. `end` keeps the Organization tab from
 // staying active on `/complexes` (the index route `/` is a prefix of everything).
 const LINKS = [
   { to: '/', label: 'Tashkilot', end: true },
   { to: '/complexes', label: 'Majmualar', end: false },
   { to: '/bookings', label: 'Bandlar', end: false },
+  { to: '/wallet', label: 'Hisob', end: false },
 ];
 
 /** Persistent section switcher shown at the top of every cabinet page. */

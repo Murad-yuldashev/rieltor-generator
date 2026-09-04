@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { OrgWalletModule } from '../org-wallet/org-wallet.module';
+import { OrgWalletController } from '../org-wallet/org-wallet.controller';
 import { BookingController } from './booking.controller';
 import { BookingExpiryCron } from './booking-expiry.cron';
 import { BookingService } from './booking.service';
@@ -10,9 +12,17 @@ import { DeveloperService } from './developer.service';
 import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
-  imports: [AuthModule, WalletModule], // JwtGuard/JwtService; WalletModule exports WalletService (commission credit at convert)
-  controllers: [DeveloperController, BookingController, ComplexImageController],
+  // WalletModule → WalletService (realtor commission credit at convert).
+  // OrgWalletModule → OrgWalletService (org-wallet debit at convert + the CRM
+  // /api/crm/wallet controller, which lives here to keep the dependency one-way).
+  imports: [AuthModule, WalletModule, OrgWalletModule],
+  controllers: [
+    DeveloperController,
+    BookingController,
+    ComplexImageController,
+    OrgWalletController,
+  ],
   providers: [DeveloperService, DeveloperGuard, BookingService, BookingExpiryCron],
-  exports: [DeveloperGuard],
+  exports: [DeveloperGuard, DeveloperService],
 })
 export class DeveloperModule {}
