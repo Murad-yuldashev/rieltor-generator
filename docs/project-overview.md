@@ -821,6 +821,74 @@ reja: `docs/superpowers/plans/2026-09-03-phase-5.3-marketplace-publishing.md`.
 - **5.4:** C6 cross-CRM fixation (booking-mijozni platforma User/lead'ga bog'lash) + komissiya
   (C7/C8). **Phase 6:** kontraktlar/moliya/KPI. Keyinroq: yuqoridagi non-goal'lar.
 
+## 4q. Phase 5.4 — Cross-CRM fixation + komissiya (2026-09-04)
+
+Phase 5 ning to'rtinchi (yakuniy) qadami — **yopiq halqaning to'lov qismi**: rieltor claim qilgan
+NEW_BUILD lead'ini quruvchi xonadoniga **fiksatsiya** qiladi (C6), va o'sha xonadon booking
+convert → SOLD bo'lganida rieltorga **komissiya darhol** to'lanadi (C7/C8). Bu 5.1–5.3 ni
+(inventar → shaxmatka/booking → marketplace + skoring qilingan NEW_BUILD lead) rieltor daromadiga
+ulaydi. Spec: `docs/superpowers/specs/2026-09-04-phase-5.4-fixation-commission-design.md`,
+reja: `docs/superpowers/plans/2026-09-04-phase-5.4-fixation-commission.md`.
+
+### Ma'lumot modeli (additiv migratsiya `phase_5_4_fixation_commission`)
+
+- Yangi **`Fixation`** modeli — `{realtorId, unitId, propertyRequestId @unique, buyerPhone,
+status FixationStatus (ACTIVE/CONVERTED/CANCELLED), commissionBps, commissionSom BigInt?,
+createdAt/convertedAt?/cancelledAt?}`. `@unique propertyRequestId` = bir lead'ga ko'pi 1 fixation.
+- **`Complex.commissionBps`** + **`Unit.commissionBps`** (bazis punktlarda, nullable) — komissiya
+  stavkasi. **`Booking.fixationId`** + **`WalletTransaction.fixationId`** (sotuvni fixation'ga
+  bog'laydi). **`WalletTxType`** += **`COMMISSION`**. Barchasi additiv (CREATE/ADD; mavjud ustunga
+  tegilmagan).
+
+### Fiksatsiya (C6) — `@Controller('leads')`, JwtGuard + RealtorGuard
+
+- **`POST /api/leads/:id/fixate`** — claim qilgan rieltor o'z NEW_BUILD lead'ini nishon xonadonga
+  fiksatsiya qiladi. Bitta tranzaksiyada xonadon qatorini **`SELECT..FOR UPDATE`** qulflaydi (4.1
+  idiomasi), so'ng noyoblikni tekshiradi: **bir (xonadon, kanonik telefon) uchun ko'pi 1 ACTIVE
+  fixation** — raqobatchi ACTIVE bo'lsa **409**. Telefon `998XXXXXXXXX`ga kanonizatsiya qilinadi
+  (shared **`canonicalizePhone`**, ikkala tomonda bir xil). CANCELLED qatorni qayta jonlantiradi
+  (unique propertyRequestId ikkinchi create'ni taqiqlaydi). **`DELETE /api/leads/:id/fixate`** —
+  faqat egasi o'z ACTIVE fixation'ini bekor qiladi.
+
+### Komissiya stavkasi (C7)
+
+- Stavka **per-Complex default + per-Unit override** (bazis punkt; unit override → complex default
+  → 0). Fiksatsiya paytida stavka **Fixation qatoriga snapshot** qilinadi — kelishilgan foizni
+  qulflaydi, quruvchi keyin stavkani o'zgartirsa ham rieltor komissiyasi kesilmaydi.
+
+### Darhol to'lov (C8) — atomic convert
+
+- `booking` convert → SOLD **atomik** qilindi: `updateMany` ACTIVE→CONVERTED, va **faqat
+  count===1 bo'lganda** unit SOLD bo'ladi va to'lov bajariladi (bir vaqtli/qayta-otilgan convert →
+  ikki marta kredit yo'q). Booking'ning kanonik telefoni ACTIVE Fixation bilan moslashtiriladi;
+  komissiya = **`priceSom(SOLD) × fixation.commissionBps / 10000`** (BigInt, truncate) rieltor
+  hamyoniga **darhol** kreditlanadi (`WalletTxType.COMMISSION`), Fixation → CONVERTED,
+  `Booking.fixationId` o'rnatiladi. Narx `priceSom` (jonli SOLD narxi) tranzaksiya ichida o'qiladi;
+  **stavka esa snapshot**. Null narx yoki 0 stavka → to'lovsiz, lekin sotuv baribir convert bo'ladi.
+  Idempotent (`credit` hamyonni tranzaksiya ichida upsert qiladi). Platforma **hisobni o'z zimmasiga
+  oladi** (float); quruvchi-tomon billing/escrow → Phase 6.
+
+### Rieltor kabineti (`apps/agent`) + quruvchi CRM (`apps/crm`)
+
+- **`apps/agent`:** claim qilingan NEW_BUILD lead nishon xonadonini + **taxminiy komissiya**ni
+  ko'rsatadi va **Fiksatsiya qilish / Bekor qilish / Komissiya olindi** holatini beradi (lead DTO
+  target unit + estimated commission + fixation holatini olib yuradi).
+- **`apps/crm`:** kompleks/xonadon detalida **komissiya-% konfiguratsiyasi** (per-complex default +
+  per-unit override) va shaxmatkada **faqat-o'qish "fixation" indikatori**.
+
+### Non-goals (keyinroq)
+
+- To'liq C7 browsable/komissiya-filtrlangan showcase; quruvchi hamyoni/escrow/billing/reconciliation
+  (Phase 6); komissiya clawback (convert'dan keyin bekor / dispute / refund); fixation muddati croni;
+  qattiq Booking→User identity bog'lanishi; ikki tomonlama fixation tasdiqi; komissiyani "tozalab
+  inherit/null qilish" affordance'i.
+
+### Kelasi
+
+- **Phase 5 yakunlandi** (5.1 inventar → 5.2 shaxmatka/booking → 5.3 marketplace → 5.4 fixation +
+  komissiya). **Keyingi: Phase 6 — kontraktlar/moliya:** quruvchi hamyoni + escrow, kontraktlar,
+  komissiya clawback/reconciliation, KPI. Keyinroq: yuqoridagi non-goal'lar.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
