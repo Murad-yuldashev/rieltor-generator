@@ -620,12 +620,16 @@ export const PresentationViewEventSchema = z.object({
 /** Kind of a wallet ledger entry: a prepaid top-up, a lead-claim debit, or a fixation commission credit. */
 export const WalletTxTypeSchema = z.enum(['TOPUP', 'LEAD_CLAIM', 'COMMISSION']);
 
-/** One row in the wallet ledger. `amountSom` is BigInt-as-string; `leadId` is set only for LEAD_CLAIM. */
+/**
+ * One row in the wallet ledger. `amountSom` is BigInt-as-string; `leadId` is set
+ * only for LEAD_CLAIM, `fixationId` only for COMMISSION.
+ */
 export const WalletTxRowSchema = z.object({
   id: z.string(),
   type: WalletTxTypeSchema,
   amountSom: z.string(),
   leadId: z.string().nullable(),
+  fixationId: z.string().nullable(),
   createdAt: z.string(),
 });
 
@@ -897,6 +901,30 @@ export const ModeratorDeveloperRowSchema = z.object({
   memberPhone: z.string(),
 });
 
+// --- Fixation + commission (Phase 5.4) ---
+
+/** Lifecycle of a lead→unit fixation: ACTIVE until it converts to a sale or is cancelled. */
+export const FixationStatusSchema = z.enum(['ACTIVE', 'CONVERTED', 'CANCELLED']);
+
+/** A realtor's fixation of a buyer lead onto a developer's unit. */
+export const FixationSchema = z.object({
+  id: z.string(),
+  unitId: z.string(),
+  propertyRequestId: z.string(),
+  buyerPhone: z.string(),
+  status: FixationStatusSchema,
+  /** Commission rate in basis points (1% = 100 bps). */
+  commissionBps: z.number().int(),
+  /** Commission paid on conversion, BigInt-as-string; null until CONVERTED. */
+  commissionSom: z.string().nullable(),
+  createdAt: z.string(),
+  /** When the fixation converted to a sale; null unless CONVERTED. */
+  convertedAt: z.string().nullable(),
+});
+
+/** Body of the fixation request — an optional target unit within the complex. */
+export const FixateInputSchema = z.object({ unitId: z.string().optional() });
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -1001,3 +1029,6 @@ export type PublicComplexDetail = z.infer<typeof PublicComplexDetailSchema>;
 export type ComplexInquiry = z.infer<typeof ComplexInquirySchema>;
 export type DeveloperVerify = z.infer<typeof DeveloperVerifySchema>;
 export type ModeratorDeveloperRow = z.infer<typeof ModeratorDeveloperRowSchema>;
+export type FixationStatus = z.infer<typeof FixationStatusSchema>;
+export type Fixation = z.infer<typeof FixationSchema>;
+export type FixateInput = z.infer<typeof FixateInputSchema>;

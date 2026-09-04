@@ -34,7 +34,14 @@ export class WalletService {
         transactions: {
           orderBy: { createdAt: 'desc' },
           take: 50,
-          select: { id: true, type: true, amountSom: true, leadId: true, createdAt: true },
+          select: {
+            id: true,
+            type: true,
+            amountSom: true,
+            leadId: true,
+            fixationId: true,
+            createdAt: true,
+          },
         },
       },
     });
@@ -45,6 +52,7 @@ export class WalletService {
         type: t.type,
         amountSom: String(t.amountSom),
         leadId: t.leadId,
+        fixationId: t.fixationId,
         createdAt: t.createdAt.toISOString(),
       })),
     };
@@ -99,6 +107,33 @@ export class WalletService {
     });
     await tx.walletTransaction.create({
       data: { walletId: wallet.id, type: 'LEAD_CLAIM', amountSom, leadId },
+    });
+  }
+
+  /**
+   * Credit the realtor's wallet inside the caller's transaction (Task 6). Runs on
+   * the passed `tx`, never opening its own. The wallet must already exist (the
+   * caller runs `ensureWallet` first). The `increment` is atomic, so no row lock
+   * is needed — the credit and its COMMISSION ledger row land in the caller's tx.
+   */
+  async credit(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    amountSom: bigint,
+    ref: { fixationId?: string } = {},
+  ): Promise<void> {
+    const wallet = await tx.wallet.update({
+      where: { userId },
+      data: { balanceSom: { increment: amountSom } },
+      select: { id: true },
+    });
+    await tx.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'COMMISSION',
+        amountSom,
+        fixationId: ref.fixationId ?? null,
+      },
     });
   }
 }
