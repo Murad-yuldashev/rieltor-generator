@@ -1,15 +1,12 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
-import { DeveloperModule } from '../developer/developer.module';
-import { OrgWalletController } from './org-wallet.controller';
 import { OrgWalletService } from './org-wallet.service';
 
-// AuthModule provides JwtGuard/JwtService for @UseGuards(JwtGuard). DeveloperModule
-// exports DeveloperGuard + DeveloperService (org resolution). PrismaModule is @Global.
-// OrgWalletService is exported so Task 4's BookingService can debit the commission.
+// Provides ONLY OrgWalletService (needs just PrismaModule, which is @Global). The
+// OrgWalletController lives in DeveloperModule instead — that keeps the dependency
+// one-way (DeveloperModule → OrgWalletModule) so BookingService can debit the org
+// wallet without a module cycle. No AuthModule/DeveloperModule import here: those
+// were only for the controller, which has moved.
 @Module({
-  imports: [AuthModule, DeveloperModule],
-  controllers: [OrgWalletController],
   providers: [OrgWalletService],
   exports: [OrgWalletService],
 })
