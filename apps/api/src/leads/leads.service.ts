@@ -293,6 +293,8 @@ function toLead(row: LeadRow, revealed: boolean): Lead {
     complexId: row.complexId,
     unitId: row.unitId,
     unitInfo,
-    fixation: row.fixation ? toFixation(row.fixation) : null,
+    // Gate the fixation on `revealed`: it carries the buyer's canonical phone, so a
+    // non-claimer reading this lead via findOne must not see it (same masking as `phone`).
+    fixation: revealed && row.fixation ? toFixation(row.fixation) : null,
   };
 }
