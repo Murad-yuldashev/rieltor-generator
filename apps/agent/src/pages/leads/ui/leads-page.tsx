@@ -8,7 +8,8 @@ import {
   type LeadStats,
 } from '@rieltor/shared';
 import { LISTING_TYPE_META } from '@/entities/listing';
-import { useMyLeads, useLeadStats, useSetOutcome } from '@/features/leads';
+import { useMyLeads, useLeadStats, useSetOutcome, useFixate, useUnfixate } from '@/features/leads';
+import { ApiError } from '@/shared/api/client';
 import { Icon } from '@/shared/ui/icon';
 
 /** Funnel stages in flow order — drives both the stats summary and the stepper. */
@@ -199,6 +200,10 @@ function LeadCard({ lead }: { lead: Lead }) {
         </a>
       )}
 
+      {lead.type === 'NEW_BUILD' && lead.unitInfo && (
+        <FixationPanel lead={lead} unit={lead.unitInfo} />
+      )}
+
       <div className="flex flex-wrap gap-1.5">
         {STAGES.map((stage) => {
           const active = stage === 'LOST' ? lostMode : !lostMode && lead.outcomeStage === stage;
@@ -253,5 +258,100 @@ function LeadCard({ lead }: { lead: Lead }) {
         </p>
       )}
     </li>
+  );
+}
+
+/**
+ * The NEW_BUILD target unit of a claimed lead: its complex + unit + price, the
+ * realtor-facing **estimated** commission, and the fixation controls. Owns its own
+ * mutations so only this lead's card is busy while fixating. The fixation state is
+ * server truth (`lead.fixation`): null/CANCELLED offers "Fiksatsiya qilish", ACTIVE
+ * shows the badge + "Bekor qilish", CONVERTED shows the commission actually earned.
+ *
+ * Commission figures are lump sums, so they are formatted with `'SALE'` (no `/oy`
+ * monthly suffix) regardless of the lead's own deal.
+ */
+function FixationPanel({ lead, unit }: { lead: Lead; unit: NonNullable<Lead['unitInfo']> }) {
+  const fixate = useFixate(lead.id);
+  const unfixate = useUnfixate(lead.id);
+  const fixation = lead.fixation;
+  const busy = fixate.isPending || unfixate.isPending;
+
+  // The fixate 409 (the unit already has an ACTIVE fixation for another client) carries
+  // a ready-to-show Uzbek message; surface it verbatim. Any other failure keeps the
+  // generic copy so an unexpected error can't leak an internal string.
+  const fixateError =
+    fixate.error instanceof ApiError && fixate.error.status === 409
+      ? fixate.error.message
+      : fixate.isError
+        ? "Fiksatsiya qilib bo'lmadi. Qayta urinib ko'ring."
+        : null;
+
+  return (
+    <div className="mb-3 rounded-[12px] bg-surface p-3.5">
+      <p className="text-[12px] font-bold uppercase tracking-wide text-ink-3">Yangi bino</p>
+      <p className="mt-1 text-[14px] font-bold text-ink">
+        {unit.complexName} · {unit.number}-xonadon
+      </p>
+      {unit.priceSom && (
+        <p className="mt-0.5 text-[13px] font-semibold text-ink-2">
+          {formatPriceSom(unit.priceSom, 'SALE')}
+        </p>
+      )}
+      {unit.commissionSom && (
+        <p className="mt-0.5 text-[13px] font-medium text-ink-2">
+          Taxminiy komissiya:{' '}
+          <span className="font-extrabold text-ink">
+            {formatPriceSom(unit.commissionSom, 'SALE')}
+          </span>
+        </p>
+      )}
+
+      {(!fixation || fixation.status === 'CANCELLED') && (
+        <div className="mt-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => fixate.mutate(lead.unitId ? { unitId: lead.unitId } : undefined)}
+            className="rounded-full bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-white disabled:opacity-50"
+          >
+            Fiksatsiya qilish
+          </button>
+          {fixateError && (
+            <p className="mt-2 text-[13px] font-semibold text-brand-rose">{fixateError}</p>
+          )}
+        </div>
+      )}
+
+      {fixation?.status === 'ACTIVE' && (
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[12px] font-bold text-accent">
+              Fiksatsiya qilingan
+            </span>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => unfixate.mutate()}
+              className="rounded-full bg-card px-3 py-1.5 text-[13px] font-semibold text-ink-2 disabled:opacity-50"
+            >
+              Bekor qilish
+            </button>
+          </div>
+          {unfixate.isError && (
+            <p className="mt-2 text-[13px] font-semibold text-brand-rose">
+              Bekor qilib bo'lmadi. Qayta urinib ko'ring.
+            </p>
+          )}
+        </div>
+      )}
+
+      {fixation?.status === 'CONVERTED' && (
+        <p className="mt-3 text-[13px] font-bold text-ink">
+          Komissiya olindi
+          {fixation.commissionSom ? ` — ${formatPriceSom(fixation.commissionSom, 'SALE')}` : ''}
+        </p>
+      )}
+    </div>
   );
 }
