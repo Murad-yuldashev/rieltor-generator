@@ -134,6 +134,7 @@ model User {
   memberships       Membership[]
   bookings          Booking[]
   fixations         Fixation[]        @relation("RealtorFixations")
+  buyerContracts    Contract[]        @relation("BuyerContracts")
 }
 
 model Session {
@@ -530,6 +531,7 @@ model Organization {
   members   Membership[]
   complexes Complex[]
   orgWallet OrgWallet?
+  contracts Contract[]
 
   /// Marketplace trust (5.3): a moderator flips `verified` on after review.
   verified                Boolean   @default(false)
@@ -631,6 +633,7 @@ model Unit {
   /// the complex default when set.
   commissionBps Int?
   fixations     Fixation[]
+  contracts     Contract[]
 
   @@index([buildingId])
 }
@@ -650,6 +653,7 @@ model Booking {
   /// Cross-CRM fixation (5.4): the realtor hold this booking was made against.
   fixationId   String?
   fixation     Fixation?     @relation(fields: [fixationId], references: [id], onDelete: SetNull)
+  contract     Contract?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -683,7 +687,67 @@ model Fixation {
   convertedAt       DateTime?
   cancelledAt       DateTime?
   bookings          Booking[]
+  contracts         Contract[]
 
   @@index([unitId, status])
   @@index([realtorId, status])
+}
+
+/// Contract settlement currency (6.2). SOM-only today; extend via ALTER TYPE ADD VALUE
+/// when real multi-currency + FX lands. No conversion is performed in 6.2.
+enum Currency {
+  SOM
+}
+
+/// Contract lifecycle (6.2). Created ACTIVE at the deal-close; CANCELLED is reserved
+/// for the 6.3 clawback/unwind path (not written in 6.2).
+enum ContractStatus {
+  ACTIVE
+  CANCELLED
+}
+
+/// The durable sale record, created at Booking convert→SOLD (one per converted booking;
+/// bookingId @unique = the idempotency backstop). Money is BigInt, string end-to-end.
+model Contract {
+  id           String         @id @default(cuid())
+  /// Human-facing, per-org-per-year sequential, e.g. "2026-0001". Unique within an org.
+  number       String
+  orgId        String
+  org          Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  unitId       String
+  unit         Unit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  /// The converted booking this contract wraps — 1:1; the at-most-once backstop.
+  bookingId    String         @unique
+  booking      Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  /// The cross-CRM fixation credited for the sale, when the buyer came via a realtor lead.
+  fixationId   String?
+  fixation     Fixation?      @relation(fields: [fixationId], references: [id], onDelete: SetNull)
+  /// The platform buyer User — populated ONLY on the fixation path (the lead author);
+  /// null for a walk-in booking, which carries only the snapshot name/phone below.
+  buyerId      String?
+  buyer        User?          @relation("BuyerContracts", fields: [buyerId], references: [id], onDelete: SetNull)
+  /// Buyer identity SNAPSHOT at convert (survives later profile edits / a deleted lead).
+  buyerName    String
+  buyerPhone   String
+  /// Agreed price SNAPSHOT of unit.priceSom at convert; null-tolerant. BigInt as string.
+  agreedAmount BigInt?
+  currency     Currency       @default(SOM)
+  status       ContractStatus @default(ACTIVE)
+  /// Stub online-signing (6.2): a developer action stamps this. Real JSHSHIR is deferred.
+  signedAt     DateTime?
+  createdAt    DateTime       @default(now())
+
+  @@unique([orgId, number])
+  @@index([orgId, createdAt])
+}
+
+/// Per-org-per-year monotonic counter backing Contract.number. Composite PK (no cuid) is the
+/// ON CONFLICT target for the race-safe raw increment in ContractService.create (a Prisma upsert
+/// on this compound key would emulate, not use native ON CONFLICT — see the service comment).
+model OrgContractCounter {
+  orgId   String
+  year    Int
+  lastSeq Int    @default(0)
+
+  @@id([orgId, year])
 }
