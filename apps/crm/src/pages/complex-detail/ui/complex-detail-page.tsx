@@ -74,6 +74,11 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
   const [longitude, setLongitude] = useState(
     complex.longitude != null ? String(complex.longitude) : '',
   );
+  // Cross-CRM commission (5.4) — entered as a percent, stored as basis points.
+  // Seeded from `commissionBps / 100`; blank means "no rate set" (leave as-is on save).
+  const [commissionPercent, setCommissionPercent] = useState(
+    complex.commissionBps != null ? String(complex.commissionBps / 100) : '',
+  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const isPublished = complex.publishStatus === 'PUBLISHED';
@@ -99,6 +104,13 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
     // as a blank string. A non-numeric geo value parses to NaN and is dropped too.
     const latValue = latitude.trim() ? Number(latitude) : undefined;
     const lngValue = longitude.trim() ? Number(longitude) : undefined;
+    // Commission is a percent in the UI, stored as basis points: bps = round(pct * 100).
+    // Blank / out-of-range → omitted (the server keeps the current rate).
+    const pctValue = commissionPercent.trim() ? Number(commissionPercent) : undefined;
+    const commissionBps =
+      pctValue != null && Number.isFinite(pctValue) && pctValue >= 0 && pctValue <= 100
+        ? Math.round(pctValue * 100)
+        : undefined;
     await update.mutateAsync({
       name: trimmedName,
       district: trimmedDistrict,
@@ -107,6 +119,7 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
       description: description.trim() || undefined,
       latitude: Number.isFinite(latValue) ? latValue : undefined,
       longitude: Number.isFinite(lngValue) ? lngValue : undefined,
+      commissionBps,
     });
   }
 
@@ -229,6 +242,24 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
           placeholder="Ixtiyoriy, masalan: 69.279"
           className={FIELD}
         />
+
+        <label className={LABEL} htmlFor="edit-commission">
+          Komissiya, %
+        </label>
+        <input
+          id="edit-commission"
+          type="number"
+          step="0.01"
+          min={0}
+          max={100}
+          value={commissionPercent}
+          onChange={(event) => setCommissionPercent(event.target.value)}
+          placeholder="Ixtiyoriy, masalan: 1.5"
+          className={FIELD}
+        />
+        <p className="mt-1.5 text-[12px] text-ink-3">
+          Sotuvchilar uchun standart komissiya. Har bir xonadonda alohida belgilash mumkin.
+        </p>
 
         <button
           type="submit"
