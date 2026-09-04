@@ -1,14 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { LeadOutcomeUpdateSchema } from '@rieltor/shared';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { FixateInputSchema, LeadOutcomeUpdateSchema } from '@rieltor/shared';
 import { RealtorGuard } from '../agent/realtor.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
+import { FixationService } from './fixation.service';
 import { LeadsService } from './leads.service';
 
 @Controller('leads')
 @UseGuards(JwtGuard, RealtorGuard)
 export class LeadsController {
-  constructor(private readonly leads: LeadsService) {}
+  constructor(
+    private readonly leads: LeadsService,
+    private readonly fixations: FixationService,
+  ) {}
 
   @Get()
   feed() {
@@ -41,5 +45,16 @@ export class LeadsController {
   setOutcome(@Param('id') id: string, @CurrentUser() u: { id: string }, @Body() body: unknown) {
     const { stage, lostReason } = LeadOutcomeUpdateSchema.parse(body);
     return this.leads.setOutcome(id, u.id, stage, lostReason);
+  }
+
+  @Post(':id/fixate')
+  fixate(@Param('id') id: string, @CurrentUser() u: { id: string }, @Body() body: unknown) {
+    const { unitId } = FixateInputSchema.parse(body);
+    return this.fixations.fixate(u.id, id, unitId);
+  }
+
+  @Delete(':id/fixate')
+  unfixate(@Param('id') id: string, @CurrentUser() u: { id: string }) {
+    return this.fixations.cancelFixation(u.id, id);
   }
 }

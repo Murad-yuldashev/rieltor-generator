@@ -3,6 +3,7 @@ import { AgentModule } from '../agent/agent.module';
 import { AuthModule } from '../auth/auth.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { ConversionController } from './conversion.controller';
+import { FixationService } from './fixation.service';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 
@@ -12,6 +13,6 @@ import { LeadsService } from './leads.service';
 @Module({
   imports: [AgentModule, AuthModule, WalletModule],
   controllers: [LeadsController, ConversionController],
-  providers: [LeadsService],
+  providers: [LeadsService, FixationService],
 })
 export class LeadsModule {}

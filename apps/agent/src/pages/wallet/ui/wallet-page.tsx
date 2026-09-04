@@ -11,7 +11,7 @@ function formatTxDate(createdAt: string): string {
 /**
  * "Hisobim" — the realtor's prepaid wallet. Shows the current balance, the preset
  * top-up buttons (a STUB payment that credits the package), and the transaction
- * ledger: TOPUP as a green credit, LEAD_CLAIM as a debit for a claimed lead.
+ * ledger: TOPUP and COMMISSION as green credits, LEAD_CLAIM as a debit for a claimed lead.
  */
 export function WalletPage() {
   const { data: wallet, isPending, isError } = useWallet();
@@ -85,30 +85,34 @@ export function WalletPage() {
             ) : (
               <ul className="flex flex-col gap-2">
                 {wallet.transactions.map((tx) => {
-                  const isTopup = tx.type === 'TOPUP';
+                  // TOPUP and COMMISSION credit the wallet (green, +); LEAD_CLAIM debits it (−).
+                  const isCredit = tx.type === 'TOPUP' || tx.type === 'COMMISSION';
+                  const label =
+                    tx.type === 'TOPUP'
+                      ? "To'ldirish"
+                      : tx.type === 'COMMISSION'
+                        ? 'Komissiya'
+                        : 'Lid';
+                  const amount = formatPriceSom(tx.amountSom, 'SALE');
                   return (
                     <li
                       key={tx.id}
                       className="flex items-center justify-between rounded-card bg-card px-4 py-3.5 shadow-card"
                     >
                       <div>
-                        <p className="text-[15px] font-semibold text-ink">
-                          {isTopup ? "To'ldirish" : 'Lid'}
-                        </p>
+                        <p className="text-[15px] font-semibold text-ink">{label}</p>
                         <p className="text-[13px] font-medium text-ink-2">
                           {formatTxDate(tx.createdAt)}
                         </p>
                       </div>
                       <p
                         className={
-                          isTopup
+                          isCredit
                             ? 'text-[15px] font-bold text-brand-green'
                             : 'text-[15px] font-bold text-ink'
                         }
                       >
-                        {isTopup
-                          ? `+${formatPriceSom(tx.amountSom, 'SALE')}`
-                          : `−${formatPriceSom(tx.amountSom, 'SALE')} (lead)`}
+                        {isCredit ? `+${amount}` : `−${amount} (lead)`}
                       </p>
                     </li>
                   );

@@ -288,6 +288,16 @@ function ShaxmatkaCell({
           {selected ? '✓' : ''}
         </span>
       )}
+      {/* Fixation marker (5.4): a realtor has fixated a client on this unit — book with
+          the matching phone. Read-only, does not block booking. Hidden in select mode
+          so it never overlaps the selection check badge. */}
+      {unit.hasActiveFixation && !selectMode && (
+        <span
+          aria-label="Fiksatsiya"
+          title="Mijoz fiksatsiya qilingan"
+          className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-card"
+        />
+      )}
       <span className="text-[14px] font-bold leading-none">{unit.number}</span>
       <span className="w-full truncate text-[11px] font-semibold leading-tight opacity-80">
         {subtitle}
@@ -414,6 +424,11 @@ function CellPanel({
           >
             {UNIT_STATUS_LABELS[unit.status]}
           </span>
+          {unit.hasActiveFixation && (
+            <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[12px] font-semibold text-accent">
+              Fiksatsiya
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -424,6 +439,14 @@ function CellPanel({
           ✕
         </button>
       </div>
+
+      {/* Fixation note (5.4): a realtor has fixated a client — book with the matching
+          phone so the fixation is honoured. Informational only; booking is not blocked. */}
+      {unit.hasActiveFixation && (
+        <p className="mt-3 rounded-[10px] border border-accent/30 bg-accent-soft px-3 py-2 text-[12px] font-semibold text-accent">
+          Bu xonadonga mijoz fiksatsiya qilingan. Band qilishda mos telefon raqamidan foydalaning.
+        </p>
+      )}
 
       <UnitEditForm buildingId={buildingId} unit={unit} />
 
@@ -447,11 +470,23 @@ function UnitEditForm({ buildingId, unit }: { buildingId: string; unit: Unit }) 
   const [rooms, setRooms] = useState(unit.rooms != null ? String(unit.rooms) : '');
   const [areaM2, setAreaM2] = useState(unit.areaM2 != null ? String(unit.areaM2) : '');
   const [priceSom, setPriceSom] = useState(unit.priceSom ?? '');
+  // Cross-CRM commission (5.4) — optional per-unit override entered as a percent,
+  // stored as basis points. Blank means "inherit the complex default".
+  const [commissionPercent, setCommissionPercent] = useState(
+    unit.commissionBps != null ? String(unit.commissionBps / 100) : '',
+  );
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedNumber = number.trim();
     if (!trimmedNumber) return;
+    // Commission is a percent in the UI, stored as basis points: bps = round(pct * 100).
+    // Blank / out-of-range → omitted (the unit inherits the complex-level rate).
+    const pctValue = commissionPercent.trim() ? Number(commissionPercent) : undefined;
+    const commissionBps =
+      pctValue != null && Number.isFinite(pctValue) && pctValue >= 0 && pctValue <= 100
+        ? Math.round(pctValue * 100)
+        : undefined;
     await update.mutateAsync({
       unitId: unit.id,
       number: trimmedNumber,
@@ -459,6 +494,7 @@ function UnitEditForm({ buildingId, unit }: { buildingId: string; unit: Unit }) 
       rooms: rooms.trim() ? Number(rooms) : undefined,
       areaM2: areaM2.trim() ? Number(areaM2) : undefined,
       priceSom: priceSom.trim() ? priceSom.trim() : undefined,
+      commissionBps,
     });
   }
 
@@ -515,6 +551,19 @@ function UnitEditForm({ buildingId, unit }: { buildingId: string; unit: Unit }) 
           value={priceSom}
           onChange={(event) => setPriceSom(event.target.value.replace(/\D/g, ''))}
           placeholder="Ixtiyoriy"
+          className={PANEL_INPUT}
+        />
+      </label>
+      <label className="col-span-2 block">
+        <span className={LABEL}>Komissiya, %</span>
+        <input
+          type="number"
+          step="0.01"
+          min={0}
+          max={100}
+          value={commissionPercent}
+          onChange={(event) => setCommissionPercent(event.target.value)}
+          placeholder="Majmua bo'yicha"
           className={PANEL_INPUT}
         />
       </label>
@@ -857,7 +906,18 @@ function UnitRow({ buildingId, unit }: { buildingId: string; unit: Unit }) {
 
   return (
     <tr className="border-b border-line">
-      <td className={cn(CELL, 'font-semibold')}>{unit.number}</td>
+      <td className={cn(CELL, 'font-semibold')}>
+        <span className="inline-flex items-center gap-1.5">
+          {unit.number}
+          {unit.hasActiveFixation && (
+            <span
+              aria-label="Fiksatsiya"
+              title="Mijoz fiksatsiya qilingan"
+              className="h-2 w-2 shrink-0 rounded-full bg-accent"
+            />
+          )}
+        </span>
+      </td>
       <td className={CELL}>{unit.floor}</td>
       <td className={CELL}>{unit.rooms != null ? unit.rooms : '—'}</td>
       <td className={CELL}>{unit.areaM2 != null ? unit.areaM2 : '—'}</td>

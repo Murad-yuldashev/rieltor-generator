@@ -318,6 +318,27 @@ export const LeadLostReasonSchema = z.enum([
   'OTHER',
 ]);
 
+// --- Fixation status + row (Phase 5.4) — defined before LeadSchema so it can embed FixationSchema. ---
+
+/** Lifecycle of a lead→unit fixation: ACTIVE until it converts to a sale or is cancelled. */
+export const FixationStatusSchema = z.enum(['ACTIVE', 'CONVERTED', 'CANCELLED']);
+
+/** A realtor's fixation of a buyer lead onto a developer's unit. */
+export const FixationSchema = z.object({
+  id: z.string(),
+  unitId: z.string(),
+  propertyRequestId: z.string(),
+  buyerPhone: z.string(),
+  status: FixationStatusSchema,
+  /** Commission rate in basis points (1% = 100 bps). */
+  commissionBps: z.number().int(),
+  /** Commission paid on conversion, BigInt-as-string; null until CONVERTED. */
+  commissionSom: z.string().nullable(),
+  createdAt: z.string(),
+  /** When the fixation converted to a sale; null unless CONVERTED. */
+  convertedAt: z.string().nullable(),
+});
+
 /**
  * The realtor feed row: `authorPhoneMasked` always, `phone` null until the caller
  * claims it. `score`/`priceSom` are lead-quality + claim-fee values that live only
@@ -336,6 +357,21 @@ export const LeadSchema = PropertyRequestSummarySchema.extend({
   lostReason: LeadLostReasonSchema.nullable(),
   /** ISO timestamp of the last outcome update; null until first recorded. */
   outcomeUpdatedAt: z.string().nullable(),
+  /** Target NEW_BUILD complex, when the lead points at one; null otherwise. */
+  complexId: z.string().nullable(),
+  /** Target NEW_BUILD unit, when the lead points at one; null otherwise. */
+  unitId: z.string().nullable(),
+  /** The target unit's snapshot with an estimated commission; null unless a unit is set. */
+  unitInfo: z
+    .object({
+      number: z.string(),
+      complexName: z.string(),
+      priceSom: z.string().nullable(),
+      commissionSom: z.string().nullable(), // estimated, current price × effective bps
+    })
+    .nullable(),
+  /** The lead's fixation, if a realtor has fixated it; null otherwise. */
+  fixation: FixationSchema.nullable(),
 });
 
 /** The buyer's own request row plus whether a realtor has claimed it. */
@@ -617,15 +653,19 @@ export const PresentationViewEventSchema = z.object({
   durationMs: z.number().int().nonnegative().max(3_600_000).optional(), // cap 1h
 });
 
-/** Kind of a wallet ledger entry: a prepaid top-up or a lead-claim debit. */
-export const WalletTxTypeSchema = z.enum(['TOPUP', 'LEAD_CLAIM']);
+/** Kind of a wallet ledger entry: a prepaid top-up, a lead-claim debit, or a fixation commission credit. */
+export const WalletTxTypeSchema = z.enum(['TOPUP', 'LEAD_CLAIM', 'COMMISSION']);
 
-/** One row in the wallet ledger. `amountSom` is BigInt-as-string; `leadId` is set only for LEAD_CLAIM. */
+/**
+ * One row in the wallet ledger. `amountSom` is BigInt-as-string; `leadId` is set
+ * only for LEAD_CLAIM, `fixationId` only for COMMISSION.
+ */
 export const WalletTxRowSchema = z.object({
   id: z.string(),
   type: WalletTxTypeSchema,
   amountSom: z.string(),
   leadId: z.string().nullable(),
+  fixationId: z.string().nullable(),
   createdAt: z.string(),
 });
 
@@ -704,6 +744,8 @@ export const ComplexSchema = z.object({
   coverImage: ImageSchema.nullable(),
   /** Number of gallery images. */
   imageCount: z.number().int(),
+  /** Cross-CRM commission (5.4): complex-level default rate in basis points; null when unset. */
+  commissionBps: z.number().int().nullable(),
 });
 
 /** A building within a complex. */
@@ -763,6 +805,10 @@ export const UnitSchema = z.object({
   priceSom: z.string().nullable(), // BigInt-as-string
   status: UnitStatusSchema,
   activeBooking: BookingSummarySchema.nullable(),
+  /** Cross-CRM commission (5.4): unit-level override rate in basis points; null when unset. */
+  commissionBps: z.number().int().nullable(),
+  /** Cross-CRM fixation (5.4): true when an ACTIVE fixation exists for this unit. */
+  hasActiveFixation: z.boolean(),
 });
 
 /** Body of `POST /api/crm/become-developer` — become a developer / create an organization. */
@@ -783,7 +829,10 @@ export const ComplexCreateSchema = z.object({
   /** Map pin longitude (5.3); WGS84 −180..180. */
   longitude: z.number().min(-180).max(180).optional(),
 });
-export const ComplexUpdateSchema = ComplexCreateSchema.partial();
+export const ComplexUpdateSchema = ComplexCreateSchema.partial().extend({
+  /** Cross-CRM commission (5.4): complex-level default rate in basis points (0–10000 = 0–100%). */
+  commissionBps: z.number().int().min(0).max(10000).optional(),
+});
 
 /** Body of `POST /api/crm/complexes/:id/buildings`. */
 export const BuildingCreateSchema = z.object({
@@ -801,7 +850,10 @@ export const UnitCreateSchema = z.object({
   priceSom: z.string().regex(/^\d+$/).optional(), // digits only; parsed to BigInt server-side
   status: UnitStatusSchema.optional(),
 });
-export const UnitUpdateSchema = UnitCreateSchema.partial();
+export const UnitUpdateSchema = UnitCreateSchema.partial().extend({
+  /** Cross-CRM commission (5.4): unit-level override rate in basis points (0–10000 = 0–100%). */
+  commissionBps: z.number().int().min(0).max(10000).optional(),
+});
 
 /** Body of `POST /api/crm/units/:id/book` — create a hold on a unit. */
 export const BookingCreateSchema = z.object({
@@ -896,6 +948,11 @@ export const ModeratorDeveloperRowSchema = z.object({
   complexCount: z.number().int(),
   memberPhone: z.string(),
 });
+
+// --- Fixation + commission (Phase 5.4) ---
+
+/** Body of the fixation request — an optional target unit within the complex. */
+export const FixateInputSchema = z.object({ unitId: z.string().optional() });
 
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
@@ -1001,3 +1058,6 @@ export type PublicComplexDetail = z.infer<typeof PublicComplexDetailSchema>;
 export type ComplexInquiry = z.infer<typeof ComplexInquirySchema>;
 export type DeveloperVerify = z.infer<typeof DeveloperVerifySchema>;
 export type ModeratorDeveloperRow = z.infer<typeof ModeratorDeveloperRowSchema>;
+export type FixationStatus = z.infer<typeof FixationStatusSchema>;
+export type Fixation = z.infer<typeof FixationSchema>;
+export type FixateInput = z.infer<typeof FixateInputSchema>;

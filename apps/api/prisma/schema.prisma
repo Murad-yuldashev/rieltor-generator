@@ -133,6 +133,7 @@ model User {
   wallet            Wallet?
   memberships       Membership[]
   bookings          Booking[]
+  fixations         Fixation[]        @relation("RealtorFixations")
 }
 
 model Session {
@@ -288,6 +289,9 @@ model PropertyRequest {
   unitId    String?
   unit      Unit?    @relation("UnitInquiries", fields: [unitId], references: [id], onDelete: SetNull)
 
+  /// Cross-CRM fixation (5.4): the realtor's hold on this lead, one per request.
+  fixation Fixation?
+
   @@index([status, createdAt])
   @@index([deal, type, outcomeStage])
 }
@@ -436,6 +440,8 @@ enum WalletTxType {
   TOPUP
   /// Balance debited to claim a lead.
   LEAD_CLAIM
+  /// Balance credited when a fixation converts (cross-CRM commission payout).
+  COMMISSION
 }
 
 model WalletTransaction {
@@ -447,6 +453,8 @@ model WalletTransaction {
   amountSom BigInt
   /// The claimed PropertyRequest, for LEAD_CLAIM.
   leadId    String?
+  /// The converted Fixation, for COMMISSION.
+  fixationId String?
   createdAt DateTime     @default(now())
 
   @@index([walletId, createdAt])
@@ -538,6 +546,10 @@ model Complex {
   images        ComplexImage[]
   inquiries     PropertyRequest[]    @relation("ComplexInquiries")
 
+  /// Cross-CRM commission (5.4): complex-level default rate in basis points.
+  /// A unit-level override takes precedence when set.
+  commissionBps Int?
+
   @@index([orgId])
 }
 
@@ -587,6 +599,11 @@ model Unit {
   bookings   Booking[]
   inquiries  PropertyRequest[] @relation("UnitInquiries")
 
+  /// Cross-CRM commission (5.4): unit-level rate in basis points; overrides
+  /// the complex default when set.
+  commissionBps Int?
+  fixations     Fixation[]
+
   @@index([buildingId])
 }
 
@@ -602,9 +619,43 @@ model Booking {
   cancelReason String? // set when status = CANCELLED
   createdById  String // the org member who booked (a User id)
   createdBy    User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  /// Cross-CRM fixation (5.4): the realtor hold this booking was made against.
+  fixationId   String?
+  fixation     Fixation?     @relation(fields: [fixationId], references: [id], onDelete: SetNull)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@index([unitId])
   @@index([status, holdUntil]) // the expiry cron scans ACTIVE + overdue
+}
+
+/// Cross-CRM fixation lifecycle (5.4): a realtor's exclusive hold on a lead for
+/// a unit, which either CONVERTED into a sale or was CANCELLED/expired.
+enum FixationStatus {
+  ACTIVE
+  CONVERTED
+  CANCELLED
+}
+
+/// A realtor's fixation on a developer unit for a specific buyer lead. Converting
+/// it pays the realtor a COMMISSION into their wallet.
+model Fixation {
+  id                String          @id @default(cuid())
+  realtorId         String
+  realtor           User            @relation("RealtorFixations", fields: [realtorId], references: [id], onDelete: Cascade)
+  unitId            String
+  unit              Unit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  propertyRequestId String          @unique
+  propertyRequest   PropertyRequest @relation(fields: [propertyRequestId], references: [id], onDelete: Cascade)
+  buyerPhone        String
+  status            FixationStatus  @default(ACTIVE)
+  commissionBps     Int
+  commissionSom     BigInt?
+  createdAt         DateTime        @default(now())
+  convertedAt       DateTime?
+  cancelledAt       DateTime?
+  bookings          Booking[]
+
+  @@index([unitId, status])
+  @@index([realtorId, status])
 }

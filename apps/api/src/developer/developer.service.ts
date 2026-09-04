@@ -32,9 +32,13 @@ const PUBLIC_DIR = resolve(__dirname, '..', '..', 'public');
 // Per-complex gallery cap — the guarded upload endpoint refuses beyond this.
 const MAX_COMPLEX_IMAGES = 20;
 
-/** A unit row optionally carrying its active booking (populated by `listUnits`). */
+/**
+ * A unit row optionally carrying its active booking and active-fixation marker rows
+ * (populated by the unit reads — `listUnits`, plus the create/update responses).
+ */
 type UnitRowWithBookings = UnitRow & {
   bookings?: { id: string; clientName: string; clientPhone: string; holdUntil: Date }[];
+  fixations?: { id: string }[];
 };
 
 /** A complex row carrying its ordered images (populated by the complex read queries). */
@@ -146,6 +150,7 @@ export class DeveloperService {
       longitude: c.longitude,
       coverImage: c.images[0] ? this.toImage(c.images[0]) : null,
       imageCount: c.images.length,
+      commissionBps: c.commissionBps,
     };
   }
 
@@ -224,6 +229,7 @@ export class DeveloperService {
         ...(input.status !== undefined && { status: input.status }),
         ...(input.latitude !== undefined && { latitude: input.latitude }),
         ...(input.longitude !== undefined && { longitude: input.longitude }),
+        ...(input.commissionBps !== undefined && { commissionBps: input.commissionBps }),
       },
       include: { images: { orderBy: { position: 'asc' } }, org: true },
     });
@@ -481,6 +487,9 @@ export class DeveloperService {
               holdUntil: u.bookings[0].holdUntil.toISOString(),
             }
           : null,
+      commissionBps: u.commissionBps,
+      // The read include filters to ACTIVE fixations, so any row present means one exists.
+      hasActiveFixation: (u.fixations?.length ?? 0) > 0,
     };
   }
 
@@ -520,6 +529,7 @@ export class DeveloperService {
           take: 1,
           select: { id: true, clientName: true, clientPhone: true, holdUntil: true },
         },
+        fixations: { where: { status: 'ACTIVE' }, select: { id: true } },
       },
     });
     return rows.map((u) => this.toUnit(u));
@@ -566,6 +576,16 @@ export class DeveloperService {
         ...(input.areaM2 !== undefined && { areaM2: input.areaM2 ?? null }),
         ...(input.priceSom !== undefined && { priceSom: BigInt(input.priceSom) }),
         ...(input.status !== undefined && { status: input.status }),
+        ...(input.commissionBps !== undefined && { commissionBps: input.commissionBps }),
+      },
+      include: {
+        bookings: {
+          where: { status: 'ACTIVE' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { id: true, clientName: true, clientPhone: true, holdUntil: true },
+        },
+        fixations: { where: { status: 'ACTIVE' }, select: { id: true } },
       },
     });
     return this.toUnit(unit);
