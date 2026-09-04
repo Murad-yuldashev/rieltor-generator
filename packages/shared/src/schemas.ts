@@ -978,6 +978,40 @@ export const OrgWalletViewSchema = z.object({
   transactions: z.array(OrgWalletTxRowSchema),
 });
 
+// --- Contracts (Phase 6.2) — the durable sale record created at convert. ---
+
+/** Contract settlement currency. SOM-only in 6.2 (multi-currency FX deferred). */
+export const CurrencySchema = z.enum(['SOM']);
+
+/** Contract lifecycle: ACTIVE at the deal-close; CANCELLED reserved for 6.3 clawback. */
+export const ContractStatusSchema = z.enum(['ACTIVE', 'CANCELLED']);
+
+/**
+ * A durable sale contract. `agreedAmount` is a non-negative BigInt-as-string, null when the
+ * unit had no price at convert. `buyerId` is null for a walk-in sale (no platform user);
+ * `buyerName`/`buyerPhone` are the snapshot taken at convert.
+ */
+export const ContractSchema = z.object({
+  id: z.string(),
+  number: z.string(),
+  unitId: z.string(),
+  fixationId: z.string().nullable(),
+  buyerId: z.string().nullable(),
+  buyerName: z.string(),
+  buyerPhone: z.string(),
+  agreedAmount: z.string().regex(/^\d+$/).nullable(),
+  currency: CurrencySchema,
+  status: ContractStatusSchema,
+  signedAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+/** A contract row for the org-wide CRM list — adds unit + building context. */
+export const ContractRowSchema = ContractSchema.extend({
+  unitNumber: z.string(),
+  buildingName: z.string(),
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -1088,3 +1122,7 @@ export type FixateInput = z.infer<typeof FixateInputSchema>;
 export type OrgWalletTxType = z.infer<typeof OrgWalletTxTypeSchema>;
 export type OrgWalletTxRow = z.infer<typeof OrgWalletTxRowSchema>;
 export type OrgWalletView = z.infer<typeof OrgWalletViewSchema>;
+export type Currency = z.infer<typeof CurrencySchema>;
+export type ContractStatus = z.infer<typeof ContractStatusSchema>;
+export type Contract = z.infer<typeof ContractSchema>;
+export type ContractRow = z.infer<typeof ContractRowSchema>;
