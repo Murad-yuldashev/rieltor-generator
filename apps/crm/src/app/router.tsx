@@ -4,6 +4,7 @@ import { BuildingDetailPage } from '@/pages/building-detail';
 import { ComplexDetailPage } from '@/pages/complex-detail';
 import { ComplexesPage } from '@/pages/complexes';
 import { OrganizationPage } from '@/pages/organization';
+import { WalletPage } from '@/pages/wallet';
 import { DeveloperGuard } from './developer-guard';
 import { RootLayout } from './root-layout';
 
@@ -26,6 +27,7 @@ export const router = createBrowserRouter(
             { path: 'complexes/:id', element: <ComplexDetailPage /> },
             { path: 'buildings/:id', element: <BuildingDetailPage /> },
             { path: 'bookings', element: <BookingsPage /> },
+            { path: 'wallet', element: <WalletPage /> },
           ],
         },
       ],
