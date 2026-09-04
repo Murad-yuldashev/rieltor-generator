@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Booking, BookingAction, BookingCreate, BookingRow } from '@rieltor/shared';
+import { canonicalizePhone } from '@rieltor/shared';
 import type { Booking as BookingRecord } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
 import { DeveloperService } from './developer.service';
 
 /** Default hold length (days) when the caller does not specify `holdDays`. */
@@ -14,6 +16,7 @@ export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly dev: DeveloperService,
+    private readonly wallet: WalletService,
   ) {}
 
   /** Row -> `Booking` DTO (holdUntil/createdAt as ISO strings, note/cancelReason passthrough). */
@@ -71,6 +74,7 @@ export class BookingService {
       select: {
         status: true,
         unitId: true,
+        clientPhone: true, // canonicalized at convert to attribute a cross-CRM fixation
         unit: { select: { building: { select: { complex: { select: { orgId: true } } } } } },
       },
     });
@@ -107,12 +111,61 @@ export class BookingService {
         return b;
       }
       if (input.action === 'convert') {
-        const b = await tx.booking.update({
-          where: { id: bookingId },
+        // Atomic ACTIVE->CONVERTED flip: the `updateMany` guard is the serialization
+        // point. A concurrent/re-fired convert that already committed leaves count===0
+        // here, so the unit flip AND the commission payout run at most once — no
+        // double credit. (The pre-tx guard already 409s an obviously non-ACTIVE booking;
+        // this defends the TOCTOU race where two converts both pass that read.)
+        const { count } = await tx.booking.updateMany({
+          where: { id: bookingId, status: 'ACTIVE' },
           data: { status: 'CONVERTED' },
         });
-        await tx.unit.update({ where: { id: booking.unitId }, data: { status: 'SOLD' } });
-        return b;
+        if (count === 1) {
+          await tx.unit.update({ where: { id: booking.unitId }, data: { status: 'SOLD' } });
+          // Load the unit's price + effective commission rate inside the tx.
+          const unit = await tx.unit.findUnique({
+            where: { id: booking.unitId },
+            select: {
+              priceSom: true,
+              commissionBps: true,
+              building: { select: { complex: { select: { commissionBps: true } } } },
+            },
+          });
+          // Attribute the sale to an ACTIVE cross-CRM fixation on this (unit, buyer).
+          const phone = canonicalizePhone(booking.clientPhone);
+          const fixation = await tx.fixation.findFirst({
+            where: { unitId: booking.unitId, buyerPhone: phone, status: 'ACTIVE' },
+          });
+          if (fixation) {
+            // unit override -> complex default -> 0 (no rate configured).
+            const effectiveBps = unit?.commissionBps ?? unit?.building.complex.commissionBps ?? 0;
+            const commissionSom = ((unit?.priceSom ?? 0n) * BigInt(effectiveBps)) / 10000n;
+            await tx.fixation.update({
+              where: { id: fixation.id },
+              data: {
+                status: 'CONVERTED',
+                commissionSom,
+                commissionBps: effectiveBps,
+                convertedAt: new Date(),
+              },
+            });
+            await tx.booking.update({
+              where: { id: bookingId },
+              data: { fixationId: fixation.id },
+            });
+            // A null price or a zero rate yields no payout; the sale still converts.
+            if (commissionSom > 0n) {
+              // ensureWallet opens its own upsert — run it BEFORE credit (which updates on `tx`).
+              await this.wallet.ensureWallet(fixation.realtorId);
+              await this.wallet.credit(tx, fixation.realtorId, commissionSom, {
+                fixationId: fixation.id,
+              });
+            }
+          }
+        }
+        // Return the current booking (freshly CONVERTED, or already-final on a lost race).
+        const b = await tx.booking.findUnique({ where: { id: bookingId } });
+        return b!;
       }
       // extend: move the hold deadline; the unit stays BOOKED.
       const holdUntil = new Date(Date.now() + (input.holdDays ?? DEFAULT_HOLD_DAYS) * DAY_MS);

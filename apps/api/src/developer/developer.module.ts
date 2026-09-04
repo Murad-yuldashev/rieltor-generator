@@ -7,9 +7,10 @@ import { ComplexImageController } from './complex-image.controller';
 import { DeveloperController } from './developer.controller';
 import { DeveloperGuard } from './developer.guard';
 import { DeveloperService } from './developer.service';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
-  imports: [AuthModule], // JwtGuard/JwtService
+  imports: [AuthModule, WalletModule], // JwtGuard/JwtService; WalletModule exports WalletService (commission credit at convert)
   controllers: [DeveloperController, BookingController, ComplexImageController],
   providers: [DeveloperService, DeveloperGuard, BookingService, BookingExpiryCron],
   exports: [DeveloperGuard],
