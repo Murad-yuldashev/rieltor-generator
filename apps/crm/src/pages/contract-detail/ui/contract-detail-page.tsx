@@ -1,24 +1,17 @@
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
-import type { Contract, ContractStatus } from '@rieltor/shared';
+import type { Contract } from '@rieltor/shared';
 import { formatPriceSom } from '@rieltor/shared';
-import { useContract, useSignContract } from '@/features/contracts';
+import {
+  CONTRACT_STATUS_BADGE,
+  CONTRACT_STATUS_LABELS,
+  useContract,
+  useSignContract,
+} from '@/features/contracts';
 import { CabinetNav } from '@/widgets/cabinet-nav';
 import { cn } from '@/shared/lib/cn';
 
 const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
-
-/** Uzbek labels for a contract's lifecycle status (UI copy only). */
-const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
-  ACTIVE: 'Faol',
-  CANCELLED: 'Bekor qilingan',
-};
-
-/** Badge tint per contract status. */
-const CONTRACT_STATUS_BADGE: Record<ContractStatus, string> = {
-  ACTIVE: 'bg-brand-green/10 text-brand-green',
-  CANCELLED: 'bg-ink-3/10 text-ink-3',
-};
 
 /** ISO timestamp → local date (uz-UZ). */
 function formatDate(iso: string): string {
