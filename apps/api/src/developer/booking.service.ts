@@ -122,14 +122,12 @@ export class BookingService {
         });
         if (count === 1) {
           await tx.unit.update({ where: { id: booking.unitId }, data: { status: 'SOLD' } });
-          // Load the unit's price + effective commission rate inside the tx.
+          // Load the live SOLD price inside the tx. The RATE is NOT read live — it is
+          // the fixation's snapshot (locked at fixate time), so a rate change the
+          // developer made after fixating cannot cut the realtor's promised commission.
           const unit = await tx.unit.findUnique({
             where: { id: booking.unitId },
-            select: {
-              priceSom: true,
-              commissionBps: true,
-              building: { select: { complex: { select: { commissionBps: true } } } },
-            },
+            select: { priceSom: true },
           });
           // Attribute the sale to an ACTIVE cross-CRM fixation on this (unit, buyer).
           const phone = canonicalizePhone(booking.clientPhone);
@@ -137,26 +135,21 @@ export class BookingService {
             where: { unitId: booking.unitId, buyerPhone: phone, status: 'ACTIVE' },
           });
           if (fixation) {
-            // unit override -> complex default -> 0 (no rate configured).
-            const effectiveBps = unit?.commissionBps ?? unit?.building.complex.commissionBps ?? 0;
-            const commissionSom = ((unit?.priceSom ?? 0n) * BigInt(effectiveBps)) / 10000n;
+            // Pay at the FIXATED (snapshot) rate; the price stays the live SOLD price.
+            const commissionSom =
+              ((unit?.priceSom ?? 0n) * BigInt(fixation.commissionBps)) / 10000n;
             await tx.fixation.update({
               where: { id: fixation.id },
-              data: {
-                status: 'CONVERTED',
-                commissionSom,
-                commissionBps: effectiveBps,
-                convertedAt: new Date(),
-              },
+              // Keep commissionBps as-is (the snapshot); only stamp the payout + status.
+              data: { status: 'CONVERTED', commissionSom, convertedAt: new Date() },
             });
             await tx.booking.update({
               where: { id: bookingId },
               data: { fixationId: fixation.id },
             });
-            // A null price or a zero rate yields no payout; the sale still converts.
+            // A null price or a zero snapshot rate yields no payout; the sale still converts.
             if (commissionSom > 0n) {
-              // ensureWallet opens its own upsert — run it BEFORE credit (which updates on `tx`).
-              await this.wallet.ensureWallet(fixation.realtorId);
+              // `credit` self-ensures the wallet in-tx (upsert) — no base-client call here.
               await this.wallet.credit(tx, fixation.realtorId, commissionSom, {
                 fixationId: fixation.id,
               });

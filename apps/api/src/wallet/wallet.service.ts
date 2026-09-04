@@ -112,9 +112,11 @@ export class WalletService {
 
   /**
    * Credit the realtor's wallet inside the caller's transaction (Task 6). Runs on
-   * the passed `tx`, never opening its own. The wallet must already exist (the
-   * caller runs `ensureWallet` first). The `increment` is atomic, so no row lock
-   * is needed — the credit and its COMMISSION ledger row land in the caller's tx.
+   * the passed `tx`, never opening its own. Self-ensures the wallet via an in-tx
+   * `upsert` (creating it with the credited balance on first touch), so the caller
+   * needs no separate `ensureWallet` — no base-client call inside the open tx. The
+   * `increment` is atomic, so no row lock is needed — the credit and its COMMISSION
+   * ledger row land in the caller's tx.
    */
   async credit(
     tx: Prisma.TransactionClient,
@@ -122,9 +124,10 @@ export class WalletService {
     amountSom: bigint,
     ref: { fixationId?: string } = {},
   ): Promise<void> {
-    const wallet = await tx.wallet.update({
+    const wallet = await tx.wallet.upsert({
       where: { userId },
-      data: { balanceSom: { increment: amountSom } },
+      create: { userId, balanceSom: amountSom },
+      update: { balanceSom: { increment: amountSom } },
       select: { id: true },
     });
     await tx.walletTransaction.create({
