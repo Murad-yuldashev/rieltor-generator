@@ -73,7 +73,8 @@ async function readErrorMessage(response: Response, method: Method, path: string
 /**
  * Attaches the bearer token and performs the fetch, retrying exactly once —
  * with a freshly refreshed token — on a 401. Shared by every call shape this
- * client makes so the retry logic can't drift between them.
+ * client makes (JSON via `request()`, multipart via `apiUpload()`) so the
+ * retry logic can't drift between them.
  */
 async function fetchWithAuth(path: string, init: RequestInit, isRetry = false): Promise<Response> {
   const headers = new Headers(init.headers);
@@ -135,4 +136,30 @@ export function apiPatch<T = void>(path: string, schema?: ZodType<T>, body?: unk
 
 export function apiDelete<T = void>(path: string, schema?: ZodType<T>): Promise<T> {
   return request(path, 'DELETE', schema);
+}
+
+/**
+ * Multipart upload (`POST /api/crm/complexes/:id/images`) — `FormData` bodies go through
+ * `fetchWithAuth` directly rather than `request()`: no `content-type` header is set here
+ * (the browser fills in the multipart boundary itself), and there is nothing to
+ * JSON.stringify. Still gets the same bearer-token attach and refresh-once-on-401 retry
+ * as every other call.
+ */
+export async function apiUpload<T = unknown>(
+  path: string,
+  formData: FormData,
+  schema?: ZodType<T>,
+): Promise<T> {
+  const response = await fetchWithAuth(path, {
+    method: 'POST',
+    headers: { accept: 'application/json' },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await readErrorMessage(response, 'POST', path));
+  }
+
+  const data: unknown = await response.json();
+  return schema ? schema.parse(data) : (data as T);
 }

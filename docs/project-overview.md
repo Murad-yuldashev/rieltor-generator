@@ -761,6 +761,66 @@ reja: `docs/superpowers/plans/2026-09-03-phase-5.2-shaxmatka-booking.md`.
   fixation + komissiya (C7/C8). **Phase 6:** kontraktlar/moliya. Keyinroq: line/podъezd o'lchovi,
   per-org default hold, booking-mijozni User/lead'ga bog'lash.
 
+## 4p. Phase 5.3 — Marketplace publishing (2026-09-03)
+
+Phase 5 ning uchinchi qadami (**A12**): tasdiqlangan quruvchi o'z inventarini (Complex) `/crm`dan
+**ommaviy marketplace**ga chiqaradi — kompleks ЖК sahifasi bo'lib ko'rinadi, xonadonlar jonli
+band-holati bilan, va qiziqqan foydalanuvchi so'rovi lead'ga aylanadi. Bu **yopiq halqa**ni yopadi:
+quruvchi inventar joylaydi → ommaviy ЖК → foydalanuvchi so'rovi → skoring qilingan `PropertyRequest`
+(NEW_BUILD) → rieltor claim/sotib olish (§4k–4m). Spec:
+`docs/superpowers/specs/2026-09-03-phase-5.3-marketplace-publishing-design.md`,
+reja: `docs/superpowers/plans/2026-09-03-phase-5.3-marketplace-publishing.md`.
+
+### Ma'lumot modeli (additiv migratsiya `phase_5_3_marketplace_publishing`)
+
+- **`Organization`** += `verified`, `verificationRequestedAt`, `verifiedAt`, `verificationNote`
+  (moderator-boshqariladigan, org-darajali tasdiqlash).
+- **`Complex`** += `slug @unique`, `publishStatus` (yangi enum **`ComplexPublishStatus`** DRAFT/PUBLISHED),
+  `publishedAt`, `latitude`, `longitude`.
+- Yangi **`ComplexImage`** modeli (cover + gallereya, `onDelete: Cascade`).
+- **`PropertyRequest`** += `complexId`, `unitId` (nullable, `onDelete: SetNull`) — inquiry lead'ni
+  komplekska bog'laydi. Barchasi `CREATE`/`ADD` — mavjud ustunga tegilmagan.
+
+### Publish oqimi (developer self-service, verified-gated)
+
+- **`PATCH /api/crm/complexes/:id/publish`** `{publish}` (DeveloperGuard + org-scoped) — chiqarish
+  **`org.verified`** VA to'liqlikka bog'liq: ≥1 cover rasm, ≥1 narxlangan AVAILABLE xonadon, tuman
+  (district) bo'lishi shart; aks holda **409** o'zbekcha xabar bilan rad etadi. Birinchi publish'da
+  **slug avtomatik** generatsiya qilinadi (Cyrillic→Latin transliteratsiya).
+
+### Tasdiqlangan quruvchi (moderator-boshqariladigan, org-darajali)
+
+- So'rov: **`POST /api/crm/organization/verification-request`**. Moderator navbati:
+  **`GET /api/moderation/developers`** + **`PATCH /api/moderation/developers/:orgId`** (RolesGuard
+  MOD/ADMIN). `apps/web`da **"Quruvchilar"** moderatsiya sahifasi.
+
+### Ommaviy ЖК sahifasi (`@Controller('jk')`, guard'siz)
+
+- **`GET /api/jk`** (browse), **`GET /api/jk/:slug`** (detal — **PII'siz** per-unit band-holati to'ri
+  AVAILABLE/BOOKED/SOLD, hech qanday booking mijoz ma'lumoti yo'q), **`POST /api/jk/:slug/inquiry`**
+  (JwtGuard) → komplekska bog'langan skoring qilingan `PropertyRequest` (type **NEW_BUILD**) yaratadi
+  va rieltor claim/sotib olish quvuriga ulaydi (yopiq halqa). `/jk` + `/jk/:slug` uchun **SSR OG meta**
+  (`NotFoundShellFilter` orqali).
+
+### UI (`apps/crm` + `apps/web`)
+
+- **`apps/crm`:** publish toggle + badge + lat/lng + cover/gallereya yuklash (`processImage` webp
+  quvurini qayta ishlatadi) + verification-request UI. `ComplexImage` o'chirish `(complexId, position)`
+  bo'yicha kalitlaydi (`Image` DTO cuid id'ni ochmaydi).
+- **`apps/web`:** `/jk` browse (`ComplexCard`, tuman faseti) + `/jk/:slug` detal (gallereya,
+  **"Tasdiqlangan quruvchi"** nishoni, band-holati to'ri, bog'liqliksiz OSM xarita havolasi,
+  login'ga bog'langan inquiry CTA).
+
+### Non-goals (keyinroq)
+
+- Boy A12 (hujjatlar / qurilish jadvali / bo'lib to'lash), xonadonlar umumiy `/api/objects`
+  qidiruvida, viloyat taksonomiyasi, alohida quruvchi-profil sahifasi.
+
+### Kelasi
+
+- **5.4:** C6 cross-CRM fixation (booking-mijozni platforma User/lead'ga bog'lash) + komissiya
+  (C7/C8). **Phase 6:** kontraktlar/moliya/KPI. Keyinroq: yuqoridagi non-goal'lar.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

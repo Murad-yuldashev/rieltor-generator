@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   Building,
@@ -7,6 +8,7 @@ import type {
   ComplexCreate,
   ComplexDetail,
   ComplexUpdate,
+  Image,
   Organization,
   Unit,
   UnitBulkUpdate,
@@ -16,14 +18,27 @@ import type {
 import type {
   Building as BuildingRow,
   Complex as ComplexRow,
+  ComplexImage as ComplexImageRow,
   Unit as UnitRow,
 } from '@prisma/client';
+import { processImage } from '../listings/process-image';
 import { PrismaService } from '../prisma/prisma.service';
+import { slugify } from './slug';
+
+// Same directory bootstrap.ts serves '/images' from, resolved the same way as
+// ListingsService (relative to the API root, not this file after compilation).
+const PUBLIC_DIR = resolve(__dirname, '..', '..', 'public');
+
+// Per-complex gallery cap — the guarded upload endpoint refuses beyond this.
+const MAX_COMPLEX_IMAGES = 20;
 
 /** A unit row optionally carrying its active booking (populated by `listUnits`). */
 type UnitRowWithBookings = UnitRow & {
   bookings?: { id: string; clientName: string; clientPhone: string; holdUntil: Date }[];
 };
+
+/** A complex row carrying its ordered images (populated by the complex read queries). */
+type ComplexRowWithImages = ComplexRow & { images: ComplexImageRow[] };
 
 @Injectable()
 export class DeveloperService {
@@ -73,6 +88,9 @@ export class DeveloperService {
         id: true,
         name: true,
         district: true,
+        verified: true,
+        verificationRequestedAt: true,
+        verifiedAt: true,
         members: {
           select: { userId: true, role: true, user: { select: { name: true, phone: true } } },
         },
@@ -82,6 +100,9 @@ export class DeveloperService {
       id: org!.id,
       name: org!.name,
       district: org!.district,
+      verified: org!.verified,
+      verificationRequestedAt: org!.verificationRequestedAt?.toISOString() ?? null,
+      verifiedAt: org!.verifiedAt?.toISOString() ?? null,
       members: org!.members.map((m) => ({
         userId: m.userId,
         role: m.role,
@@ -93,8 +114,23 @@ export class DeveloperService {
 
   // ---- Complex CRUD (org-scoped) -------------------------------------------
 
-  /** Row -> `Complex` DTO (createdAt as ISO string). */
-  private toComplex(c: ComplexRow): Complex {
+  /** `ComplexImage` row -> shared `Image` DTO. */
+  private toImage(img: ComplexImageRow): Image {
+    return {
+      base: img.base,
+      ogUrl: img.ogUrl,
+      width: img.width,
+      height: img.height,
+      position: img.position,
+    };
+  }
+
+  /**
+   * Row (+ ordered images) -> `Complex` DTO. Dates as ISO strings; `coverImage`
+   * is the first image by position (images are queried ordered), `imageCount`
+   * the gallery size.
+   */
+  private toComplex(c: ComplexRowWithImages): Complex {
     return {
       id: c.id,
       name: c.name,
@@ -103,6 +139,13 @@ export class DeveloperService {
       description: c.description,
       status: c.status,
       createdAt: c.createdAt.toISOString(),
+      slug: c.slug,
+      publishStatus: c.publishStatus,
+      publishedAt: c.publishedAt?.toISOString() ?? null,
+      latitude: c.latitude,
+      longitude: c.longitude,
+      coverImage: c.images[0] ? this.toImage(c.images[0]) : null,
+      imageCount: c.images.length,
     };
   }
 
@@ -123,6 +166,7 @@ export class DeveloperService {
     const rows = await this.prisma.complex.findMany({
       where: { orgId },
       orderBy: { createdAt: 'desc' },
+      include: { images: { orderBy: { position: 'asc' } }, org: true },
     });
     return rows.map((c) => this.toComplex(c));
   }
@@ -139,6 +183,7 @@ export class DeveloperService {
         description: input.description ?? null,
         status: input.status ?? 'UNDER_CONSTRUCTION',
       },
+      include: { images: { orderBy: { position: 'asc' } }, org: true },
     });
     return this.toComplex(complex);
   }
@@ -148,7 +193,11 @@ export class DeveloperService {
     await this.complexOwnedOrThrow(userId, id);
     const complex = await this.prisma.complex.findUnique({
       where: { id },
-      include: { buildings: { orderBy: { createdAt: 'asc' } } },
+      include: {
+        buildings: { orderBy: { createdAt: 'asc' } },
+        images: { orderBy: { position: 'asc' } },
+        org: true,
+      },
     });
     return {
       ...this.toComplex(complex!),
@@ -158,6 +207,7 @@ export class DeveloperService {
         floors: b.floors,
         createdAt: b.createdAt.toISOString(),
       })),
+      gallery: complex!.images.map((img) => this.toImage(img)),
     };
   }
 
@@ -172,9 +222,96 @@ export class DeveloperService {
         ...(input.address !== undefined && { address: input.address ?? null }),
         ...(input.description !== undefined && { description: input.description ?? null }),
         ...(input.status !== undefined && { status: input.status }),
+        ...(input.latitude !== undefined && { latitude: input.latitude }),
+        ...(input.longitude !== undefined && { longitude: input.longitude }),
       },
+      include: { images: { orderBy: { position: 'asc' } }, org: true },
     });
     return this.toComplex(complex);
+  }
+
+  /**
+   * Compute a unique complex slug from `name`, appending `-2`, `-3`, … until no
+   * OTHER complex holds it (the current complex `selfId` is excluded so republishing
+   * keeps its slug).
+   */
+  private async uniqueComplexSlug(name: string, selfId: string): Promise<string> {
+    const baseSlug = slugify(name);
+    for (let n = 1; ; n++) {
+      const candidate = n === 1 ? baseSlug : `${baseSlug}-${n}`.slice(0, 40);
+      const clash = await this.prisma.complex.findFirst({
+        where: { slug: candidate, NOT: { id: selfId } },
+        select: { id: true },
+      });
+      if (!clash) return candidate;
+    }
+  }
+
+  /**
+   * Publish / unpublish an owned complex (foreign complex -> 404).
+   *
+   * Publishing is gated: the first failing check throws a 409 with its Uzbek message —
+   * org unverified, then no image, then no priced-available unit. On success the slug is
+   * minted once (kept across republishes) and the complex goes PUBLISHED with `publishedAt`.
+   * Unpublishing just flips back to DRAFT (the slug is retained).
+   */
+  async setPublish(userId: string, complexId: string, publish: boolean): Promise<Complex> {
+    const existing = await this.complexOwnedOrThrow(userId, complexId);
+    if (publish) {
+      // Gate 1: the organization must be verified.
+      const org = await this.prisma.organization.findUnique({
+        where: { id: existing.orgId },
+        select: { verified: true },
+      });
+      if (org?.verified !== true) {
+        throw new ConflictException("Avval tashkilotni tasdiqdan o'tkazing");
+      }
+      // Gate 2: at least one gallery image.
+      const imageCount = await this.prisma.complexImage.count({ where: { complexId } });
+      if (imageCount === 0) {
+        throw new ConflictException('Kamida bitta rasm yuklang');
+      }
+      // Gate 3: at least one AVAILABLE unit that carries a price.
+      const pricedAvailable = await this.prisma.unit.count({
+        where: { building: { complexId }, status: 'AVAILABLE', priceSom: { not: null } },
+      });
+      if (pricedAvailable === 0) {
+        throw new ConflictException("Kamida bitta narxli bo'sh xonadon kerak");
+      }
+      const slug = existing.slug ?? (await this.uniqueComplexSlug(existing.name, complexId));
+      const complex = await this.prisma.complex.update({
+        where: { id: complexId },
+        data: { slug, publishStatus: 'PUBLISHED', publishedAt: new Date() },
+        include: { images: { orderBy: { position: 'asc' } }, org: true },
+      });
+      return this.toComplex(complex);
+    }
+    const complex = await this.prisma.complex.update({
+      where: { id: complexId },
+      data: { publishStatus: 'DRAFT' },
+      include: { images: { orderBy: { position: 'asc' } }, org: true },
+    });
+    return this.toComplex(complex);
+  }
+
+  /**
+   * Request marketplace verification for the caller's org (idempotent).
+   * Already-verified orgs are returned unchanged; otherwise `verificationRequestedAt`
+   * is stamped so a moderator can review.
+   */
+  async requestVerification(userId: string): Promise<Organization> {
+    const orgId = await this.orgIdOf(userId);
+    const org = await this.prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { verified: true },
+    });
+    if (org?.verified !== true) {
+      await this.prisma.organization.update({
+        where: { id: orgId },
+        data: { verificationRequestedAt: new Date() },
+      });
+    }
+    return this.orgView(userId);
   }
 
   /** Delete an owned complex (cascades buildings/units via schema). */
@@ -182,6 +319,84 @@ export class DeveloperService {
     await this.complexOwnedOrThrow(userId, id);
     await this.prisma.complex.delete({ where: { id } });
     return { ok: true };
+  }
+
+  // ---- ComplexImage upload/delete (org-scoped via the complex) -------------
+
+  /**
+   * Add one gallery image to an owned complex (foreign complex -> 404).
+   *
+   * Enforces a per-complex cap (409 once full), then runs the shared sharp
+   * pipeline — `processImage` writes variants under `public/images/complex/<id>/`
+   * and returns the `{ base, ogUrl, width, height }` stored on the row. `position`
+   * is (max existing position) + 1 so the gallery keeps append order; the first
+   * image also gets an OG crop (it is the cover). Returns the fresh `ComplexDetail`
+   * so the client re-renders the whole gallery from one response.
+   */
+  async addComplexImage(
+    userId: string,
+    complexId: string,
+    file: Express.Multer.File,
+  ): Promise<ComplexDetail> {
+    await this.complexOwnedOrThrow(userId, complexId);
+
+    const existing = await this.prisma.complexImage.findMany({
+      where: { complexId },
+      select: { position: true },
+    });
+    if (existing.length >= MAX_COMPLEX_IMAGES) {
+      throw new ConflictException("Rasmlar chegarasi to'ldi");
+    }
+
+    const position = existing.reduce((max, img) => Math.max(max, img.position), -1) + 1;
+    const result = await processImage({
+      source: file.buffer,
+      outputRoot: PUBLIC_DIR,
+      // A path segment only: base becomes "/images/complex/<complexId>/<nn>".
+      listingId: `complex/${complexId}`,
+      position,
+      makeOg: existing.length === 0, // first image is the cover
+    });
+
+    await this.prisma.complexImage.create({
+      data: {
+        complexId,
+        base: result.base,
+        ogUrl: result.ogUrl,
+        width: result.width,
+        height: result.height,
+        position,
+      },
+    });
+
+    return this.getComplex(userId, complexId);
+  }
+
+  /**
+   * Delete one gallery image from an owned complex (foreign complex -> 404).
+   *
+   * The `:imageId` route param carries the image's `position`, not its cuid: the
+   * shared `Image` DTO the CRM renders exposes no `id`, so the client sends
+   * `String(position)`. Position is unique per complex (assigned max+1), so the
+   * delete is scoped to `{ complexId, position }`. A non-numeric or unmatched
+   * position -> 404. Returns the fresh `ComplexDetail`.
+   */
+  async removeComplexImage(
+    userId: string,
+    complexId: string,
+    imageId: string,
+  ): Promise<ComplexDetail> {
+    await this.complexOwnedOrThrow(userId, complexId);
+
+    const position = Number(imageId);
+    if (!Number.isInteger(position)) throw new NotFoundException('Rasm topilmadi');
+
+    const { count } = await this.prisma.complexImage.deleteMany({
+      where: { complexId, position },
+    });
+    if (count === 0) throw new NotFoundException('Rasm topilmadi');
+
+    return this.getComplex(userId, complexId);
   }
 
   // ---- Building CRUD (org-scoped via the complex) --------------------------

@@ -282,6 +282,12 @@ model PropertyRequest {
   lostReason       LeadLostReason?
   outcomeUpdatedAt DateTime?
 
+  /// Marketplace inquiry provenance (5.3): which complex/unit the lead came from.
+  complexId String?
+  complex   Complex? @relation("ComplexInquiries", fields: [complexId], references: [id], onDelete: SetNull)
+  unitId    String?
+  unit      Unit?    @relation("UnitInquiries", fields: [unitId], references: [id], onDelete: SetNull)
+
   @@index([status, createdAt])
   @@index([deal, type, outcomeStage])
 }
@@ -472,6 +478,13 @@ enum BookingStatus {
   CONVERTED // turned into a sale (unit -> SOLD)
 }
 
+/// Marketplace publish state for a Complex (5.3). DRAFT stays private to the
+/// org; PUBLISHED appears on the public marketplace.
+enum ComplexPublishStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model Organization {
   id        String       @id @default(cuid())
   name      String
@@ -481,6 +494,12 @@ model Organization {
   updatedAt DateTime     @updatedAt
   members   Membership[]
   complexes Complex[]
+
+  /// Marketplace trust (5.3): a moderator flips `verified` on after review.
+  verified                Boolean   @default(false)
+  verificationRequestedAt DateTime?
+  verifiedAt              DateTime?
+  verificationNote        String?
 }
 
 model Membership {
@@ -510,7 +529,31 @@ model Complex {
   updatedAt   DateTime      @updatedAt
   buildings   Building[]
 
+  /// Marketplace publishing (5.3).
+  slug          String?              @unique
+  publishStatus ComplexPublishStatus @default(DRAFT)
+  publishedAt   DateTime?
+  latitude      Float?
+  longitude     Float?
+  images        ComplexImage[]
+  inquiries     PropertyRequest[]    @relation("ComplexInquiries")
+
   @@index([orgId])
+}
+
+model ComplexImage {
+  id        String   @id @default(cuid())
+  complexId String
+  complex   Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  /// Base path without a variant — used with imageSrcSet() from @rieltor/shared.
+  base      String
+  ogUrl     String?
+  width     Int
+  height    Int
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([complexId])
 }
 
 model Building {
@@ -528,9 +571,9 @@ model Building {
 }
 
 model Unit {
-  id         String     @id @default(cuid())
+  id         String            @id @default(cuid())
   buildingId String
-  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  building   Building          @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   /// Unit number/label, e.g. "42".
   number     String
   floor      Int
@@ -538,10 +581,11 @@ model Unit {
   areaM2     Float?
   /// BigInt money, string end-to-end.
   priceSom   BigInt?
-  status     UnitStatus @default(AVAILABLE)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  status     UnitStatus        @default(AVAILABLE)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
   bookings   Booking[]
+  inquiries  PropertyRequest[] @relation("UnitInquiries")
 
   @@index([buildingId])
 }

@@ -5,6 +5,7 @@ import {
   formatPriceSom,
   imageSrcSet,
   type ListingDetail,
+  type PublicComplexDetail,
   type PublicPresentation,
   type PublicRealtor,
 } from '@rieltor/shared';
@@ -138,6 +139,58 @@ export function buildRealtorMetaTags(
   // The logo is a renderable relative URL ("/images/logo-<user>/01-1200.webp");
   // the first listing's cover is the fallback when a realtor has uploaded none.
   const relativeImage = realtor.logoUrl ?? realtor.listings[0]?.image?.ogUrl ?? null;
+
+  const tags = [
+    `<title>${escapeHtml(title)}</title>`,
+    meta('name', 'description', description),
+    `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    meta('property', 'og:type', 'website'),
+    meta('property', 'og:site_name', 'Rieltor'),
+    meta('property', 'og:url', pageUrl),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
+    meta('name', 'twitter:card', 'summary_large_image'),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
+  ];
+
+  if (relativeImage) {
+    // Telegram does not follow relative paths — an absolute URL is required.
+    const absolute = `${baseUrl}${relativeImage}`;
+    tags.push(
+      meta('property', 'og:image', absolute),
+      meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
+      meta('property', 'og:image:height', String(OG_IMAGE_HEIGHT)),
+      meta('name', 'twitter:image', absolute),
+    );
+  }
+
+  return tags.join('\n    ');
+}
+
+/**
+ * OG/head tags for a public ЖК (residential complex) page (/jk/:slug). Mirrors
+ * buildRealtorMetaTags: the Telegram/link preview is the whole point of the SSR
+ * shell for a share link. The title is "<name> — <district>"; the description is
+ * the cheapest available price ("<price> so'mdan") plus the free-unit count, or
+ * just the count when nothing is priced yet; the preview image is the cover, or
+ * omitted (like the realtor branch) when the complex has no gallery.
+ */
+export function buildComplexMetaTags(
+  complex: PublicComplexDetail,
+  slug: string,
+  baseUrl: string,
+): string {
+  const title = `${complex.name} — ${complex.district}`;
+  // A new-build complex is always a SALE, so formatPriceSom carries no "/oy"
+  // period suffix here; "dan" turns "780 000 000 so'm" into "…so'mdan" (from).
+  const description = complex.priceFromSom
+    ? `${formatPriceSom(complex.priceFromSom, 'SALE')}dan · ${complex.unitsAvailable} ta bo'sh xonadon`
+    : `${complex.unitsAvailable} ta bo'sh xonadon`;
+  const pageUrl = `${baseUrl}/jk/${slug}`;
+  // The cover is a renderable relative URL ("/images/<complex>/og.jpg"); omitted
+  // (no og:image tag) when the complex has no gallery, same as the realtor branch.
+  const relativeImage = complex.coverImage?.ogUrl ?? null;
 
   const tags = [
     `<title>${escapeHtml(title)}</title>`,

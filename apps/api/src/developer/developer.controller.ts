@@ -9,6 +9,7 @@ import {
   UnitCreateSchema,
   UnitUpdateSchema,
 } from '@rieltor/shared';
+import * as z from 'zod';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
 import { DeveloperGuard } from './developer.guard';
@@ -32,6 +33,12 @@ export class DeveloperController {
     return this.dev.orgView(u.id);
   }
 
+  @Post('organization/verification-request')
+  @UseGuards(DeveloperGuard)
+  requestVerification(@CurrentUser() u: { id: string }) {
+    return this.dev.requestVerification(u.id);
+  }
+
   // ---- Complex CRUD (org-scoped) -------------------------------------------
 
   @Get('complexes')
@@ -50,6 +57,15 @@ export class DeveloperController {
   @UseGuards(DeveloperGuard)
   getComplex(@Param('id') id: string, @CurrentUser() u: { id: string }) {
     return this.dev.getComplex(u.id, id);
+  }
+
+  // Declared BEFORE `complexes/:id`: keep the literal `/publish` sub-route ahead of the
+  // single-segment catch-all so route ordering stays unambiguous.
+  @Patch('complexes/:id/publish')
+  @UseGuards(DeveloperGuard)
+  setPublish(@Param('id') id: string, @CurrentUser() u: { id: string }, @Body() body: unknown) {
+    const { publish } = z.object({ publish: z.boolean() }).parse(body);
+    return this.dev.setPublish(u.id, id, publish);
   }
 
   @Patch('complexes/:id')

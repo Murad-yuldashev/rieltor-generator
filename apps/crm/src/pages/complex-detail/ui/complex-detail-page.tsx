@@ -1,15 +1,24 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import type { ComplexDetail, ComplexStatus } from '@rieltor/shared';
+import { imageVariantSrc, type ComplexDetail, type ComplexStatus } from '@rieltor/shared';
 import {
   COMPLEX_STATUS_LABELS,
   COMPLEX_STATUS_OPTIONS,
+  PUBLISH_STATE_BADGE,
+  PUBLISH_STATE_LABELS,
   useComplex,
+  useComplexImages,
   useCreateBuilding,
   useDeleteComplex,
+  usePublishComplex,
   useUpdateComplex,
 } from '@/features/developer';
+import { ApiError } from '@/shared/api/client';
+import { cn } from '@/shared/lib/cn';
 import { CabinetNav } from '@/widgets/cabinet-nav';
+
+/** Per-complex gallery cap — mirrors the API's MAX_COMPLEX_IMAGES (upload 409s past it). */
+const MAX_COMPLEX_IMAGES = 20;
 
 const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
 const FIELD =
@@ -50,6 +59,7 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
   const navigate = useNavigate();
   const update = useUpdateComplex(complex.id);
   const remove = useDeleteComplex();
+  const publish = usePublishComplex(complex.id);
   const createBuilding = useCreateBuilding(complex.id);
 
   const [name, setName] = useState(complex.name);
@@ -57,7 +67,24 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
   const [address, setAddress] = useState(complex.address ?? '');
   const [description, setDescription] = useState(complex.description ?? '');
   const [status, setStatus] = useState<ComplexStatus>(complex.status);
+  // Geo pin — number inputs held as strings; blank means "leave as-is" on save.
+  const [latitude, setLatitude] = useState(
+    complex.latitude != null ? String(complex.latitude) : '',
+  );
+  const [longitude, setLongitude] = useState(
+    complex.longitude != null ? String(complex.longitude) : '',
+  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const isPublished = complex.publishStatus === 'PUBLISHED';
+  // A failed publish gate returns 409 with an Uzbek reason (verify org / add an
+  // image / price an available unit) — show it verbatim; anything else is generic.
+  const publishError =
+    publish.error instanceof ApiError && publish.error.status === 409
+      ? publish.error.message
+      : publish.isError
+        ? "E'lon holatini o'zgartirishda xatolik. Qayta urinib ko'ring."
+        : null;
 
   const [buildingName, setBuildingName] = useState('');
   const [buildingFloors, setBuildingFloors] = useState('');
@@ -67,14 +94,19 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
     const trimmedName = name.trim();
     const trimmedDistrict = district.trim();
     if (!trimmedName || !trimmedDistrict) return;
-    // `address`/`description` are optional on the DTO — an empty field is omitted
-    // (the server keeps the current value) rather than sent as a blank string.
+    // `address`/`description`/`latitude`/`longitude` are optional on the DTO — a
+    // blank field is omitted (the server keeps the current value) rather than sent
+    // as a blank string. A non-numeric geo value parses to NaN and is dropped too.
+    const latValue = latitude.trim() ? Number(latitude) : undefined;
+    const lngValue = longitude.trim() ? Number(longitude) : undefined;
     await update.mutateAsync({
       name: trimmedName,
       district: trimmedDistrict,
       status,
       address: address.trim() || undefined,
       description: description.trim() || undefined,
+      latitude: Number.isFinite(latValue) ? latValue : undefined,
+      longitude: Number.isFinite(lngValue) ? lngValue : undefined,
     });
   }
 
@@ -168,6 +200,36 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
           ))}
         </select>
 
+        <label className={LABEL} htmlFor="edit-latitude">
+          Kenglik (latitude)
+        </label>
+        <input
+          id="edit-latitude"
+          type="number"
+          step="any"
+          min={-90}
+          max={90}
+          value={latitude}
+          onChange={(event) => setLatitude(event.target.value)}
+          placeholder="Ixtiyoriy, masalan: 41.311"
+          className={FIELD}
+        />
+
+        <label className={LABEL} htmlFor="edit-longitude">
+          Uzunlik (longitude)
+        </label>
+        <input
+          id="edit-longitude"
+          type="number"
+          step="any"
+          min={-180}
+          max={180}
+          value={longitude}
+          onChange={(event) => setLongitude(event.target.value)}
+          placeholder="Ixtiyoriy, masalan: 69.279"
+          className={FIELD}
+        />
+
         <button
           type="submit"
           disabled={update.isPending || name.trim().length === 0 || district.trim().length === 0}
@@ -182,6 +244,41 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
           </p>
         )}
       </form>
+
+      <ComplexMedia complex={complex} />
+
+      <section className="rounded-card bg-card p-5 shadow-card">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-ink">Marketpleysda e'lon</h2>
+          <span
+            className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold ${PUBLISH_STATE_BADGE[complex.publishStatus]}`}
+          >
+            {PUBLISH_STATE_LABELS[complex.publishStatus]}
+          </span>
+        </div>
+        <p className="mt-1 text-[13px] text-ink-2">
+          {isPublished
+            ? "Majmua marketpleysda ko'rinmoqda. E'londan olsangiz, xaridorlar uni ko'ra olmaydi."
+            : "E'lon qilish uchun tashkilot tasdiqdan o'tgan, kamida bitta rasm va narxli bo'sh xonadon bo'lishi kerak."}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => publish.mutate(!isPublished)}
+          disabled={publish.isPending}
+          className={
+            isPublished
+              ? 'mt-4 w-full rounded-[14px] border border-line px-6 py-3 text-[15px] font-extrabold text-ink-2 disabled:opacity-60'
+              : 'mt-4 w-full rounded-[14px] bg-brand-green px-6 py-3.5 text-[15px] font-extrabold text-white disabled:opacity-60'
+          }
+        >
+          {publish.isPending ? 'Bajarilmoqda...' : isPublished ? "E'londan olish" : "E'lon qilish"}
+        </button>
+
+        {publishError && (
+          <p className="mt-3 text-[13px] font-semibold text-brand-rose">{publishError}</p>
+        )}
+      </section>
 
       <section className="rounded-card bg-card p-5 shadow-card">
         <h2 className="text-[15px] font-bold text-ink">Binolar</h2>
@@ -294,5 +391,116 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
         )}
       </section>
     </>
+  );
+}
+
+/**
+ * Cover + gallery media manager. Selecting a file uploads it immediately, then the
+ * input is cleared so re-picking the same file still fires `change`. The gallery is
+ * re-rendered straight from the `ComplexDetail` each mutation returns; the first
+ * image (position 0) is the cover. The upload cap (20) answers with a 409 whose
+ * Uzbek reason is shown verbatim.
+ *
+ * NOTE: the delete endpoint is keyed by the image's `position` here — the shared
+ * `Image` DTO exposes no row id, and position is its only stable per-complex
+ * identifier (it equals the `<nn>` segment of `base`).
+ */
+function ComplexMedia({ complex }: { complex: ComplexDetail }) {
+  const { uploadImage, deleteImage } = useComplexImages(complex.id);
+
+  const atCap = complex.imageCount >= MAX_COMPLEX_IMAGES;
+
+  function handleSelect(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    // Clear the input right away so picking the same file again still fires `change`.
+    event.target.value = '';
+    if (file) uploadImage.mutate(file);
+  }
+
+  // A full gallery returns 409 with the Uzbek reason ("Rasmlar chegarasi to'ldi") —
+  // show it verbatim; any other failure is generic.
+  const uploadError =
+    uploadImage.error instanceof ApiError && uploadImage.error.status === 409
+      ? uploadImage.error.message
+      : uploadImage.isError
+        ? "Rasm yuklashda xatolik. Qayta urinib ko'ring."
+        : null;
+
+  return (
+    <section className="rounded-card bg-card p-5 shadow-card">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[15px] font-bold text-ink">Rasmlar</h2>
+        <span className="shrink-0 text-[13px] font-semibold text-ink-3">
+          {complex.imageCount} / {MAX_COMPLEX_IMAGES}
+        </span>
+      </div>
+      <p className="mt-1 text-[13px] text-ink-2">
+        E'lon qilish uchun kamida bitta rasm kerak. Birinchi rasm muqova bo'ladi.
+      </p>
+
+      {complex.gallery.length === 0 ? (
+        <p className="mt-3 text-[14px] text-ink-3">Hozircha rasm yo'q</p>
+      ) : (
+        <ul className="mt-4 grid grid-cols-3 gap-3">
+          {complex.gallery.map((image, index) => (
+            <li
+              key={image.base}
+              className="relative overflow-hidden rounded-[14px] border border-line"
+            >
+              <img
+                src={imageVariantSrc(image.base, 360)}
+                alt={`Majmua rasmi ${index + 1}`}
+                width={image.width}
+                height={image.height}
+                loading="lazy"
+                className="aspect-[4/3] w-full object-cover"
+              />
+              {index === 0 && (
+                <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white">
+                  Muqova
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => deleteImage.mutate(String(image.position))}
+                disabled={deleteImage.isPending}
+                className="absolute right-2 top-2 rounded-full bg-brand-rose px-2 py-0.5 text-[11px] font-bold text-white disabled:opacity-60"
+              >
+                O'chirish
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <label
+        className={cn(
+          'mt-4 flex w-full cursor-pointer items-center justify-center rounded-[14px] border border-accent bg-accent-soft px-6 py-3 text-[15px] font-extrabold text-accent',
+          (uploadImage.isPending || atCap) && 'pointer-events-none opacity-60',
+        )}
+      >
+        {uploadImage.isPending
+          ? 'Yuklanmoqda...'
+          : atCap
+            ? "Rasmlar chegarasi to'ldi"
+            : "Rasm qo'shish"}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleSelect}
+          disabled={uploadImage.isPending || atCap}
+          className="hidden"
+        />
+      </label>
+
+      {uploadError && (
+        <p className="mt-3 text-[13px] font-semibold text-brand-rose">{uploadError}</p>
+      )}
+      {deleteImage.isError && (
+        <p className="mt-3 text-[13px] font-semibold text-brand-rose">
+          Rasmni o'chirishda xatolik. Qayta urinib ko'ring.
+        </p>
+      )}
+    </section>
   );
 }

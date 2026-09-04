@@ -285,6 +285,10 @@ export const PropertyRequestCreateSchema = z.object({
   priceMaxSom: z.string().regex(/^\d+$/).nullable().optional(),
   areaMinM2: z.number().positive().max(10_000).nullable().optional(),
   note: z.string().max(500).nullable().optional(),
+  /** When the request is an inquiry about a published complex (5.3). */
+  complexId: z.string().optional(),
+  /** When the inquiry targets a specific unit within that complex (5.3). */
+  unitId: z.string().optional(),
 });
 
 export const PropertyRequestSummarySchema = z.object({
@@ -649,6 +653,9 @@ export const OrgRoleSchema = z.enum(['OWNER', 'MANAGER']);
 /** Build lifecycle of a residential complex. */
 export const ComplexStatusSchema = z.enum(['PLANNED', 'UNDER_CONSTRUCTION', 'DONE']);
 
+/** Marketplace publishing state of a complex (5.3): DRAFT until it goes live. */
+export const ComplexPublishStatusSchema = z.enum(['DRAFT', 'PUBLISHED']);
+
 /** Sales lifecycle of a single unit. */
 export const UnitStatusSchema = z.enum(['AVAILABLE', 'BOOKED', 'SOLD']);
 
@@ -666,6 +673,12 @@ export const OrganizationSchema = z.object({
   name: z.string(),
   district: z.string().nullable(),
   members: z.array(OrgMemberSchema),
+  /** Marketplace trust (5.3): moderator-granted verified badge. */
+  verified: z.boolean(),
+  /** When the org last requested verification; null until requested. */
+  verificationRequestedAt: z.string().nullable(),
+  /** When a moderator granted verification; null until verified. */
+  verifiedAt: z.string().nullable(),
 });
 
 /** A residential complex owned by an organization. */
@@ -677,6 +690,20 @@ export const ComplexSchema = z.object({
   description: z.string().nullable(),
   status: ComplexStatusSchema,
   createdAt: z.string(),
+  /** Public URL slug (5.3); null until published. */
+  slug: z.string().nullable(),
+  /** Marketplace publish state (5.3). */
+  publishStatus: ComplexPublishStatusSchema,
+  /** When the complex was first published; null while DRAFT. */
+  publishedAt: z.string().nullable(),
+  /** Map pin latitude (5.3); null until set. */
+  latitude: z.number().nullable(),
+  /** Map pin longitude (5.3); null until set. */
+  longitude: z.number().nullable(),
+  /** First gallery image by position, for CRM list cards; null when none. */
+  coverImage: ImageSchema.nullable(),
+  /** Number of gallery images. */
+  imageCount: z.number().int(),
 });
 
 /** A building within a complex. */
@@ -687,9 +714,10 @@ export const BuildingSchema = z.object({
   createdAt: z.string(),
 });
 
-/** A complex plus its buildings. */
+/** A complex plus its buildings and full image gallery (CRM media manager). */
 export const ComplexDetailSchema = ComplexSchema.extend({
   buildings: z.array(BuildingSchema),
+  gallery: z.array(ImageSchema),
 });
 
 // --- Developer CRM: booking + shaxmatka (Phase 5.2) ---
@@ -750,6 +778,10 @@ export const ComplexCreateSchema = z.object({
   address: z.string().trim().max(300).optional(),
   description: z.string().trim().max(2000).optional(),
   status: ComplexStatusSchema.optional(),
+  /** Map pin latitude (5.3); WGS84 −90..90. */
+  latitude: z.number().min(-90).max(90).optional(),
+  /** Map pin longitude (5.3); WGS84 −180..180. */
+  longitude: z.number().min(-180).max(180).optional(),
 });
 export const ComplexUpdateSchema = ComplexCreateSchema.partial();
 
@@ -796,6 +828,74 @@ export const UnitBulkUpdateSchema = z
   .refine((v) => v.status !== undefined || v.priceSom !== undefined, {
     message: 'status yoki priceSom kerak',
   });
+
+// --- Marketplace publishing: public ЖК + verification (Phase 5.3) ---
+
+/** One available/held/sold unit as shown on the public complex page. */
+export const PublicUnitSchema = z.object({
+  id: z.string(),
+  number: z.string(),
+  floor: z.number().int(),
+  rooms: z.number().int().nullable(),
+  areaM2: z.number().nullable(),
+  priceSom: z.string().nullable(), // BigInt-as-string
+  status: UnitStatusSchema,
+});
+
+/** A building with its units, on the public complex page. */
+export const PublicBuildingSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  floors: z.number().int().nullable(),
+  units: z.array(PublicUnitSchema),
+});
+
+/** A complex card in the public marketplace list. */
+export const PublicComplexSummarySchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  district: z.string(),
+  coverImage: ImageSchema.nullable(),
+  buildStatus: ComplexStatusSchema,
+  priceFromSom: z.string().nullable(), // cheapest available unit, BigInt-as-string
+  unitsAvailable: z.number().int(),
+  developerName: z.string(),
+  developerVerified: z.boolean(),
+});
+
+/** The full public complex page — summary plus media, geo, and inventory. */
+export const PublicComplexDetailSchema = PublicComplexSummarySchema.extend({
+  description: z.string().nullable(),
+  address: z.string().nullable(),
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
+  gallery: z.array(ImageSchema),
+  buildings: z.array(PublicBuildingSchema),
+  unitsTotal: z.number().int(),
+});
+
+/** Body of `POST /api/jk/:slug/inquiry` — a buyer's interest in a published complex. */
+export const ComplexInquirySchema = z.object({
+  note: z.string().trim().max(1000).optional(),
+  unitId: z.string().optional(),
+});
+
+/** Body of `PATCH /api/moderation/developers/:orgId` — grant/revoke a developer's badge. */
+export const DeveloperVerifySchema = z.object({
+  verified: z.boolean(),
+  note: z.string().trim().max(500).optional(),
+});
+
+/** One row in the moderator's developer table — GET /api/moderation/developers. */
+export const ModeratorDeveloperRowSchema = z.object({
+  orgId: z.string(),
+  name: z.string(),
+  district: z.string().nullable(),
+  verified: z.boolean(),
+  verificationRequestedAt: z.string().nullable(),
+  complexCount: z.number().int(),
+  memberPhone: z.string(),
+});
 
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
@@ -872,6 +972,7 @@ export type WalletView = z.infer<typeof WalletViewSchema>;
 export type Topup = z.infer<typeof TopupSchema>;
 export type OrgRole = z.infer<typeof OrgRoleSchema>;
 export type ComplexStatus = z.infer<typeof ComplexStatusSchema>;
+export type ComplexPublishStatus = z.infer<typeof ComplexPublishStatusSchema>;
 export type UnitStatus = z.infer<typeof UnitStatusSchema>;
 export type OrgMember = z.infer<typeof OrgMemberSchema>;
 export type Organization = z.infer<typeof OrganizationSchema>;
@@ -893,3 +994,10 @@ export type BookingRow = z.infer<typeof BookingRowSchema>;
 export type BookingCreate = z.infer<typeof BookingCreateSchema>;
 export type BookingAction = z.infer<typeof BookingActionSchema>;
 export type UnitBulkUpdate = z.infer<typeof UnitBulkUpdateSchema>;
+export type PublicUnit = z.infer<typeof PublicUnitSchema>;
+export type PublicBuilding = z.infer<typeof PublicBuildingSchema>;
+export type PublicComplexSummary = z.infer<typeof PublicComplexSummarySchema>;
+export type PublicComplexDetail = z.infer<typeof PublicComplexDetailSchema>;
+export type ComplexInquiry = z.infer<typeof ComplexInquirySchema>;
+export type DeveloperVerify = z.infer<typeof DeveloperVerifySchema>;
+export type ModeratorDeveloperRow = z.infer<typeof ModeratorDeveloperRowSchema>;

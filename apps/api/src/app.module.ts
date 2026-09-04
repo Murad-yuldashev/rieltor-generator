@@ -7,11 +7,13 @@ import { AgentModule } from './agent/agent.module';
 import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { BotModule } from './bot/bot.module';
+import { ComplexesPublicModule } from './complexes-public/complexes-public.module';
 import { envSchema } from './config/env';
 import { DeveloperModule } from './developer/developer.module';
 import { HealthModule } from './health/health.module';
 import { LeadsModule } from './leads/leads.module';
 import { ListingsModule } from './listings/listings.module';
+import { ModerationDevelopersModule } from './moderation-developers/moderation-developers.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PresentationsModule } from './presentations/presentations.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -37,10 +39,12 @@ import { WalletModule } from './wallet/wallet.module';
     AiModule,
     AuthModule,
     BotModule,
+    ComplexesPublicModule,
     DeveloperModule,
     HealthModule,
     LeadsModule,
     ListingsModule,
+    ModerationDevelopersModule,
     NotificationsModule,
     PresentationsModule,
     PropertiesModule,

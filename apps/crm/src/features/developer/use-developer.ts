@@ -14,7 +14,7 @@ import {
   type UnitCreate,
   type UnitUpdate,
 } from '@rieltor/shared';
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api/client';
+import { apiDelete, apiGet, apiPatch, apiPost, apiUpload } from '@/shared/api/client';
 
 export const ORG_QUERY_KEY = ['crm-org'] as const;
 
@@ -64,6 +64,21 @@ export function useBecomeDeveloper() {
   });
 }
 
+/**
+ * `POST /api/crm/organization/verification-request` — the org asks a moderator to
+ * grant its verified badge. Returns the org self-view (now with
+ * `verificationRequestedAt` set), so we refresh the org query to flip the status
+ * to "Kutilmoqda". No body.
+ */
+export function useRequestVerification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => apiPost('/api/crm/organization/verification-request', OrganizationSchema),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ORG_QUERY_KEY }),
+  });
+}
+
 /** `GET /api/crm/complexes` — every complex owned by the caller's organization. */
 export function useComplexes() {
   return useQuery({
@@ -104,6 +119,56 @@ export function useUpdateComplex(id: string) {
       void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) });
     },
   });
+}
+
+/**
+ * `PATCH /api/crm/complexes/:id/publish` — flip a complex between DRAFT and
+ * PUBLISHED. The server gates publish on org verification, at least one image and
+ * a priced available unit; a failed gate comes back as a 409 whose Uzbek `message`
+ * the caller surfaces (ApiError carries it). Refreshes the list (the badge changed)
+ * and this complex's detail.
+ */
+export function usePublishComplex(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (publish: boolean) =>
+      apiPatch(`/api/crm/complexes/${id}/publish`, ComplexSchema, { publish }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: COMPLEXES_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) });
+    },
+  });
+}
+
+/**
+ * Cover + gallery media for one complex. `uploadImage` posts the raw `File` as
+ * multipart (`POST /api/crm/complexes/:id/images`, field `file`); `deleteImage`
+ * removes one gallery image (`DELETE /api/crm/complexes/:id/images/:imageId`).
+ * Both endpoints answer with the full `ComplexDetail` (fresh gallery), and both
+ * invalidate this complex's detail so the media manager re-renders from server
+ * truth. A full gallery (cap 20) answers the upload with a 409 whose Uzbek
+ * `message` ("Rasmlar chegarasi to'ldi") the caller surfaces (ApiError carries it).
+ */
+export function useComplexImages(id: string) {
+  const queryClient = useQueryClient();
+
+  const uploadImage = useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiUpload(`/api/crm/complexes/${id}/images`, formData, ComplexDetailSchema);
+    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) }),
+  });
+
+  const deleteImage = useMutation({
+    mutationFn: (imageId: string) =>
+      apiDelete(`/api/crm/complexes/${id}/images/${imageId}`, ComplexDetailSchema),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: complexQueryKey(id) }),
+  });
+
+  return { uploadImage, deleteImage };
 }
 
 /** `DELETE /api/crm/complexes/:id` — remove a complex, then refresh the list. */

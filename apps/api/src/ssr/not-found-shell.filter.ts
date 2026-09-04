@@ -1,17 +1,24 @@
 import { ArgumentsHost, Catch, ExceptionFilter, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
+import { ComplexesPublicService } from '../complexes-public/complexes-public.service';
 import type { Env } from '../config/env';
 import { PresentationsService } from '../presentations/presentations.service';
 import { RealtorPublicService } from '../realtor-public/realtor-public.service';
 import { HtmlCacheService } from './html-cache.service';
-import { buildPresentationMetaTags, buildRealtorMetaTags } from './meta';
+import { buildComplexMetaTags, buildPresentationMetaTags, buildRealtorMetaTags } from './meta';
 
 /** Public presentation page path: /p/:token (a single token segment). */
 const PRESENTATION_PATH = /^\/p\/([^/]+)\/?$/;
 
 /** Public realtor microsite path: /r/:slug (a single slug segment). */
 const REALTOR_PATH = /^\/r\/([^/]+)\/?$/;
+
+/** Public ЖК (residential complex) detail page path: /jk/:slug (a single slug segment). */
+const COMPLEX_PATH = /^\/jk\/([^/]+)\/?$/;
+
+/** Public ЖК marketplace browse page path: /jk (no slug). */
+const COMPLEX_BROWSE_PATH = /^\/jk\/?$/;
 
 /**
  * Catches NotFoundException thrown either by NestJS itself (the "Cannot GET /x"
@@ -41,6 +48,14 @@ const REALTOR_PATH = /^\/r\/([^/]+)\/?$/;
  * ALSO an API controller (@Controller('r') → /api/r/:slug), so it lives here for
  * the identical reason — og-meta injected for a live slug, the plain 404 shell
  * for an unknown one.
+ *
+ * The public ЖК pages are the same special case again: 'jk' is ALSO an API
+ * controller (@Controller('jk') → /api/jk, /api/jk/:slug), so it cannot be a
+ * prefix-excluded SSR route without un-prefixing that API GET. Both the detail
+ * page (GET /jk/:slug) and the marketplace browse page (GET /jk) land here:
+ * /jk/:slug gets its complex og-meta for a live slug (200) or the plain 404 shell
+ * for an unknown one; /jk is a real browse page, so it gets the plain shell with
+ * a 200 (site-default OG) — it need not fetch any complex.
  */
 @Catch(NotFoundException)
 export class NotFoundShellFilter implements ExceptionFilter {
@@ -48,6 +63,7 @@ export class NotFoundShellFilter implements ExceptionFilter {
     private readonly html: HtmlCacheService,
     private readonly presentations: PresentationsService,
     private readonly realtors: RealtorPublicService,
+    private readonly complexes: ComplexesPublicService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -97,6 +113,31 @@ export class NotFoundShellFilter implements ExceptionFilter {
         // Unknown slug → fall through to the plain 404 shell, same as obj/:id.
         if (!(error instanceof NotFoundException)) throw error;
       }
+    }
+
+    const complexMatch = req.method === 'GET' ? COMPLEX_PATH.exec(req.path) : null;
+    const complexSlug = complexMatch?.[1];
+    if (complexSlug) {
+      try {
+        const complex = await this.complexes.getBySlug(complexSlug);
+        const baseUrl = this.config.get('PUBLIC_BASE_URL', { infer: true });
+        res
+          .status(200)
+          .type('html')
+          .send(this.html.injectMeta(shell, buildComplexMetaTags(complex, complexSlug, baseUrl)));
+        return;
+      } catch (error) {
+        // Unknown slug → fall through to the plain 404 shell, same as obj/:id.
+        if (!(error instanceof NotFoundException)) throw error;
+      }
+    }
+
+    // The ЖК marketplace browse page (GET /jk) is a real SPA page, not a missing
+    // route: serve the plain shell (site-default OG) with a 200 so a hard refresh
+    // or shared /jk link opens the list, mirroring the SPA_ROUTES browse pages.
+    if (req.method === 'GET' && COMPLEX_BROWSE_PATH.test(req.path)) {
+      res.status(200).type('html').send(shell);
+      return;
     }
 
     res.status(404).type('html').send(shell);
