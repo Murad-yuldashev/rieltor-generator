@@ -617,8 +617,8 @@ export const PresentationViewEventSchema = z.object({
   durationMs: z.number().int().nonnegative().max(3_600_000).optional(), // cap 1h
 });
 
-/** Kind of a wallet ledger entry: a prepaid top-up or a lead-claim debit. */
-export const WalletTxTypeSchema = z.enum(['TOPUP', 'LEAD_CLAIM']);
+/** Kind of a wallet ledger entry: a prepaid top-up, a lead-claim debit, or a fixation commission credit. */
+export const WalletTxTypeSchema = z.enum(['TOPUP', 'LEAD_CLAIM', 'COMMISSION']);
 
 /** One row in the wallet ledger. `amountSom` is BigInt-as-string; `leadId` is set only for LEAD_CLAIM. */
 export const WalletTxRowSchema = z.object({
