@@ -13,6 +13,6 @@ import { WalletModule } from '../wallet/wallet.module';
   imports: [AuthModule, WalletModule], // JwtGuard/JwtService; WalletModule exports WalletService (commission credit at convert)
   controllers: [DeveloperController, BookingController, ComplexImageController],
   providers: [DeveloperService, DeveloperGuard, BookingService, BookingExpiryCron],
-  exports: [DeveloperGuard],
+  exports: [DeveloperGuard, DeveloperService], // DeveloperService: OrgWalletModule's controller resolves the caller's org
 })
 export class DeveloperModule {}
