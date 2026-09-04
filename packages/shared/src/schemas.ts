@@ -744,6 +744,8 @@ export const ComplexSchema = z.object({
   coverImage: ImageSchema.nullable(),
   /** Number of gallery images. */
   imageCount: z.number().int(),
+  /** Cross-CRM commission (5.4): complex-level default rate in basis points; null when unset. */
+  commissionBps: z.number().int().nullable(),
 });
 
 /** A building within a complex. */
@@ -803,6 +805,10 @@ export const UnitSchema = z.object({
   priceSom: z.string().nullable(), // BigInt-as-string
   status: UnitStatusSchema,
   activeBooking: BookingSummarySchema.nullable(),
+  /** Cross-CRM commission (5.4): unit-level override rate in basis points; null when unset. */
+  commissionBps: z.number().int().nullable(),
+  /** Cross-CRM fixation (5.4): true when an ACTIVE fixation exists for this unit. */
+  hasActiveFixation: z.boolean(),
 });
 
 /** Body of `POST /api/crm/become-developer` — become a developer / create an organization. */
@@ -823,7 +829,10 @@ export const ComplexCreateSchema = z.object({
   /** Map pin longitude (5.3); WGS84 −180..180. */
   longitude: z.number().min(-180).max(180).optional(),
 });
-export const ComplexUpdateSchema = ComplexCreateSchema.partial();
+export const ComplexUpdateSchema = ComplexCreateSchema.partial().extend({
+  /** Cross-CRM commission (5.4): complex-level default rate in basis points (0–10000 = 0–100%). */
+  commissionBps: z.number().int().min(0).max(10000).optional(),
+});
 
 /** Body of `POST /api/crm/complexes/:id/buildings`. */
 export const BuildingCreateSchema = z.object({
@@ -841,7 +850,10 @@ export const UnitCreateSchema = z.object({
   priceSom: z.string().regex(/^\d+$/).optional(), // digits only; parsed to BigInt server-side
   status: UnitStatusSchema.optional(),
 });
-export const UnitUpdateSchema = UnitCreateSchema.partial();
+export const UnitUpdateSchema = UnitCreateSchema.partial().extend({
+  /** Cross-CRM commission (5.4): unit-level override rate in basis points (0–10000 = 0–100%). */
+  commissionBps: z.number().int().min(0).max(10000).optional(),
+});
 
 /** Body of `POST /api/crm/units/:id/book` — create a hold on a unit. */
 export const BookingCreateSchema = z.object({
