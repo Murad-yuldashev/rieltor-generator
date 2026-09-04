@@ -7,7 +7,7 @@ import {
 import { type Fixation, canonicalizePhone } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
-type FixationRow = {
+export type FixationRow = {
   id: string;
   unitId: string;
   propertyRequestId: string;
@@ -152,7 +152,7 @@ export class FixationService {
   }
 }
 
-function toFixation(row: FixationRow): Fixation {
+export function toFixation(row: FixationRow): Fixation {
   return {
     id: row.id,
     unitId: row.unitId,

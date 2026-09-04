@@ -19,6 +19,7 @@ import {
 } from '@rieltor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
+import { type FixationRow, toFixation } from './fixation.service';
 import { budgetTier, winRate } from './lead-scoring';
 
 type LeadRow = {
@@ -39,7 +40,36 @@ type LeadRow = {
   lostReason: Lead['lostReason'];
   outcomeUpdatedAt: Date | null;
   author: { phone: string };
+  complexId: string | null;
+  unitId: string | null;
+  // The target NEW_BUILD unit (loaded via the `unit` relation) when `unitId` is set.
+  unit: {
+    number: string;
+    priceSom: bigint | null;
+    commissionBps: number | null;
+    building: { complex: { name: string; commissionBps: number | null } };
+  } | null;
+  // The lead's fixation (loaded via the `fixation` back-relation); null when none.
+  fixation: FixationRow | null;
 };
+
+/**
+ * Shared include for every query that maps to a `Lead`: the masked author phone,
+ * the target unit with its complex (for `unitInfo` + estimated commission), and
+ * the lead's fixation. Non-NEW_BUILD leads simply have `unit`/`fixation` null.
+ */
+const LEAD_INCLUDE = {
+  author: { select: { phone: true } },
+  unit: {
+    select: {
+      number: true,
+      priceSom: true,
+      commissionBps: true,
+      building: { select: { complex: { select: { name: true, commissionBps: true } } } },
+    },
+  },
+  fixation: true,
+} as const;
 
 @Injectable()
 export class LeadsService {
@@ -56,7 +86,7 @@ export class LeadsService {
     const rows = await this.prisma.propertyRequest.findMany({
       where: { status: 'OPEN', score: { gt: 0 } },
       orderBy: [{ score: 'desc' }, { createdAt: 'desc' }],
-      include: { author: { select: { phone: true } } },
+      include: LEAD_INCLUDE,
       take: 100,
     });
     return rows.map((r) => toLead(r as LeadRow, false));
@@ -66,7 +96,7 @@ export class LeadsService {
   async findOne(id: string, realtorId: string): Promise<Lead> {
     const row = await this.prisma.propertyRequest.findUnique({
       where: { id },
-      include: { author: { select: { phone: true } } },
+      include: LEAD_INCLUDE,
     });
     if (!row) throw new NotFoundException();
     const revealed = (row as LeadRow).claimedById === realtorId;
@@ -78,7 +108,7 @@ export class LeadsService {
     const rows = await this.prisma.propertyRequest.findMany({
       where: { claimedById: realtorId },
       orderBy: { claimedAt: 'desc' },
-      include: { author: { select: { phone: true } } },
+      include: LEAD_INCLUDE,
     });
     return rows.map((r) => toLead(r as LeadRow, true));
   }
@@ -224,6 +254,24 @@ function emptyLostReasons(): LeadLostReasonCounts {
 }
 
 function toLead(row: LeadRow, revealed: boolean): Lead {
+  // The target unit's snapshot + an estimated commission (current price × the
+  // effective rate: unit override → complex default → 0). Null when no unit is set.
+  const unit = row.unit;
+  const unitInfo = unit
+    ? {
+        number: unit.number,
+        complexName: unit.building.complex.name,
+        priceSom: unit.priceSom == null ? null : String(unit.priceSom),
+        commissionSom:
+          unit.priceSom == null
+            ? null
+            : String(
+                (unit.priceSom *
+                  BigInt(unit.commissionBps ?? unit.building.complex.commissionBps ?? 0)) /
+                  10000n,
+              ),
+      }
+    : null;
   return {
     id: row.id,
     deal: row.deal,
@@ -242,5 +290,9 @@ function toLead(row: LeadRow, revealed: boolean): Lead {
     outcomeStage: row.outcomeStage,
     lostReason: row.lostReason,
     outcomeUpdatedAt: row.outcomeUpdatedAt ? row.outcomeUpdatedAt.toISOString() : null,
+    complexId: row.complexId,
+    unitId: row.unitId,
+    unitInfo,
+    fixation: row.fixation ? toFixation(row.fixation) : null,
   };
 }

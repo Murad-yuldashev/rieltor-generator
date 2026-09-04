@@ -318,6 +318,27 @@ export const LeadLostReasonSchema = z.enum([
   'OTHER',
 ]);
 
+// --- Fixation status + row (Phase 5.4) — defined before LeadSchema so it can embed FixationSchema. ---
+
+/** Lifecycle of a lead→unit fixation: ACTIVE until it converts to a sale or is cancelled. */
+export const FixationStatusSchema = z.enum(['ACTIVE', 'CONVERTED', 'CANCELLED']);
+
+/** A realtor's fixation of a buyer lead onto a developer's unit. */
+export const FixationSchema = z.object({
+  id: z.string(),
+  unitId: z.string(),
+  propertyRequestId: z.string(),
+  buyerPhone: z.string(),
+  status: FixationStatusSchema,
+  /** Commission rate in basis points (1% = 100 bps). */
+  commissionBps: z.number().int(),
+  /** Commission paid on conversion, BigInt-as-string; null until CONVERTED. */
+  commissionSom: z.string().nullable(),
+  createdAt: z.string(),
+  /** When the fixation converted to a sale; null unless CONVERTED. */
+  convertedAt: z.string().nullable(),
+});
+
 /**
  * The realtor feed row: `authorPhoneMasked` always, `phone` null until the caller
  * claims it. `score`/`priceSom` are lead-quality + claim-fee values that live only
@@ -336,6 +357,21 @@ export const LeadSchema = PropertyRequestSummarySchema.extend({
   lostReason: LeadLostReasonSchema.nullable(),
   /** ISO timestamp of the last outcome update; null until first recorded. */
   outcomeUpdatedAt: z.string().nullable(),
+  /** Target NEW_BUILD complex, when the lead points at one; null otherwise. */
+  complexId: z.string().nullable(),
+  /** Target NEW_BUILD unit, when the lead points at one; null otherwise. */
+  unitId: z.string().nullable(),
+  /** The target unit's snapshot with an estimated commission; null unless a unit is set. */
+  unitInfo: z
+    .object({
+      number: z.string(),
+      complexName: z.string(),
+      priceSom: z.string().nullable(),
+      commissionSom: z.string().nullable(), // estimated, current price × effective bps
+    })
+    .nullable(),
+  /** The lead's fixation, if a realtor has fixated it; null otherwise. */
+  fixation: FixationSchema.nullable(),
 });
 
 /** The buyer's own request row plus whether a realtor has claimed it. */
@@ -902,25 +938,6 @@ export const ModeratorDeveloperRowSchema = z.object({
 });
 
 // --- Fixation + commission (Phase 5.4) ---
-
-/** Lifecycle of a lead→unit fixation: ACTIVE until it converts to a sale or is cancelled. */
-export const FixationStatusSchema = z.enum(['ACTIVE', 'CONVERTED', 'CANCELLED']);
-
-/** A realtor's fixation of a buyer lead onto a developer's unit. */
-export const FixationSchema = z.object({
-  id: z.string(),
-  unitId: z.string(),
-  propertyRequestId: z.string(),
-  buyerPhone: z.string(),
-  status: FixationStatusSchema,
-  /** Commission rate in basis points (1% = 100 bps). */
-  commissionBps: z.number().int(),
-  /** Commission paid on conversion, BigInt-as-string; null until CONVERTED. */
-  commissionSom: z.string().nullable(),
-  createdAt: z.string(),
-  /** When the fixation converted to a sale; null unless CONVERTED. */
-  convertedAt: z.string().nullable(),
-});
 
 /** Body of the fixation request — an optional target unit within the complex. */
 export const FixateInputSchema = z.object({ unitId: z.string().optional() });
