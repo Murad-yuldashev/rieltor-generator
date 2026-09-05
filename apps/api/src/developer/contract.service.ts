@@ -97,11 +97,18 @@ export class ContractService {
     }));
   }
 
-  /** One contract, org-scoped. Foreign/missing -> 404. */
-  async getOne(orgId: string, id: string): Promise<Contract> {
-    const row = await this.prisma.contract.findFirst({ where: { id, orgId } });
+  /** One contract, org-scoped, with unit + building labels. Foreign/missing -> 404. */
+  async getOne(orgId: string, id: string): Promise<ContractRow> {
+    const row = await this.prisma.contract.findFirst({
+      where: { id, orgId },
+      include: { unit: { select: { number: true, building: { select: { name: true } } } } },
+    });
     if (!row) throw new NotFoundException('Shartnoma topilmadi');
-    return toContract(row);
+    return {
+      ...toContract(row),
+      unitNumber: row.unit.number,
+      buildingName: row.unit.building.name,
+    };
   }
 
   /**

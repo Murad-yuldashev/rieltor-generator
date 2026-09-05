@@ -15,11 +15,11 @@ export function useContracts() {
   });
 }
 
-/** One contract detail (`GET /api/crm/contracts/:id`). */
+/** One contract detail (`GET /api/crm/contracts/:id`) — a ContractRow, with unit + building labels. */
 export function useContract(id: string) {
   return useQuery({
     queryKey: [...CONTRACTS_QUERY_KEY, id] as const,
-    queryFn: () => apiGet(`/api/crm/contracts/${id}`, ContractSchema),
+    queryFn: () => apiGet(`/api/crm/contracts/${id}`, ContractRowSchema),
   });
 }
 

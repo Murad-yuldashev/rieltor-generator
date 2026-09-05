@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
-import type { Contract } from '@rieltor/shared';
+import type { ContractRow } from '@rieltor/shared';
 import { formatPriceSom } from '@rieltor/shared';
 import {
   CONTRACT_STATUS_BADGE,
@@ -47,7 +47,7 @@ export function ContractDetailPage() {
 }
 
 /** The field list, status, and sign control for a loaded contract. */
-function ContractDetailView({ contract }: { contract: Contract }) {
+function ContractDetailView({ contract }: { contract: ContractRow }) {
   const sign = useSignContract(contract.id);
   const canSign = contract.status === 'ACTIVE' && contract.signedAt === null;
 
@@ -63,7 +63,9 @@ function ContractDetailView({ contract }: { contract: Contract }) {
           <span className="block text-[13px] text-ink-3">{contract.buyerPhone}</span>
         </Field>
 
-        <Field label="Xonadon">{contract.unitId}</Field>
+        <Field label="Xonadon">
+          {contract.buildingName} · {contract.unitNumber}-xonadon
+        </Field>
 
         <Field label="Summa">
           {contract.agreedAmount === null ? '—' : formatPriceSom(contract.agreedAmount, 'SALE')}
