@@ -6,6 +6,8 @@ import { BookingController } from './booking.controller';
 import { BookingExpiryCron } from './booking-expiry.cron';
 import { BookingService } from './booking.service';
 import { ComplexImageController } from './complex-image.controller';
+import { ContractController } from './contract.controller';
+import { ContractService } from './contract.service';
 import { DeveloperController } from './developer.controller';
 import { DeveloperGuard } from './developer.guard';
 import { DeveloperService } from './developer.service';
@@ -21,8 +23,9 @@ import { WalletModule } from '../wallet/wallet.module';
     BookingController,
     ComplexImageController,
     OrgWalletController,
+    ContractController,
   ],
-  providers: [DeveloperService, DeveloperGuard, BookingService, BookingExpiryCron],
+  providers: [DeveloperService, DeveloperGuard, BookingService, BookingExpiryCron, ContractService],
   exports: [DeveloperGuard, DeveloperService],
 })
 export class DeveloperModule {}

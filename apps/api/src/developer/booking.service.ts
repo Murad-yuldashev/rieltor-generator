@@ -5,6 +5,7 @@ import type { Booking as BookingRecord } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { OrgWalletService } from '../org-wallet/org-wallet.service';
+import { ContractService } from './contract.service';
 import { DeveloperService } from './developer.service';
 
 /** Default hold length (days) when the caller does not specify `holdDays`. */
@@ -19,6 +20,7 @@ export class BookingService {
     private readonly dev: DeveloperService,
     private readonly wallet: WalletService,
     private readonly orgWallet: OrgWalletService,
+    private readonly contract: ContractService,
   ) {}
 
   /** Row -> `Booking` DTO (holdUntil/createdAt as ISO strings, note/cancelReason passthrough). */
@@ -76,6 +78,7 @@ export class BookingService {
       select: {
         status: true,
         unitId: true,
+        clientName: true, // walk-in buyerName snapshot for the Contract at convert
         clientPhone: true, // canonicalized at convert to attribute a cross-CRM fixation
         unit: { select: { building: { select: { complex: { select: { orgId: true } } } } } },
       },
@@ -135,6 +138,11 @@ export class BookingService {
           const phone = canonicalizePhone(booking.clientPhone);
           const fixation = await tx.fixation.findFirst({
             where: { unitId: booking.unitId, buyerPhone: phone, status: 'ACTIVE' },
+            include: {
+              propertyRequest: {
+                select: { author: { select: { id: true, name: true, phone: true } } },
+              },
+            },
           });
           if (fixation) {
             // Pay at the FIXATED (snapshot) rate; the price stays the live SOLD price.
@@ -164,6 +172,20 @@ export class BookingService {
               );
             }
           }
+          // Durable sale record (6.2). Created on EVERY convert, inside the count===1 gate so
+          // it is written at most once. Buyer is the lead author on the fixation path, else the
+          // booking's free-text client. Price is a snapshot of the live SOLD price (null-tolerant).
+          const buyer = fixation?.propertyRequest?.author ?? null;
+          await this.contract.create(tx, {
+            orgId: booking.unit.building.complex.orgId,
+            unitId: booking.unitId,
+            bookingId,
+            fixationId: fixation?.id ?? null,
+            buyerId: buyer?.id ?? null,
+            buyerName: buyer?.name ?? booking.clientName,
+            buyerPhone: buyer?.phone ?? booking.clientPhone,
+            agreedAmount: unit?.priceSom ?? null,
+          });
         }
         // Return the current booking (freshly CONVERTED, or already-final on a lost race).
         const b = await tx.booking.findUnique({ where: { id: bookingId } });
