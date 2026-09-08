@@ -1059,7 +1059,9 @@ export const PaymentScheduleViewSchema = z.object({
 export const PaymentScheduleCreateSchema = z.object({
   downPaymentSom: z.string().regex(/^\d+$/),
   installmentCount: z.number().int().min(1).max(600),
-  startDate: z.string(),
+  // Date-only (YYYY-MM-DD, what <input type="date"> emits). Rejecting garbage here yields a clean
+  // 400 instead of an Invalid-Date reaching the service and throwing a 500 on createMany.
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 export const PaymentRecordSchema = z.object({ note: z.string().max(500).optional() });
 
