@@ -1284,6 +1284,67 @@ net komissiya mavjud org hamyoni legeridan hosil qilinadi. Spec:
   **Keyingi: Phase 7 — o'sish qatlami** (platform-spec §Phase 7: showroom 3D · ipoteka kalkulyatori ·
   xarita · reels · jurnal · mobil ilova · AI yordamchi · omnikanal inbox · telefoniya).
 
+## 4w. Phase 7.1 — Ipoteka kalkulyatori (2026-09-08)
+
+Bu yerda **Phase 7 — O'sish qatlami** ochiladi: yopilgan marketplace/CRM halqasi ustiga xaridorni
+ushlab turadigan o'sish funksiyalari qo'shiladi. Phase 7 — **yo'l xaritasidagi oxirgi faza**, u
+**7.1** (ipoteka kalkulyatori) → **7.2** (AI yordamchi) → **7.3** (xarita) → **7.4** (jurnal) ga
+dekompozitsiya qilingan. 7.1 xaridorga uy narxidan oylik to'lovni **taxminan** hisoblab beradigan
+sof mijoz-tomon kalkulyator va bir nechta **namuna** bank dasturini ko'rsatadigan faqat-o'qish jadval
+qo'shadi — hech qanday ariza, skoring yoki jonli bank tarifi yo'q. Spec:
+`docs/superpowers/specs/2026-09-08-phase-7.1-mortgage-design.md`,
+reja: `docs/superpowers/plans/2026-09-08-phase-7.1-mortgage.md`.
+
+### Mijoz-tomon annuitet hisobi
+
+- **`computeMortgage`** — sof funksiya (`apps/web` `shared/lib/mortgage.ts`), **Number** matematikasi:
+  annuitet oylik to'lov `M = P·r·(1+r)ⁿ / ((1+r)ⁿ−1)`, `r=0` bo'lsa `P/n` (nolga bo'lish yo'q),
+  boshlang'ich to'lov narxdan katta bo'lsa asosiy qarz 0 → oylik 0. So'mga **yaxlitlanadi**; jami =
+  oylik × oy, ortiqcha to'lov ≥ 0. Hisob **serverga bormaydi** — hammasi brauzerda.
+- UI'da doimiy **"Hisob taxminiy"** ogohlantirishi (rasmiy bank taklifi emas).
+
+### Namuna bank dasturlari — faqat-o'qish jadval
+
+- Yangi **`MortgageProgram`** Prisma modeli: `bankName`, `programName`, `rateBps` (yillik foiz bazis
+  punktda, 1800 = 18.00%), `maxTermMonths`, `minDownBps` (min boshlang'ich ulushi bazis punktda),
+  `maxAmountSom BigInt?` (ixtiyoriy kredit shifti, `null` = cheksiz), `active`, `position`. Migratsiya
+  **additiv** — bitta `CREATE TABLE` + `[active, position]` indeks (mavjud jadvallarga tegilmaydi).
+- Seed **6 ta ILLYUSTRATIV** namuna dasturi qo'shadi (`Namuna Bank`, `Ipoteka Bank (namuna)`,
+  `Poytaxt Bank (namuna)` …) — **jonli bank tariflari EMAS**. Seed **idempotent** (count-guard:
+  qatorlar mavjud bo'lsa qayta yozmaydi).
+- **`GET /api/mortgage/programs`** — **ommaviy, guard'siz** (xaridorga qaragan, `@Controller('objects')`
+  naqshi), **faqat-o'qish** (yozuv yo'li yo'q): faqat `active` dasturlar, `position` bo'yicha
+  tartiblangan. `maxAmountSom` string|null (BigInt→string). Shared **`MortgageProgramSchema`** DTO —
+  front va back uchun yagona manba.
+
+### UI — /ipoteka sahifasi + e'lon vidjeti
+
+- **`MortgageCalculator`** komponenti: dastur tanlagichi tarifni **oldindan to'ldiradi**, muddatni
+  `maxTermMonths`gacha **cheklaydi** va min boshlang'ich ulushini eslatadi; boshlang'ich to'lovni
+  **so'm/%** almashtirgichi bilan kiritish. Pul `formatPriceSom(String(x), 'SALE')` bilan ko'rsatiladi.
+- **`/ipoteka`** — mustaqil sahifa (header'da "Ipoteka" nav havolasi bilan).
+- **E'lon sahifasidagi vidjet** — faqat **SALE** e'lonlarda ko'rinadi (ijara e'lonida ipoteka yo'q),
+  narx e'londan oldindan to'ldiriladi.
+
+### Ma'lumot modeli va env
+
+- **1 yangi Prisma model** (`MortgageProgram`) + additiv migratsiya
+  (`20260908124511_phase_7_1_mortgage`) + 6 illyustrativ seed qatori. **Yangi env qo'shilmagan.**
+  Marketplace, CRM va boshqa oqimlarga **tegilmagan** (net-new jadval + guard'siz endpoint).
+
+### Non-goals (keyinroq)
+
+- **Jonli bank-tarif feed'lari** (hozircha namuna qatorlar); dasturlar uchun **moderator CRUD**;
+  **kredit arizasi/submission** oqimi; **kredit skoringi**; **amortizatsiya jadvali** (to'lov
+  taqsimoti). Bular ataylab keyinga qoldirilgan.
+
+### Kelasi
+
+- **7.1 yakunlandi** (mijoz-tomon annuitet kalkulyatori + namuna `MortgageProgram` jadvali + guard'siz
+  `GET /api/mortgage/programs` + `/ipoteka` sahifasi va SALE e'lon vidjeti). Phase 7 (**oxirgi
+  yo'l-xarita fazasi**) dekompozitsiyasi: **7.1** ipoteka kalkulyatori → **7.2** AI yordamchi →
+  **7.3** xarita → **7.4** jurnal. **Keyingi: 7.2 — AI yordamchi.**
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

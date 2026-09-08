@@ -100,6 +100,17 @@ export const ListingDetailSchema = ListingSummarySchema.omit({
 
 export const ViewsSchema = z.object({ views: z.number().int() });
 
+/** A bank mortgage program for the calculator's picker. */
+export const MortgageProgramSchema = z.object({
+  id: z.string(),
+  bankName: z.string(),
+  programName: z.string(),
+  rateBps: z.number().int(),
+  maxTermMonths: z.number().int(),
+  minDownBps: z.number().int(),
+  maxAmountSom: z.string().regex(/^\d+$/).nullable(), // BigInt-as-string; null = uncapped
+});
+
 /** Uzbek mobile numbers, E.164 without the plus. */
 export const PhoneSchema = z
   .string()
@@ -1095,6 +1106,7 @@ export type Deal = z.infer<typeof DealSchema>;
 export type ListingSummary = z.infer<typeof ListingSummarySchema>;
 export type ListingDetail = z.infer<typeof ListingDetailSchema>;
 export type Views = z.infer<typeof ViewsSchema>;
+export type MortgageProgram = z.infer<typeof MortgageProgramSchema>;
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 export type TelegramAuth = z.infer<typeof TelegramAuthSchema>;

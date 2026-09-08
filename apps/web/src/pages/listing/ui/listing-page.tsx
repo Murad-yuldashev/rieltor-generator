@@ -9,6 +9,7 @@ import {
   PriceBlock,
   listingQuery,
 } from '@/entities/listing';
+import { MortgageCalculator } from '@/features/mortgage';
 import { ViewCounter } from '@/features/view-counter';
 import { ApiError } from '@/shared/api/client';
 import { SectionCard } from '@/shared/ui/section-card';
@@ -87,6 +88,14 @@ export function ListingPage() {
                 viewSlot={<ViewCounter id={data.id} />}
               />
             </SectionCard>
+
+            {/* Mortgage calculator — only sale listings can be financed; a rent
+                listing has no mortgage, so the widget is SALE-only. */}
+            {data.deal === 'SALE' && (
+              <SectionCard title="Ipoteka kalkulyatori" className="order-2 mx-4 lg:mx-0 desk:mx-0">
+                <MortgageCalculator initialPriceSom={data.priceSom} />
+              </SectionCard>
+            )}
 
             <SectionCard className="order-3 mx-4 lg:mx-0 desk:mx-0">
               <ParamsRow
