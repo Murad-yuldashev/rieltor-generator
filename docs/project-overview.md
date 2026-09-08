@@ -1207,6 +1207,83 @@ to'ldirishlari bilan bir xil test-stub yondashuvi; haqiqiy provayderlar (Click/P
   moliya/KPI dashboard + reconciliation. **Keyingi: 6.4b — qarzdorlar reestri + moliya/KPI dashboard +
   reconciliation.**
 
+## 4v. Phase 6.4b — Qarzdorlar reestri + moliya dashboard (2026-09-08)
+
+Phase 6 ning to'rtinchi qadamining (6.4) ikkinchi yarmi va **butun Phase 6 ni yakunlaydi** — 6.4a
+qurgan to'lov jadvallari ustidan quruvchiga **org darajasidagi moliya suratini** va **qarzdorlar
+reestrini** beradi. 6.4a gacha ulush ma'lumoti faqat har-kontrakt bo'yicha mavjud edi; qancha
+kontraktlangan, yig'ilgan, qoldiq, muddati o'tgan; kim to'lovdan ortda qolgan; clawbacklardan keyingi
+net komissiya qancha — bularning umumlashgan ko'rinishi yo'q edi. 6.4b buni **sof o'qish-uchun
+(read-only) hisobot qatlami** sifatida qo'shadi: **hech qanday sxema o'zgarishi yo'q, migratsiya yo'q,
+pul-yo'li (convert/cancel) tegilmaydi, cron yo'q**. Muddati o'tganlik **o'qish vaqtida** hisoblanadi;
+net komissiya mavjud org hamyoni legeridan hosil qilinadi. Spec:
+`docs/superpowers/specs/2026-09-08-phase-6.4b-finance-dashboard-design.md`.
+
+### Moliya xulosasi (`GET /api/crm/finance`) — mavjud qatorlar ustidan agregatsiya
+
+- Org darajasidagi **moliya surati**: **kontraktlangan** (`contractedSom` — org ning `ACTIVE`
+  kontraktlaridagi barcha ulushlar yig'indisi, 6.4a `Σ == agreedAmount` invarianti bo'yicha),
+  **yig'ilgan** (`collectedSom` — `PAID` ulushlar yig'indisi), **qoldiq**
+  (`outstandingSom = kontraktlangan − yig'ilgan`), **muddati o'tgan** (`overdueSom` — `dueDate < now`
+  bo'lgan `PENDING` ulushlar), `scheduleCount` + `debtorCount`, **net komissiya**
+  (`commissionPaidSom = Σ COMMISSION_DEBIT − Σ COMMISSION_REFUND` org hamyoni legeridan, **≥ 0 ga
+  qisiladi** — har refund oldingi debitni teskari qaytargani uchun net konstruksiya bo'yicha
+  manfiy emas) va **org balansi** (`orgBalanceSom` — keshlangan hamyon balansi, **manfiy bo'lishi
+  mumkin** = qarz). `now = new Date()` chaqiruv boshida bir marta olinadi — shu bois xulosa + qarzdorlar
+  bitta bir xil onni ishlatadi (R2). Har `_sum.amountSom` `bigint | null` → `?? 0n` → `String(bigint)`;
+  `orgBalanceSom` boshida `-` ga ruxsat beradi (R6).
+
+### Qarzdorlar reestri (`GET /api/crm/debtors`) — muddati o'tgan ulushli kontraktlar
+
+- Org ning **≥ 1 muddati o'tgan ulushga ega `ACTIVE` kontraktlari**: har qatorda kontrakt raqami,
+  xaridor (ism + telefon), `overdueSom` (bu kontraktning muddati o'tgan ulushlari yig'indisi),
+  `oldestDueDate` (eng eski muddati o'tgan sana, ISO) va `remainingSom` (barcha `PAID`-emas ulushlar
+  yig'indisi — kelajakdagi `PENDING` ulushni ham hisoblaydi, shu bois `remainingSom ≥ overdueSom`).
+  **Eng eski muddat oldinda** (`oldestDueDate` bo'yicha o'sish tartibida) saralanadi.
+
+### Org-scoping + `ACTIVE`-filtri (load-bearing)
+
+- **Har agregat/count/findMany org-scoped** (R3): ulushlar `schedule.contract.orgId` orqali, leger +
+  balans `orgWallet.orgId` orqali — begona org ning qatorlari **hech qachon sanalmaydi/ko'rsatilmaydi**.
+- **Yig'im + qarzdor so'rovlari `contract.status === 'ACTIVE'` ni filtrlaydi** (R4): 6.3 da **bekor
+  qilingan** sotuv (unwind qilingan, xonadon qayta-sotiladigan, komissiyasi allaqachon
+  `COMMISSION_REFUND` orqali teskari qaytarilgan) kontraktlangan/muddati-o'tganni **shishirmaydi** va
+  **soxta qarzdor** sifatida chiqmaydi — yig'im tomonini komissiya tomonining REFUND netlashuvi bilan
+  **izchil** saqlaydi. To'lov-jadvalsiz (to'liq to'lov) sotuvlar yig'im metrikasidan tashqarida.
+
+### CRM "Moliya" dashboard sahifasi
+
+- **`FinanceService`** (provayder `DeveloperModule`da, `Prisma` in'ektsiya qiladi) +
+  **`FinanceController`** (`@Controller('crm')`, `JwtGuard` + `DeveloperGuard`, `orgIdOf(u.id)` ni
+  yechadi) — `finance`/`debtors` yo'llari mavjud crm route'lari bilan to'qnashmaydi (o'rnatilgan
+  ko'p-`@Controller('crm')` andozasi). DTO'lar `packages/shared`da (`FinanceSummarySchema` +
+  `DebtorRowSchema`); barcha summa **satr**.
+- **`apps/crm` "Moliya" sahifasi** (`pages/finance`, `features/finance/use-finance.ts` +
+  `cabinet-nav` tab): **xulosa kartalari** (Kontraktlangan · Yig'ilgan · Qoldiq · Muddati o'tgan —
+  `> 0` bo'lsa qizil · Net komissiya · Balans — manfiyda qizil "Qarz", 6.1 satr-belgisi idiomi bilan)
+  - **qarzdorlar jadvali** (kontrakt raqami `/contracts/:id` ga link / xaridor / qarz / eng eski
+    muddat / qoldiq, bo'sh holat "Qarzdor yo'q"). Pul `formatPriceSom(x, 'SALE')` bilan, UI matni
+    o'zbekcha, identifikatorlar/route/izohlar inglizcha.
+
+### Non-goals (nomlangan, qurilmagan)
+
+- Saqlangan **`OVERDUE`** ulush statusi + belgilash **croni** (6.4b muddati o'tganlikni o'qishda
+  hisoblaydi); qarzdorlarga **ommaviy SMS + vazifa biriktirish** (partnyorga bog'liq / og'ir);
+  **plan-vs-fakt hisoboti, sotuv maqsadlari, xodim KPI** (maqsadlar modelini talab qiladi; og'irroq);
+  legerdagi **`contractId`** (per-kontrakt komissiya atributsiyasi — org darajasidagi net komissiya
+  usiz ham hosil qilinadi); platforma-keng (moderatsiya) moliya ko'rinishi; jadvalsiz to'liq-to'lov
+  sotuvlari yig'im metrikasida; haqiqiy to'lov provayderlari.
+
+### Kelasi
+
+- **6.4b yakunlandi** (org moliya xulosasi + qarzdorlar reestri — mavjud jadvallar ustidan sof
+  read-only agregatsiya, `ACTIVE`-scoped + net komissiya + CRM "Moliya" dashboard, 2 org-scoped route,
+  sxema/migratsiya/cron/pul-yo'li o'zgarishisiz). **Bu bilan Phase 6 to'liq yakunlandi:** **6.1** org
+  hamyoni + moliyalashtirilgan komissiya → **6.2** kontraktlar → **6.3** komissiya clawback/unwind →
+  **6.4a** to'lov jadvali + to'lov qayd etish → **6.4b** qarzdorlar reestri + moliya dashboard.
+  **Keyingi: Phase 7 — o'sish qatlami** (platform-spec §Phase 7: showroom 3D · ipoteka kalkulyatori ·
+  xarita · reels · jurnal · mobil ilova · AI yordamchi · omnikanal inbox · telefoniya).
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
