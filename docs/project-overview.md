@@ -1103,8 +1103,8 @@ DateTime?`** (status=`CANCELLED` bilan yoziladi). Ikki `ALTER TYPE … ADD VALUE
   fixation ko'rinishi `Fixation → CANCELLED` ni aks ettiradi.
 - **Kontrakt detali** (`apps/crm`): status `ACTIVE` bo'lsa **"Bekor qilish"** boshqaruvi (majburiy
   `reason` inline maydoni) → `useCancelContract` mutatsiya `['crm-contracts']` + detal kalitini
-  invalidatsiya qiladi; `CANCELLED` bo'lsa qizil status nishoni + `cancelReason`/`cancelledAt`
-  ko'rsatiladi, imzo boshqaruvi yashiriladi.
+  invalidatsiya qiladi; `CANCELLED` bo'lsa kul-rang (ink-3) status nishoni + `cancelReason`/`cancelledAt`
+  ko'rsatiladi, imzo va bekor boshqaruvlari yashiriladi.
 
 ### Non-goals (Phase 6 ichida keyinroq)
 
