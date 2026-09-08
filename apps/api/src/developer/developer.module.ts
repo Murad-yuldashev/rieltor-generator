@@ -11,6 +11,8 @@ import { ContractService } from './contract.service';
 import { DeveloperController } from './developer.controller';
 import { DeveloperGuard } from './developer.guard';
 import { DeveloperService } from './developer.service';
+import { FinanceController } from './finance.controller';
+import { FinanceService } from './finance.service';
 import { PaymentScheduleController } from './payment-schedule.controller';
 import { PaymentScheduleService } from './payment-schedule.service';
 import { WalletModule } from '../wallet/wallet.module';
@@ -27,6 +29,7 @@ import { WalletModule } from '../wallet/wallet.module';
     OrgWalletController,
     ContractController,
     PaymentScheduleController,
+    FinanceController,
   ],
   providers: [
     DeveloperService,
@@ -35,6 +38,7 @@ import { WalletModule } from '../wallet/wallet.module';
     BookingExpiryCron,
     ContractService,
     PaymentScheduleService,
+    FinanceService,
   ],
   exports: [DeveloperGuard, DeveloperService],
 })
