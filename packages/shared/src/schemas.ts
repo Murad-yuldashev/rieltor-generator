@@ -1024,6 +1024,45 @@ export const ContractRowSchema = ContractSchema.extend({
 /** Body of the contract-cancel request (6.3 clawback) — the required reason. */
 export const ContractCancelSchema = z.object({ reason: z.string().min(1).max(500) });
 
+// --- Payment schedule (Phase 6.4a) — an installment plan attached to a contract. ---
+
+export const PaymentFrequencySchema = z.enum(['MONTHLY']);
+export const InstallmentStatusSchema = z.enum(['PENDING', 'PAID']);
+export const PaymentMethodSchema = z.enum(['STUB']);
+
+export const PaymentInstallmentSchema = z.object({
+  id: z.string(),
+  seq: z.number().int(),
+  dueDate: z.string(),
+  amountSom: z.string().regex(/^\d+$/),
+  status: InstallmentStatusSchema,
+  paidAt: z.string().nullable(),
+});
+
+/** A contract's schedule with its items + a paid/total summary. Named `…View` (like OrgWalletView)
+ *  to avoid colliding with the Prisma `PaymentSchedule` model name in the service. */
+export const PaymentScheduleViewSchema = z.object({
+  id: z.string(),
+  contractId: z.string(),
+  currency: CurrencySchema,
+  downPaymentSom: z.string().regex(/^\d+$/),
+  installmentCount: z.number().int(),
+  installmentSom: z.string().regex(/^\d+$/),
+  startDate: z.string(),
+  frequency: PaymentFrequencySchema,
+  installments: z.array(PaymentInstallmentSchema),
+  totalSom: z.string().regex(/^\d+$/),
+  paidSom: z.string().regex(/^\d+$/),
+  remainingSom: z.string().regex(/^\d+$/),
+});
+
+export const PaymentScheduleCreateSchema = z.object({
+  downPaymentSom: z.string().regex(/^\d+$/),
+  installmentCount: z.number().int().min(1).max(600),
+  startDate: z.string(),
+});
+export const PaymentRecordSchema = z.object({ note: z.string().max(500).optional() });
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -1139,3 +1178,10 @@ export type ContractStatus = z.infer<typeof ContractStatusSchema>;
 export type Contract = z.infer<typeof ContractSchema>;
 export type ContractRow = z.infer<typeof ContractRowSchema>;
 export type ContractCancel = z.infer<typeof ContractCancelSchema>;
+export type PaymentFrequency = z.infer<typeof PaymentFrequencySchema>;
+export type InstallmentStatus = z.infer<typeof InstallmentStatusSchema>;
+export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
+export type PaymentInstallment = z.infer<typeof PaymentInstallmentSchema>;
+export type PaymentScheduleView = z.infer<typeof PaymentScheduleViewSchema>;
+export type PaymentScheduleCreate = z.infer<typeof PaymentScheduleCreateSchema>;
+export type PaymentRecord = z.infer<typeof PaymentRecordSchema>;
