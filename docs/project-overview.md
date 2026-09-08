@@ -1120,6 +1120,93 @@ DateTime?`** (status=`CANCELLED` bilan yoziladi). Ikki `ALTER TYPE … ADD VALUE
   **6.3** komissiya clawback/unwind → **6.4** to'lov jadvallari/qarzdorlar/moliya-KPI + reconciliation
   dashboard. **Keyingi: 6.4 — to'lov jadvallari/qarzdorlar/moliya-KPI.**
 
+## 4u. Phase 6.4a — To'lov jadvali + to'lov qayd etish (2026-09-08)
+
+Phase 6 ning to'rtinchi qadami (6.4), ikkiga bo'lingan holda — **6.4a** kontraktga **ulushli to'lov
+jadvali** va unga qarshi **to'lovni qayd etish** beradi. 6.4a gacha sotuv (`Contract`, 6.2) faqat
+kelishilgan narxni yozar, xaridor uni vaqt bo'yicha qanday to'laganini kuzatib bo'lmasdi. 6.4a
+`Contract`ga ixtiyoriy **`PaymentSchedule`** (boshlang'ich to'lov + N ta teng oylik ulush) qo'shadi —
+quruvchi uni **`ACTIVE`** kontraktga o'zi biriktiradi — va bir ulushni **to'landi** deb belgilaganda
+**`Payment`** yozadigan stub yig'im mexanizmini kiritadi. Bu 6.4b qarzdorlar reestri + moliya-KPI
+dashboard quriladigan yig'im poydevori. To'lovlar 6.4a da **qo'lda** qayd etiladi — hamyon
+to'ldirishlari bilan bir xil test-stub yondashuvi; haqiqiy provayderlar (Click/Payme/Uzum) keyinroq.
+
+### Ma'lumot modeli (additiv migratsiya `phase_6_4a_payment_schedule`)
+
+- To'liq **additiv**: uch enum, uch yangi jadval, ikki virtual back-relation — mavjud jadval ustuni
+  o'zgarmaydi (`ALTER`/`DROP` yo'q, ma'lumot yozilmaydi). Enumlar: **`PaymentFrequency { MONTHLY }`**,
+  **`InstallmentStatus { PENDING | PAID }`** (`OVERDUE` 6.4b da qo'shiladi), **`PaymentMethod { STUB }`**
+  (haqiqiy provayderlar keyinroq). Jadvallar: **`PaymentSchedule`** (`contractId @unique` — kontraktga
+  **1:1**; `downPaymentSom`, `installmentCount`, `installmentSom`, `startDate`, `frequency`,
+  `currency`), **`PaymentInstallment`** (`{scheduleId, seq, dueDate, amountSom, status, paidAt}`,
+  `@@unique([scheduleId, seq])`), **`Payment`** (`installmentId @unique`, `amountSom`, `method`, `note?`,
+  `createdById`). Back-relationlar: `Contract.paymentSchedule PaymentSchedule?` +
+  `User.recordedPayments Payment[]`. DTO'lar `packages/shared`da (`PaymentScheduleViewSchema` +
+  `PaymentInstallmentSchema` + `PaymentScheduleCreateSchema` + `PaymentRecordSchema`); barcha summa
+  **satr** (`z.string().regex(/^\d+$/)`), `GET .../schedule` → view **yoki `null`**.
+
+### Ulush generatsiyasi (pul matematikasi) — `Σ ulushlar == agreedAmount`
+
+- Berilgan `agreedAmount = A` (null bo'lmasligi shart), `downPaymentSom = D`
+  (**`0 ≤ D < A`** — to'liq boshlang'ich to'lov jadval uchun hech narsa qoldirmaydi, shu bois `D == A`
+  **rad etiladi**; jadval faqat `D < A` bo'lganda yaratiladi), `installmentCount = N` (`1 ≤ N ≤ 600`),
+  `startDate = S`. `remaining = A − D` (doim `> 0`); `base = remaining / N` (**BigInt** butun bo'lish) —
+  `installmentSom` sifatida saqlanadi.
+- Oylik ulushlar seq `1..N`: `amountSom = base`, **oxirgisidan** (`seq N`) tashqari, u
+  `= remaining − base·(N−1)` — ya'ni **bo'lish qoldig'ini o'ziga singdiradi**. `D > 0` bo'lsa `seq 0`
+  ulushi (`amountSom = D`, `dueDate = S`). Har ulush muddati `S` ga `seq` to'liq oy qo'shib olinadi.
+  **Invariant:** `D + base·(N−1) + (remaining − base·(N−1)) = A` — ulushlar **aynan `A` ga** yig'iladi;
+  yaxlitlash pul yaratmaydi/yo'qotmaydi. Barcha arifmetika `BigInt`, pul uchdan-uchgacha satr.
+
+### Stub to'lov qayd etish (idempotent + gate qilingan)
+
+- Quruvchi bir ulushni **to'landi** deb belgilaganda `Payment` yoziladi (`method = STUB`,
+  `amountSom = installment.amountSom` — **to'liq summa**, 6.4a da qisman to'lov yo'q). `pay` ulush
+  **`PENDING`** va uning kontrakti **`ACTIVE`** bo'lishini talab qiladi, so'ng bitta `$transaction`
+  ichida **`PaymentInstallment PENDING→PAID updateMany count===1` darvozasi** (uy idempotentlik idiomi)
+  orqali flip qiladi; faqat `count === 1` bo'lganda `Payment` yaratiladi. Bir vaqtli/qayta otilgan
+  `pay` → `count===0` → toza **409** (`Payment.installmentId @unique` 500 emas), bitta `Payment`.
+  Ulush allaqachon to'langan bo'lsa → **409** (`Ulush allaqachon to'langan`). View `paidSom` (PAID
+  ulushlar yig'indisi) + `remainingSom` (`totalSom − paidSom`) bilan qaytadi.
+
+### API + CRM ko'rinishi
+
+- **`POST /api/crm/contracts/:id/schedule`** (yarat), **`GET .../schedule`** (o'qi, yo'q bo'lsa `null`),
+  **`DELETE .../schedule`** (o'chir), **`POST /api/crm/installments/:id/pay`** (to'landi) — barchasi
+  `JwtGuard` + `DeveloperGuard`, `PaymentScheduleService` (provayder `DeveloperModule`da, `Prisma` +
+  `DeveloperService` in'ektsiya qiladi). **Org-scoping**: kontrakt `{id, orgId}`, ulush
+  `{id, schedule:{contract:{orgId}}}` — begona/yo'q id → **404**. `remove` faqat **hech bir ulush PAID
+  emas** bo'lganda ishlaydi (aks holda 409 `To'lov qayd etilgan jadvalni o'chirib bo'lmaydi`). Jadval
+  yaratish `ACTIVE` + `agreedAmount != null` + mavjud jadval yo'qligini talab qiladi
+  (`contractId @unique` bir vaqtli ikki-yaratishni `P2002 → 409` bilan tutadi).
+- **Kontrakt detali** (`apps/crm`, `pages/contract-detail`): faqat kontrakt `ACTIVE` bo'lganda
+  ko'rinadigan **"To'lov jadvali"** bo'limi. Jadval **yo'q** bo'lsa — yaratish formasi (boshlang'ich
+  to'lov / ulushlar soni / boshlanish sanasi). Jadval **bor** bo'lsa — ulushlar jadvali (№ / muddat /
+  summa / holat nishoni + har `PENDING` qatorda **"To'landi"** tugmasi) + `paidSom`/`totalSom` progress
+  qatori + hali hech to'lov bo'lmasa **"Jadvalni o'chirish"** tugmasi. UI matni o'zbekcha, pul
+  `formatPriceSom(x, 'SALE')` bilan.
+
+### Non-goals (Phase 6 ichida keyinroq)
+
+- **OVERDUE** aniqlash (cron) + **qarzdorlar reestri** → **6.4b**; **moliya/KPI dashboard** +
+  komissiya reconciliation (clawbacklardan keyingi net; legerda `contractId`) → **6.4b**. Haqiqiy
+  to'lov-provayderlari (Click/Payme/Uzum/Apelsin/Paylov) / **QR** to'lov / ommaviy **SMS** / IP-telefoniya
+  (partnyorga bog'liq). Kechikkan to'lov **jarimalari** + jarima kechirimi; **qisman to'lovlar** (6.4a
+  har ulushga bitta to'liq summali `Payment` yozadi); yaratishdan keyin jadvalni tahrirlash (faqat
+  o'chirish, hali to'lanmaganda); ko'p-to'lov / to'lov-turi / filial atributsiyasi; xaridorga
+  qaragan to'lov ko'rinishi; sotuv bekor qilinganda (6.3 unwind) yig'ilgan ulushlarni avto-qaytarish —
+  bekor qilingan kontraktning jadvali oddiygina **inert** bo'ladi (R7: jadval/pay ops `ACTIVE` talab
+  qiladi, 6.4a hech qanday 6.3-cancel o'zgarishi kiritmaydi).
+
+### Kelasi
+
+- **6.4a yakunlandi** (ixtiyoriy `PaymentSchedule` + generatsiya `Σ == agreedAmount` + stub `Payment`
+  qayd etish + CRM jadval bo'limi + 4 org-scoped route). Phase 6 dekompozitsiyasi: **6.1** org hamyoni →
+  **6.2** kontraktlar → **6.3** komissiya clawback/unwind → **6.4** to'lov jadvallari/qarzdorlar/
+  moliya-KPI, o'zi ikkiga bo'lingan: **6.4a** to'lov jadvali + to'lov qayd etish → **6.4b** qarzdorlar +
+  moliya/KPI dashboard + reconciliation. **Keyingi: 6.4b — qarzdorlar reestri + moliya/KPI dashboard +
+  reconciliation.**
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`

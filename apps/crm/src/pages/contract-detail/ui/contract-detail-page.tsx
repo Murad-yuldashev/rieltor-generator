@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import type { ContractRow } from '@rieltor/shared';
+import type { ContractRow, InstallmentStatus } from '@rieltor/shared';
 import { formatPriceSom } from '@rieltor/shared';
 import {
   CONTRACT_STATUS_BADGE,
@@ -10,8 +10,26 @@ import {
   useContract,
   useSignContract,
 } from '@/features/contracts';
+import {
+  useCreateSchedule,
+  useDeleteSchedule,
+  usePayInstallment,
+  usePaymentSchedule,
+} from '@/features/payment-schedule';
 import { CabinetNav } from '@/widgets/cabinet-nav';
 import { cn } from '@/shared/lib/cn';
+
+/** Uzbek labels for an installment's status (UI copy only). */
+const INSTALLMENT_STATUS_LABELS: Record<InstallmentStatus, string> = {
+  PENDING: 'Kutilmoqda',
+  PAID: 'To’langan',
+};
+
+/** Badge tint per installment status. */
+const INSTALLMENT_STATUS_BADGE: Record<InstallmentStatus, string> = {
+  PENDING: 'bg-ink-3/10 text-ink-3',
+  PAID: 'bg-brand-green/10 text-brand-green',
+};
 
 const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
 
@@ -164,7 +182,196 @@ function ContractDetailView({ contract }: { contract: ContractRow }) {
           )}
         </div>
       )}
+
+      {isActive && <ScheduleSection contractId={contract.id} />}
     </>
+  );
+}
+
+/**
+ * Payment-schedule block for an active contract: a create form when no schedule
+ * exists yet, otherwise the installments table with pay + delete controls.
+ */
+function ScheduleSection({ contractId }: { contractId: string }) {
+  const { data, isPending, isError } = usePaymentSchedule(contractId);
+
+  if (isPending) {
+    return <p className="text-[15px] font-semibold text-ink-2">To'lov jadvali yuklanmoqda...</p>;
+  }
+  if (isError) {
+    return (
+      <p className="text-[13px] font-semibold text-brand-rose">
+        To'lov jadvalini yuklab bo'lmadi. Qayta urinib ko'ring.
+      </p>
+    );
+  }
+
+  return data === null ? (
+    <ScheduleCreateForm contractId={contractId} />
+  ) : (
+    <ScheduleTable contractId={contractId} schedule={data} />
+  );
+}
+
+/** The create form shown when a contract has no schedule yet. */
+function ScheduleCreateForm({ contractId }: { contractId: string }) {
+  const create = useCreateSchedule(contractId);
+  const [downPaymentSom, setDownPaymentSom] = useState('');
+  const [installmentCount, setInstallmentCount] = useState('');
+  const [startDate, setStartDate] = useState('');
+
+  const count = Number(installmentCount);
+  const canSubmit =
+    /^\d+$/.test(downPaymentSom) &&
+    Number.isInteger(count) &&
+    count >= 1 &&
+    /^\d{4}-\d{2}-\d{2}$/.test(startDate);
+
+  return (
+    <section className="flex flex-col gap-3 rounded-card bg-card p-5 shadow-card">
+      <p className="text-[15px] font-extrabold text-ink">To'lov jadvali</p>
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-semibold text-ink-2">Boshlang'ich to'lov (so'm)</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={downPaymentSom}
+          onChange={(event) => setDownPaymentSom(event.target.value)}
+          placeholder="0"
+          className="w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-[14px] text-ink"
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-semibold text-ink-2">Ulushlar soni</span>
+        <input
+          type="number"
+          min={1}
+          value={installmentCount}
+          onChange={(event) => setInstallmentCount(event.target.value)}
+          placeholder="12"
+          className="w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-[14px] text-ink"
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] font-semibold text-ink-2">Boshlanish sanasi</span>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(event) => setStartDate(event.target.value)}
+          className="w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-[14px] text-ink"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={() => create.mutate({ downPaymentSom, installmentCount: count, startDate })}
+        disabled={create.isPending || !canSubmit}
+        className="w-fit rounded-[12px] bg-accent px-5 py-2.5 text-[14px] font-extrabold text-white disabled:opacity-60"
+      >
+        {create.isPending ? '...' : 'Jadval yaratish'}
+      </button>
+      {create.isError && (
+        <p className="text-[13px] font-semibold text-brand-rose">
+          Jadval yaratishda xatolik. Qayta urinib ko'ring.
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** The installments table with a per-row pay button, a summary line, and a delete control. */
+function ScheduleTable({
+  contractId,
+  schedule,
+}: {
+  contractId: string;
+  schedule: NonNullable<ReturnType<typeof usePaymentSchedule>['data']>;
+}) {
+  const pay = usePayInstallment(contractId);
+  const remove = useDeleteSchedule(contractId);
+  // Delete is allowed only while nothing is paid. Gate on the installments (not `paidSom === '0'`,
+  // which would still show the button after a 0-som installment is paid and then 409 on click).
+  const canDelete = schedule.installments.every((it) => it.status !== 'PAID');
+
+  return (
+    <section className="flex flex-col gap-3 rounded-card bg-card p-5 shadow-card">
+      <p className="text-[15px] font-extrabold text-ink">To'lov jadvali</p>
+
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[14px]">
+          <thead>
+            <tr className="text-left text-[13px] font-semibold text-ink-2">
+              <th className="py-2 pr-3">№</th>
+              <th className="py-2 pr-3">Muddat</th>
+              <th className="py-2 pr-3">Summa</th>
+              <th className="py-2 pr-3">Holat</th>
+              <th className="py-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {schedule.installments.map((installment) => (
+              <tr key={installment.id} className="border-t border-line">
+                <td className="py-2 pr-3 text-ink">{installment.seq}</td>
+                <td className="py-2 pr-3 text-ink">{formatDate(installment.dueDate)}</td>
+                <td className="py-2 pr-3 text-ink">
+                  {formatPriceSom(installment.amountSom, 'SALE')}
+                </td>
+                <td className="py-2 pr-3">
+                  <span
+                    className={cn(
+                      'inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold',
+                      INSTALLMENT_STATUS_BADGE[installment.status],
+                    )}
+                  >
+                    {INSTALLMENT_STATUS_LABELS[installment.status]}
+                  </span>
+                </td>
+                <td className="py-2">
+                  {installment.status === 'PENDING' && (
+                    <button
+                      type="button"
+                      onClick={() => pay.mutate(installment.id)}
+                      disabled={pay.isPending}
+                      className="rounded-[10px] bg-accent px-3 py-1.5 text-[13px] font-extrabold text-white disabled:opacity-60"
+                    >
+                      To'landi
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-[14px] font-semibold text-ink-2">
+        To'langan: {formatPriceSom(schedule.paidSom, 'SALE')} /{' '}
+        {formatPriceSom(schedule.totalSom, 'SALE')}
+      </p>
+
+      {pay.isError && (
+        <p className="text-[13px] font-semibold text-brand-rose">
+          To'lovni belgilashda xatolik. Qayta urinib ko'ring.
+        </p>
+      )}
+
+      {canDelete && (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => remove.mutate()}
+            disabled={remove.isPending}
+            className="w-fit rounded-[12px] bg-brand-rose px-5 py-2.5 text-[14px] font-extrabold text-white disabled:opacity-60"
+          >
+            {remove.isPending ? '...' : "Jadvalni o'chirish"}
+          </button>
+          {remove.isError && (
+            <p className="text-[13px] font-semibold text-brand-rose">
+              Jadvalni o'chirishda xatolik. Qayta urinib ko'ring.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

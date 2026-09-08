@@ -11,6 +11,8 @@ import { ContractService } from './contract.service';
 import { DeveloperController } from './developer.controller';
 import { DeveloperGuard } from './developer.guard';
 import { DeveloperService } from './developer.service';
+import { PaymentScheduleController } from './payment-schedule.controller';
+import { PaymentScheduleService } from './payment-schedule.service';
 import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
@@ -24,8 +26,16 @@ import { WalletModule } from '../wallet/wallet.module';
     ComplexImageController,
     OrgWalletController,
     ContractController,
+    PaymentScheduleController,
   ],
-  providers: [DeveloperService, DeveloperGuard, BookingService, BookingExpiryCron, ContractService],
+  providers: [
+    DeveloperService,
+    DeveloperGuard,
+    BookingService,
+    BookingExpiryCron,
+    ContractService,
+    PaymentScheduleService,
+  ],
   exports: [DeveloperGuard, DeveloperService],
 })
 export class DeveloperModule {}
