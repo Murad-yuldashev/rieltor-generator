@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { processImage } from './images';
 import { makeAgentPlaceholder, makePlaceholder } from './placeholders';
-import { SEED_LISTINGS } from './seed-data';
+import { mortgagePrograms, SEED_LISTINGS } from './seed-data';
 
 const prisma = new PrismaClient();
 
@@ -70,6 +70,13 @@ async function seedAgent() {
 
 async function main() {
   await seedAgent();
+
+  // Illustrative mortgage programs (7.1). Count-guarded so a re-run does not
+  // duplicate — MortgageProgram has no natural unique key (id is a cuid).
+  if ((await prisma.mortgageProgram.count()) === 0) {
+    await prisma.mortgageProgram.createMany({ data: mortgagePrograms });
+    console.log(`${mortgagePrograms.length} ipoteka dasturi seed qilindi`);
+  }
 
   for (const listing of SEED_LISTINGS) {
     console.log(`${listing.id} seed qilinmoqda...`);

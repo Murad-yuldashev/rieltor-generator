@@ -817,3 +817,20 @@ model Payment {
   createdBy     User               @relation("RecordedPayments", fields: [createdById], references: [id], onDelete: Cascade)
   paidAt        DateTime           @default(now())
 }
+
+/// A bank's mortgage program (7.1). Seeded, read-only (real feeds + moderator CRUD deferred).
+/// Rates/percentages are basis points (Int); money is BigInt-as-string.
+model MortgageProgram {
+  id            String   @id @default(cuid())
+  bankName      String
+  programName   String
+  rateBps       Int // annual interest rate in bps (1800 = 18.00%)
+  maxTermMonths Int // e.g. 240 = 20 years
+  minDownBps    Int // min down payment in bps of price (1500 = 15%)
+  maxAmountSom  BigInt? // optional loan cap; null = uncapped
+  active        Boolean  @default(true)
+  position      Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([active, position])
+}

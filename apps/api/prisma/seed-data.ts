@@ -357,3 +357,77 @@ export const SEED_LISTINGS: SeedListing[] = [
     placeholderCount: 6,
   },
 ];
+
+export interface SeedMortgageProgram {
+  bankName: string;
+  programName: string;
+  /** Annual interest rate in basis points (1800 = 18.00%). */
+  rateBps: number;
+  /** Maximum term in months (240 = 20 years). */
+  maxTermMonths: number;
+  /** Minimum down payment in basis points of price (1500 = 15%). */
+  minDownBps: number;
+  /** Optional loan cap in so'm; omit for uncapped. */
+  maxAmountSom?: bigint;
+  position: number;
+}
+
+/**
+ * Illustrative sample mortgage programs for the 7.1 buyer calculator. These are
+ * NOT live bank rates — they are plausible placeholders with fictional program
+ * names. Real bank feeds (and moderator CRUD) are deferred to a later phase, so
+ * these rows must never be quoted as an actual offer.
+ */
+export const mortgagePrograms: SeedMortgageProgram[] = [
+  {
+    bankName: 'Namuna Bank',
+    programName: 'Yangi uy-joy',
+    rateBps: 1800,
+    maxTermMonths: 240,
+    minDownBps: 1500,
+    position: 1,
+  },
+  {
+    bankName: 'Namuna Bank',
+    programName: 'Ikkilamchi bozor',
+    rateBps: 2300,
+    maxTermMonths: 180,
+    minDownBps: 2500,
+    position: 2,
+  },
+  {
+    bankName: 'Ipoteka Bank (namuna)',
+    programName: 'Subsidiyalangan ipoteka',
+    rateBps: 700,
+    maxTermMonths: 300,
+    minDownBps: 1500,
+    maxAmountSom: 500_000_000n,
+    position: 3,
+  },
+  {
+    bankName: 'Poytaxt Bank (namuna)',
+    programName: 'Yosh oila',
+    rateBps: 1400,
+    maxTermMonths: 240,
+    minDownBps: 1000,
+    maxAmountSom: 700_000_000n,
+    position: 4,
+  },
+  {
+    bankName: 'Hamkor Bank (namuna)',
+    programName: 'Standart ipoteka',
+    rateBps: 2100,
+    maxTermMonths: 180,
+    minDownBps: 3000,
+    position: 5,
+  },
+  {
+    bankName: 'Milliy Bank (namuna)',
+    programName: 'Quruvchidan xarid',
+    rateBps: 1600,
+    maxTermMonths: 216,
+    minDownBps: 2000,
+    maxAmountSom: 1_000_000_000n,
+    position: 6,
+  },
+];
