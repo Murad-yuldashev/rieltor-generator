@@ -3,6 +3,8 @@ import type { Contract, ContractRow } from '@rieltor/shared';
 import { Prisma } from '@prisma/client';
 import type { Contract as ContractRecord } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
+import { OrgWalletService } from '../org-wallet/org-wallet.service';
 
 // NOTE: `ContractRecord` (the full Prisma row type) carries `agreedAmount: bigint | null`,
 // `signedAt: Date | null`, and the Prisma `Currency`/`ContractStatus` enums, which are the
@@ -31,7 +33,11 @@ function toContract(c: ContractRecord): Contract {
 
 @Injectable()
 export class ContractService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly wallet: WalletService,
+    private readonly orgWallet: OrgWalletService,
+  ) {}
 
   /**
    * Create the sale contract inside the caller's convert transaction (the count===1 gate).
@@ -127,5 +133,66 @@ export class ContractService {
       data: { signedAt: new Date() },
     });
     return toContract(signed);
+  }
+
+  /**
+   * Unwind a converted sale (6.3) — the inverse of the convert branch. Owns its tx.
+   * The Contract ACTIVE→CANCELLED updateMany is the single serialization gate (count===1),
+   * so a re-fired/concurrent cancel reverses nothing twice. Reverses money at the fixation's
+   * snapshot commissionSom (net-zero) and returns the inventory to a re-sellable state.
+   * Org-scoped: foreign/missing -> 404; already-CANCELLED -> 409.
+   */
+  async cancel(orgId: string, id: string, reason: string): Promise<ContractRow> {
+    return this.prisma.$transaction(async (tx) => {
+      const found = await tx.contract.findFirst({
+        where: { id, orgId },
+        select: { id: true, unitId: true, bookingId: true, fixationId: true },
+      });
+      if (!found) throw new NotFoundException('Shartnoma topilmadi');
+
+      const { count } = await tx.contract.updateMany({
+        where: { id, orgId, status: 'ACTIVE' },
+        data: { status: 'CANCELLED', cancelReason: reason, cancelledAt: new Date() },
+      });
+      if (count !== 1) throw new ConflictException('Shartnoma allaqachon bekor qilingan');
+
+      await tx.unit.update({ where: { id: found.unitId }, data: { status: 'AVAILABLE' } });
+      await tx.booking.update({
+        where: { id: found.bookingId },
+        data: { status: 'CANCELLED', cancelReason: reason },
+      });
+
+      if (found.fixationId) {
+        const fixation = await tx.fixation.findUnique({
+          where: { id: found.fixationId },
+          select: { id: true, realtorId: true, commissionSom: true },
+        });
+        if (fixation) {
+          await tx.fixation.update({
+            where: { id: fixation.id },
+            data: { status: 'CANCELLED', cancelledAt: new Date() },
+          });
+          const commissionSom = fixation.commissionSom ?? 0n;
+          if (commissionSom > 0n) {
+            await this.wallet.debitForClawback(tx, fixation.realtorId, commissionSom, {
+              fixationId: fixation.id,
+            });
+            await this.orgWallet.creditRefund(tx, orgId, commissionSom, {
+              fixationId: fixation.id,
+            });
+          }
+        }
+      }
+
+      const row = await tx.contract.findFirst({
+        where: { id, orgId },
+        include: { unit: { select: { number: true, building: { select: { name: true } } } } },
+      });
+      return {
+        ...toContract(row!),
+        unitNumber: row!.unit.number,
+        buildingName: row!.unit.building.name,
+      };
+    });
   }
 }
