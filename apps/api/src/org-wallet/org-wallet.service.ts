@@ -117,4 +117,32 @@ export class OrgWalletService {
       },
     });
   }
+
+  /**
+   * Refund a clawed-back commission to the org inside the caller's transaction (6.3).
+   * The reverse of `debitForCommission`: unconditional `increment`, no lock; the org
+   * wallet is credited back the exact snapshot amount. `amountSom` stored POSITIVE;
+   * the COMMISSION_REFUND type carries the credit direction.
+   */
+  async creditRefund(
+    tx: Prisma.TransactionClient,
+    orgId: string,
+    amountSom: bigint,
+    ref: { fixationId?: string },
+  ): Promise<void> {
+    const w = await tx.orgWallet.upsert({
+      where: { orgId },
+      create: { orgId, balanceSom: amountSom },
+      update: { balanceSom: { increment: amountSom } },
+      select: { id: true },
+    });
+    await tx.orgWalletTransaction.create({
+      data: {
+        orgWalletId: w.id,
+        type: 'COMMISSION_REFUND',
+        amountSom,
+        fixationId: ref.fixationId ?? null,
+      },
+    });
+  }
 }

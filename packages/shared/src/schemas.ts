@@ -663,7 +663,8 @@ export const WalletTxTypeSchema = z.enum([
 
 /**
  * One row in the wallet ledger. `amountSom` is BigInt-as-string; `leadId` is set
- * only for LEAD_CLAIM, `fixationId` only for COMMISSION.
+ * only for LEAD_CLAIM; `fixationId` is set for fixation-linked rows (COMMISSION,
+ * COMMISSION_CLAWBACK).
  */
 export const WalletTxRowSchema = z.object({
   id: z.string(),
@@ -966,8 +967,9 @@ export const OrgWalletTxTypeSchema = z.enum(['TOPUP', 'COMMISSION_DEBIT', 'COMMI
 
 /**
  * One row in the org-wallet ledger. `amountSom` is a non-negative BigInt-as-string —
- * direction is carried by `type` (TOPUP credits, COMMISSION_DEBIT debits). `fixationId`
- * is set only for a COMMISSION_DEBIT.
+ * direction is carried by `type` (TOPUP credits, COMMISSION_DEBIT debits,
+ * COMMISSION_REFUND credits). `fixationId` is set for fixation-linked rows
+ * (COMMISSION_DEBIT, COMMISSION_REFUND).
  */
 export const OrgWalletTxRowSchema = z.object({
   id: z.string(),
