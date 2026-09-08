@@ -85,14 +85,17 @@ export function WalletPage() {
             ) : (
               <ul className="flex flex-col gap-2">
                 {wallet.transactions.map((tx) => {
-                  // TOPUP and COMMISSION credit the wallet (green, +); LEAD_CLAIM debits it (−).
+                  // TOPUP and COMMISSION credit the wallet (green, +); LEAD_CLAIM and
+                  // COMMISSION_CLAWBACK debit it (−).
                   const isCredit = tx.type === 'TOPUP' || tx.type === 'COMMISSION';
                   const label =
                     tx.type === 'TOPUP'
                       ? "To'ldirish"
                       : tx.type === 'COMMISSION'
                         ? 'Komissiya'
-                        : 'Lid';
+                        : tx.type === 'COMMISSION_CLAWBACK'
+                          ? 'Komissiya qaytarib olindi'
+                          : 'Lid';
                   const amount = formatPriceSom(tx.amountSom, 'SALE');
                   return (
                     <li
@@ -112,7 +115,9 @@ export function WalletPage() {
                             : 'text-[15px] font-bold text-ink'
                         }
                       >
-                        {isCredit ? `+${amount}` : `−${amount} (lead)`}
+                        {isCredit
+                          ? `+${amount}`
+                          : `−${amount}${tx.type === 'LEAD_CLAIM' ? ' (lead)' : ''}`}
                       </p>
                     </li>
                   );

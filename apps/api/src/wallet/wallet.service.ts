@@ -139,4 +139,33 @@ export class WalletService {
       },
     });
   }
+
+  /**
+   * Reverse a paid commission inside the caller's transaction (6.3 clawback). The
+   * reverse of `credit`: unconditional — NO lock, NO balance guard, NEVER throws;
+   * the realtor wallet MAY go negative (the commission is owed back even if spent).
+   * Runs on the passed `tx`; `upsert`-self-ensures the wallet. `amountSom` stored
+   * POSITIVE; the COMMISSION_CLAWBACK type carries the debit direction.
+   */
+  async debitForClawback(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    amountSom: bigint,
+    ref: { fixationId?: string } = {},
+  ): Promise<void> {
+    const wallet = await tx.wallet.upsert({
+      where: { userId },
+      create: { userId, balanceSom: -amountSom },
+      update: { balanceSom: { decrement: amountSom } },
+      select: { id: true },
+    });
+    await tx.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'COMMISSION_CLAWBACK',
+        amountSom,
+        fixationId: ref.fixationId ?? null,
+      },
+    });
+  }
 }

@@ -443,6 +443,7 @@ enum WalletTxType {
   LEAD_CLAIM
   /// Balance credited when a fixation converts (cross-CRM commission payout).
   COMMISSION
+  COMMISSION_CLAWBACK // 6.3: realtor commission reversed when a sale is unwound (debit)
 }
 
 model WalletTransaction {
@@ -464,6 +465,7 @@ model WalletTransaction {
 enum OrgWalletTxType {
   TOPUP
   COMMISSION_DEBIT
+  COMMISSION_REFUND // 6.3: org commission-debit reversed when a sale is unwound (credit)
 }
 
 model OrgWallet {
@@ -735,6 +737,8 @@ model Contract {
   status       ContractStatus @default(ACTIVE)
   /// Stub online-signing (6.2): a developer action stamps this. Real JSHSHIR is deferred.
   signedAt     DateTime?
+  cancelReason String? // 6.3: why the sale was unwound (set with status=CANCELLED)
+  cancelledAt  DateTime? // 6.3: when the contract was cancelled
   createdAt    DateTime       @default(now())
 
   @@unique([orgId, number])

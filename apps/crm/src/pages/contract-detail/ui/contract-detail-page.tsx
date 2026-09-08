@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import type { ContractRow } from '@rieltor/shared';
 import { formatPriceSom } from '@rieltor/shared';
 import {
   CONTRACT_STATUS_BADGE,
   CONTRACT_STATUS_LABELS,
+  useCancelContract,
   useContract,
   useSignContract,
 } from '@/features/contracts';
@@ -46,10 +48,15 @@ export function ContractDetailPage() {
   );
 }
 
-/** The field list, status, and sign control for a loaded contract. */
+/** The field list, status, and sign/cancel controls for a loaded contract. */
 function ContractDetailView({ contract }: { contract: ContractRow }) {
   const sign = useSignContract(contract.id);
-  const canSign = contract.status === 'ACTIVE' && contract.signedAt === null;
+  const cancel = useCancelContract(contract.id);
+  const [reason, setReason] = useState('');
+  const isActive = contract.status === 'ACTIVE';
+  const isCancelled = contract.status === 'CANCELLED';
+  const canSign = isActive && contract.signedAt === null;
+  const trimmedReason = reason.trim();
 
   return (
     <>
@@ -93,6 +100,25 @@ function ContractDetailView({ contract }: { contract: ContractRow }) {
             formatDate(contract.signedAt)
           )}
         </Field>
+
+        {isCancelled && (
+          <>
+            <Field label="Bekor sababi">
+              {contract.cancelReason === null ? (
+                <span className="text-ink-3">—</span>
+              ) : (
+                contract.cancelReason
+              )}
+            </Field>
+            <Field label="Bekor qilingan sana">
+              {contract.cancelledAt === null ? (
+                <span className="text-ink-3">—</span>
+              ) : (
+                formatDate(contract.cancelledAt)
+              )}
+            </Field>
+          </>
+        )}
       </section>
 
       {canSign && (
@@ -108,6 +134,32 @@ function ContractDetailView({ contract }: { contract: ContractRow }) {
           {sign.isError && (
             <p className="text-[13px] font-semibold text-brand-rose">
               Imzolashda xatolik. Qayta urinib ko'ring.
+            </p>
+          )}
+        </div>
+      )}
+
+      {isActive && (
+        <div className="flex flex-col gap-2 rounded-card bg-card p-5 shadow-card">
+          <p className="text-[13px] font-semibold text-ink-2">Shartnomani bekor qilish</p>
+          <textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Bekor qilish sababi"
+            rows={3}
+            className="w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-[14px] text-ink"
+          />
+          <button
+            type="button"
+            onClick={() => cancel.mutate(trimmedReason)}
+            disabled={cancel.isPending || trimmedReason === ''}
+            className="w-fit rounded-[12px] bg-brand-rose px-5 py-2.5 text-[14px] font-extrabold text-white disabled:opacity-60"
+          >
+            {cancel.isPending ? '...' : 'Bekor qilish'}
+          </button>
+          {cancel.isError && (
+            <p className="text-[13px] font-semibold text-brand-rose">
+              Bekor qilishda xatolik. Qayta urinib ko'ring.
             </p>
           )}
         </div>

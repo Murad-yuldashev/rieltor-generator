@@ -107,12 +107,17 @@ export function WalletPage() {
 
 /**
  * One ledger row. `amountSom` is always non-negative; direction comes from `type` —
- * TOPUP is a green credit ("To'ldirish", +), COMMISSION_DEBIT a red debit
- * ("Komissiya to'lovi", −).
+ * TOPUP and COMMISSION_REFUND are green credits ("To'ldirish" / "Komissiya qaytarildi", +),
+ * COMMISSION_DEBIT a red debit ("Komissiya to'lovi", −).
  */
 function WalletTxItem({ tx }: { tx: OrgWalletTxRow }) {
-  const isCredit = tx.type === 'TOPUP';
-  const label = isCredit ? "To'ldirish" : "Komissiya to'lovi";
+  const isCredit = tx.type === 'TOPUP' || tx.type === 'COMMISSION_REFUND';
+  const label =
+    tx.type === 'TOPUP'
+      ? "To'ldirish"
+      : tx.type === 'COMMISSION_REFUND'
+        ? 'Komissiya qaytarildi'
+        : "Komissiya to'lovi";
   const amount = formatPriceSom(tx.amountSom, 'SALE');
 
   return (
