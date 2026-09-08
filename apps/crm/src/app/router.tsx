@@ -5,6 +5,7 @@ import { ComplexDetailPage } from '@/pages/complex-detail';
 import { ComplexesPage } from '@/pages/complexes';
 import { ContractDetailPage } from '@/pages/contract-detail';
 import { ContractsPage } from '@/pages/contracts';
+import { FinancePage } from '@/pages/finance';
 import { OrganizationPage } from '@/pages/organization';
 import { WalletPage } from '@/pages/wallet';
 import { DeveloperGuard } from './developer-guard';
@@ -32,6 +33,7 @@ export const router = createBrowserRouter(
             { path: 'contracts', element: <ContractsPage /> },
             { path: 'contracts/:id', element: <ContractDetailPage /> },
             { path: 'wallet', element: <WalletPage /> },
+            { path: 'finance', element: <FinancePage /> },
           ],
         },
       ],

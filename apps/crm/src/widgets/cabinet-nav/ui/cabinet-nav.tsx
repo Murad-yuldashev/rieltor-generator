@@ -9,6 +9,7 @@ const LINKS = [
   { to: '/bookings', label: 'Bandlar', end: false },
   { to: '/contracts', label: 'Shartnomalar', end: false },
   { to: '/wallet', label: 'Hisob', end: false },
+  { to: '/finance', label: 'Moliya', end: false },
 ];
 
 /** Persistent section switcher shown at the top of every cabinet page. */
