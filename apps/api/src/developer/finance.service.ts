@@ -9,7 +9,11 @@ export class FinanceService {
   /** Org finance snapshot. `now` is captured once so every metric agrees. */
   async summary(orgId: string): Promise<FinanceSummary> {
     const now = new Date();
-    const scoped = { schedule: { contract: { orgId } } }; // PaymentInstallment org scope
+    // Collection/debtor metrics count only LIVE (ACTIVE) contracts. A 6.3-cancelled sale is unwound
+    // (unit re-sellable) and its commission already reversed via COMMISSION_REFUND (netted below), so
+    // its lingering schedule must NOT inflate contracted/overdue/debtors or surface a phantom debtor.
+    const scoped = { schedule: { contract: { orgId, status: 'ACTIVE' as const } } };
+    const activeContract = { contract: { orgId, status: 'ACTIVE' as const } };
     const [contracted, collected, overdue, scheduleCount, debtorCount, debit, refund, wallet] =
       await Promise.all([
         this.prisma.paymentInstallment.aggregate({ where: scoped, _sum: { amountSom: true } }),
@@ -21,10 +25,10 @@ export class FinanceService {
           where: { ...scoped, status: 'PENDING', dueDate: { lt: now } },
           _sum: { amountSom: true },
         }),
-        this.prisma.paymentSchedule.count({ where: { contract: { orgId } } }),
+        this.prisma.paymentSchedule.count({ where: activeContract }),
         this.prisma.paymentSchedule.count({
           where: {
-            contract: { orgId },
+            ...activeContract,
             installments: { some: { status: 'PENDING', dueDate: { lt: now } } },
           },
         }),
@@ -62,7 +66,8 @@ export class FinanceService {
     const now = new Date();
     const schedules = await this.prisma.paymentSchedule.findMany({
       where: {
-        contract: { orgId },
+        // ACTIVE contracts only — a cancelled sale is not a live debt (see summary()).
+        contract: { orgId, status: 'ACTIVE' },
         installments: { some: { status: 'PENDING', dueDate: { lt: now } } },
       },
       include: {
