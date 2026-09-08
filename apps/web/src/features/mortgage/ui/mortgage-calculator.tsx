@@ -122,6 +122,7 @@ export function MortgageCalculator({ initialPriceSom }: Props) {
         <input
           type="number"
           inputMode="numeric"
+          aria-label="Boshlang'ich to'lov"
           min={0}
           value={downValue || ''}
           onChange={(e) => setDownValue(e.target.value ? Number(e.target.value) : 0)}
@@ -139,7 +140,7 @@ export function MortgageCalculator({ initialPriceSom }: Props) {
       </div>
 
       {/* Bank program picker */}
-      <div>
+      <label className="block">
         <span className={labelClass}>Bank dasturi</span>
         <select
           value={selectedProgramId ?? 'custom'}
@@ -157,7 +158,7 @@ export function MortgageCalculator({ initialPriceSom }: Props) {
             </option>
           ))}
         </select>
-      </div>
+      </label>
 
       {/* Rate + term */}
       <div className="grid grid-cols-2 gap-3">
