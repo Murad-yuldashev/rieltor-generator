@@ -1029,6 +1029,97 @@ buyerName, buyerPhone, agreedAmount BigInt?, currency, status, signedAt?, create
   clawback/reconciliation → **6.4** to'lov jadvallari/qarzdorlar/moliya-KPI. **Keyingi: 6.3 —
   clawback/reconciliation.**
 
+## 4t. Phase 6.3 — Komissiya clawback / sotuvni bekor qilish (unwind) (2026-09-05)
+
+Phase 6 ning uchinchi qadami: yopilgan sotuvga **bekor qilish (unwind) yo'li** beradi. 6.3 gacha
+`Booking.convert`→SOLD **terminal** edi — unit SOLD ga o'tar, fixation convert bo'lib rieltorga
+komissiya to'lanar va quruvchi org hamyoni debitlanar, `Contract` yaratilar edi, lekin bitim keyin
+buzilsa **hech narsani orqaga qaytarib bo'lmasdi**. 6.3 convert'ning aynan **teskarisi**ni kiritadi:
+quruvchi Contract'ni bekor qiladi (`POST /api/crm/contracts/:id/cancel {reason}`) — bu atomik
+ravishda rieltor komissiyasini **qaytarib oladi (clawback)**, org hamyonini **qaytaradi (refund)** va
+inventarni (unit / booking / fixation) qayta-sotiladigan holatga tiklaydi. Reversal platforma uchun
+**net-zero**: rieltorning `COMMISSION` krediti teng `COMMISSION_CLAWBACK` debiti bilan, org'ning
+`COMMISSION_DEBIT`i teng `COMMISSION_REFUND` krediti bilan — **convert paytida to'langan snapshot
+summada** — bekor qilinadi.
+
+### Ma'lumot modeli (additiv migratsiya `phase_6_3_clawback`)
+
+- Ikki enum qiymati + ikki nullable ustun, yangi jadval yo'q. **`WalletTxType += COMMISSION_CLAWBACK`**
+  (rieltor komissiyasi teskari — debit) va **`OrgWalletTxType += COMMISSION_REFUND`** (org
+  komissiya-debiti teskari — kredit). **`Contract += cancelReason String?`** + **`cancelledAt
+DateTime?`** (status=`CANCELLED` bilan yoziladi). Ikki `ALTER TYPE … ADD VALUE` (repoda additiv
+  isbotlangan) + ikki nullable `ADD COLUMN`; `DROP` yo'q, mavjud qatorlar qayta yozilmaydi.
+  `Booking.cancelReason` (5.2) va `Fixation.cancelledAt` (5.4) allaqachon mavjud — qayta ishlatiladi.
+  `ContractStatus.CANCELLED` (6.2 da zaxirada edi) endi yoziladi. DTO: `ContractSchema` ikki nullable
+  maydon oladi (`toContract` ikkalasini ham map qiladi — ACTIVE kontraktda `null`), `ContractCancelSchema
+= {reason: min(1).max(500)}`.
+
+### Bekor qilish (unwind) — `ContractService.cancel(orgId, id, reason)`
+
+- `ContractService` ikki dep in'ektsiya qiladi — `WalletService` + `OrgWalletService` (ikkalasi ham
+  `DeveloperModule`da allaqachon provayder; `BookingService` ham xuddi shunday oladi — **modul
+  o'zgarishi yo'q, forwardRef yo'q**). `cancel` o'z `$transaction`ini ochadi (convert branch'ining
+  teskarisi).
+- **`Contract` `ACTIVE→CANCELLED` `updateMany` `count===1` darvozasi** — yagona serializatsiya nuqtasi
+  (convert'ning booking darvozasining ko'zgusi). Qayta otilgan/bir vaqtli cancel `count===0` oladi →
+  **409**, shu bois clawback / refund / state reversal **ko'pi bilan bir marta** ishlaydi (idempotent).
+  Org-scoping: begona/yo'q id → **404**; faqat `ACTIVE` kontrakt bekor qilinadi (allaqachon `CANCELLED`
+  → 409).
+
+### Pul reversali (net-zero, snapshot summada)
+
+- Faqat fixation yo'lida: fixation `CANCELLED` ga o'tadi va `commissionSom > 0n` bo'lganda **rieltor
+  `WalletService.debitForClawback` bilan `−commissionSom`** debitlanadi, so'ng **org
+  `OrgWalletService.creditRefund` bilan `+commissionSom`** kreditlanadi — **convert paytida aynan
+  to'langan snapshot summa** (`Fixation.commissionSom`; **jonli unit narxi qayta o'qilmaydi** — u
+  o'zgargan bo'lishi mumkin). Rieltor `−commissionSom` + org `+commissionSom` = platforma neytralga
+  qaytadi.
+- **`debitForClawback`** (`credit` teskarisi) — **shartsiz**, manfiy-bardoshli, `upsert`-xavfsiz:
+  `FOR UPDATE` lock yo'q, 402 yo'q; komissiyani allaqachon sarflab bo'lgan rieltor **qarzga** (manfiy
+  balans) ketishi mumkin — bu 6.1 "org hamyoni manfiy ketishi mumkin" falsafasining aynan ko'zgusi.
+  **`creditRefund`** (`debitForCommission` teskarisi) — shartsiz `increment`. `amountSom` ikkala legerda
+  ham **musbat** saqlanadi; yo'nalishni tur ko'taradi.
+
+### To'liq inventar reversali
+
+- **`Unit → AVAILABLE`** (qayta-sotiladi), **`Booking → CANCELLED`** (+`cancelReason`),
+  **`Fixation → CANCELLED`** (+`cancelledAt`) — bekor qilingan fixation 5.4 yo'li bilan qayta-fixatsiya
+  qilinadi. **Walk-in kontrakt** (fixation yo'q) → qaytariladigan pul yo'q; faqat
+  `Contract/Booking → CANCELLED` + `Unit → AVAILABLE` (state-only reversal, hamyon qatorlari yozilmaydi).
+  `FixationStatus.CANCELLED` qayta ishlatiladi (yangi `REVERSED` qiymat emas), shu bois 5.4
+  qayta-fixatsiya yo'li o'zgarmaydi; reversal audit izi — `COMMISSION_CLAWBACK` leger qatori +
+  `contract.cancelReason`.
+
+### API + leger ko'rinishi
+
+- **`POST /api/crm/contracts/:id/cancel`** (`JwtGuard` + `DeveloperGuard`, org-scoped; body `{reason}`,
+  `min(1).max(500)`).
+- **CRM org hamyoni legeri** (`apps/crm` `pages/wallet`): `COMMISSION_REFUND` **yashil kredit**
+  ("Komissiya qaytarildi") sifatida — `isCredit` yangi turni qamraydi va CRM yorlig'i `tx.type` bo'yicha
+  (uch tomonlama) kalitlanadi, shunda top-up yorlig'i "To'ldirish" refund'ga sizib chiqmaydi.
+- **Rieltor hamyoni legeri** (`apps/agent`): `COMMISSION_CLAWBACK` **debit** ("Komissiya qaytarib
+  olindi") sifatida, ilovaning mavjud to'q-siyoh debit stili bilan (qizil emas); `LEAD_CLAIM` "(lead)"
+  summa suffiksi `tx.type === 'LEAD_CLAIM'` bilan gate qilinadi, clawback'ga sizib chiqmaydi. Rieltorning
+  fixation ko'rinishi `Fixation → CANCELLED` ni aks ettiradi.
+- **Kontrakt detali** (`apps/crm`): status `ACTIVE` bo'lsa **"Bekor qilish"** boshqaruvi (majburiy
+  `reason` inline maydoni) → `useCancelContract` mutatsiya `['crm-contracts']` + detal kalitini
+  invalidatsiya qiladi; `CANCELLED` bo'lsa qizil status nishoni + `cancelReason`/`cancelledAt`
+  ko'rsatiladi, imzo boshqaruvi yashiriladi.
+
+### Non-goals (Phase 6 ichida keyinroq)
+
+- Agregat **reconciliation dashboard** (org/platforma net komissiya, teskari-bitim reestri) → **6.4**
+  (moliya-KPI); ikki tomonlama / rieltor tasdiqi (6.3 faqat quruvchi tashabbusli); **qisman clawback**,
+  clawback dispute/appeal, refund oynalari/jarimalari; bo'shatilgan unitni marketplace'da **avto
+  qayta-listing**; teskari `Fixation.commissionSom` reset (5.4 qayta-fixatsiya masalasi).
+
+### Kelasi
+
+- **6.3 yakunlandi** (cancel-Contract unwind + clawback/refund primitivlar + to'liq inventar reversali +
+  CRM/agent leger ko'rinishi). Phase 6 dekompozitsiyasi: **6.1** org hamyoni → **6.2** kontraktlar →
+  **6.3** komissiya clawback/unwind → **6.4** to'lov jadvallari/qarzdorlar/moliya-KPI + reconciliation
+  dashboard. **Keyingi: 6.4 — to'lov jadvallari/qarzdorlar/moliya-KPI.**
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
