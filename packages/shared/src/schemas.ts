@@ -1065,6 +1065,29 @@ export const PaymentScheduleCreateSchema = z.object({
 });
 export const PaymentRecordSchema = z.object({ note: z.string().max(500).optional() });
 
+/** Org finance snapshot over the payment schedules + the org wallet ledger. */
+export const FinanceSummarySchema = z.object({
+  contractedSom: z.string().regex(/^\d+$/),
+  collectedSom: z.string().regex(/^\d+$/),
+  outstandingSom: z.string().regex(/^\d+$/),
+  overdueSom: z.string().regex(/^\d+$/),
+  scheduleCount: z.number().int(),
+  debtorCount: z.number().int(),
+  commissionPaidSom: z.string().regex(/^\d+$/),
+  orgBalanceSom: z.string().regex(/^-?\d+$/), // MAY be negative (debt)
+});
+
+/** One debtor row: a contract with overdue installments. */
+export const DebtorRowSchema = z.object({
+  contractId: z.string(),
+  contractNumber: z.string(),
+  buyerName: z.string(),
+  buyerPhone: z.string(),
+  overdueSom: z.string().regex(/^\d+$/),
+  oldestDueDate: z.string(),
+  remainingSom: z.string().regex(/^\d+$/),
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -1187,3 +1210,5 @@ export type PaymentInstallment = z.infer<typeof PaymentInstallmentSchema>;
 export type PaymentScheduleView = z.infer<typeof PaymentScheduleViewSchema>;
 export type PaymentScheduleCreate = z.infer<typeof PaymentScheduleCreateSchema>;
 export type PaymentRecord = z.infer<typeof PaymentRecordSchema>;
+export type FinanceSummary = z.infer<typeof FinanceSummarySchema>;
+export type DebtorRow = z.infer<typeof DebtorRowSchema>;
