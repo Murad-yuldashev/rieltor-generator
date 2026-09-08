@@ -37,3 +37,16 @@ export function useSignContract(id: string) {
     },
   });
 }
+
+/** Cancel/unwind a contract (`POST /api/crm/contracts/:id/cancel`) — reverses the sale. */
+export function useCancelContract(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reason: string) =>
+      apiPost(`/api/crm/contracts/${id}/cancel`, ContractRowSchema, { reason }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CONTRACTS_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: [...CONTRACTS_QUERY_KEY, id] });
+    },
+  });
+}
