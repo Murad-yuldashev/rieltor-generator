@@ -654,7 +654,12 @@ export const PresentationViewEventSchema = z.object({
 });
 
 /** Kind of a wallet ledger entry: a prepaid top-up, a lead-claim debit, or a fixation commission credit. */
-export const WalletTxTypeSchema = z.enum(['TOPUP', 'LEAD_CLAIM', 'COMMISSION']);
+export const WalletTxTypeSchema = z.enum([
+  'TOPUP',
+  'LEAD_CLAIM',
+  'COMMISSION',
+  'COMMISSION_CLAWBACK',
+]);
 
 /**
  * One row in the wallet ledger. `amountSom` is BigInt-as-string; `leadId` is set
@@ -957,7 +962,7 @@ export const FixateInputSchema = z.object({ unitId: z.string().optional() });
 // --- Organization wallet (Phase 6.1) — mirrors the realtor wallet, but org balance MAY be negative. ---
 
 /** Kind of an org-wallet ledger entry: a prepaid top-up, or a fixation-commission debit. */
-export const OrgWalletTxTypeSchema = z.enum(['TOPUP', 'COMMISSION_DEBIT']);
+export const OrgWalletTxTypeSchema = z.enum(['TOPUP', 'COMMISSION_DEBIT', 'COMMISSION_REFUND']);
 
 /**
  * One row in the org-wallet ledger. `amountSom` is a non-negative BigInt-as-string —
@@ -1003,6 +1008,8 @@ export const ContractSchema = z.object({
   currency: CurrencySchema,
   status: ContractStatusSchema,
   signedAt: z.string().nullable(),
+  cancelReason: z.string().nullable(),
+  cancelledAt: z.string().nullable(),
   createdAt: z.string(),
 });
 
@@ -1011,6 +1018,9 @@ export const ContractRowSchema = ContractSchema.extend({
   unitNumber: z.string(),
   buildingName: z.string(),
 });
+
+/** Body of the contract-cancel request (6.3 clawback) — the required reason. */
+export const ContractCancelSchema = z.object({ reason: z.string().min(1).max(500) });
 
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
@@ -1126,3 +1136,4 @@ export type Currency = z.infer<typeof CurrencySchema>;
 export type ContractStatus = z.infer<typeof ContractStatusSchema>;
 export type Contract = z.infer<typeof ContractSchema>;
 export type ContractRow = z.infer<typeof ContractRowSchema>;
+export type ContractCancel = z.infer<typeof ContractCancelSchema>;

@@ -23,6 +23,8 @@ function toContract(c: ContractRecord): Contract {
     currency: c.currency,
     status: c.status,
     signedAt: c.signedAt ? c.signedAt.toISOString() : null,
+    cancelReason: c.cancelReason,
+    cancelledAt: c.cancelledAt ? c.cancelledAt.toISOString() : null,
     createdAt: c.createdAt.toISOString(),
   };
 }
