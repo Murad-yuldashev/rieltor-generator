@@ -186,8 +186,15 @@ export class PaymentScheduleService {
       throw new ConflictException('Bekor qilingan shartnoma');
     if (inst.status !== 'PENDING') throw new ConflictException('Ulush allaqachon to’langan');
     await this.prisma.$transaction(async (tx) => {
+      // The gate also re-checks the contract is ACTIVE at update time (not just in the pre-read),
+      // so a pay racing a 6.3 cancel that flips the contract to CANCELLED loses (count===0 → 409)
+      // rather than recording a payment against an unwound sale.
       const { count } = await tx.paymentInstallment.updateMany({
-        where: { id: installmentId, status: 'PENDING' },
+        where: {
+          id: installmentId,
+          status: 'PENDING',
+          schedule: { contract: { status: 'ACTIVE' } },
+        },
         data: { status: 'PAID', paidAt: new Date() },
       });
       if (count !== 1) throw new ConflictException('Ulush allaqachon to’langan'); // lost the race

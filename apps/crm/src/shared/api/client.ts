@@ -114,8 +114,14 @@ async function request<T>(
 
   if (!schema) return undefined as T;
 
+  // Nest sends an EMPTY 200 body for a null/undefined controller return (e.g. a nullable GET
+  // with no row). response.json() would throw SyntaxError on that empty body before the schema
+  // runs, so read text and feed the schema `null` when empty — a `.nullable()` schema then
+  // resolves to null (and a non-nullable one still errors, as it should). Non-empty bodies parse
+  // exactly as response.json() did.
+  const text = await response.text();
   // parse() throws on a mismatched response, so the UI never works with malformed data.
-  return schema.parse(await response.json());
+  return schema.parse(text === '' ? null : JSON.parse(text));
 }
 
 export function apiGet<T>(path: string, schema: ZodType<T>): Promise<T> {
