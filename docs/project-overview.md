@@ -1204,8 +1204,8 @@ to'ldirishlari bilan bir xil test-stub yondashuvi; haqiqiy provayderlar (Click/P
   qayd etish + CRM jadval bo'limi + 4 org-scoped route). Phase 6 dekompozitsiyasi: **6.1** org hamyoni →
   **6.2** kontraktlar → **6.3** komissiya clawback/unwind → **6.4** to'lov jadvallari/qarzdorlar/
   moliya-KPI, o'zi ikkiga bo'lingan: **6.4a** to'lov jadvali + to'lov qayd etish → **6.4b** qarzdorlar +
-  moliya/KPI dashboard + reconciliation. **Keyingi: 6.4b — qarzdorlar reestri + moliya/KPI dashboard +
-  reconciliation.**
+  moliya dashboard. **Keyingi: 6.4b — qarzdorlar reestri + moliya dashboard** (plan-vs-fact/KPI +
+  contractId-on-ledger reconciliation keyinga qoldirildi — §4v Non-goal).
 
 ## 4v. Phase 6.4b — Qarzdorlar reestri + moliya dashboard (2026-09-08)
 
