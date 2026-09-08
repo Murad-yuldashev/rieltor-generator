@@ -14,6 +14,7 @@ import { HealthModule } from './health/health.module';
 import { LeadsModule } from './leads/leads.module';
 import { ListingsModule } from './listings/listings.module';
 import { ModerationDevelopersModule } from './moderation-developers/moderation-developers.module';
+import { MortgageModule } from './mortgage/mortgage.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrgWalletModule } from './org-wallet/org-wallet.module';
 import { PresentationsModule } from './presentations/presentations.module';
@@ -46,6 +47,7 @@ import { WalletModule } from './wallet/wallet.module';
     LeadsModule,
     ListingsModule,
     ModerationDevelopersModule,
+    MortgageModule,
     NotificationsModule,
     OrgWalletModule,
     PresentationsModule,
