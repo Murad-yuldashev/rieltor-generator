@@ -2,6 +2,7 @@ export {
   EMPTY_CRITERIA,
   MAX_ROOMS_BUCKET,
   SORT_LABELS,
+  aiCriteriaToCriteria,
   filterListings,
   hasAdvancedFilters,
 } from './model/criteria';

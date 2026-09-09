@@ -1,4 +1,4 @@
-import type { Deal, ListingSummary, ListingType } from '@rieltor/shared';
+import type { AiSearchCriteria, Deal, ListingSummary, ListingType } from '@rieltor/shared';
 
 /** "ALL" — every type; the rest are the listing types themselves. */
 export type TypeFilter = ListingType | 'ALL';
@@ -39,6 +39,23 @@ export const EMPTY_CRITERIA: Criteria = {
   areaMin: null,
   areaMax: null,
 };
+
+/** Merge a partial AI criteria (the /api/ai/search-parse DTO) into a full Criteria
+ *  (manual-search-equivalent). Called by the search page when seeded from AI navigation state. */
+export function aiCriteriaToCriteria(ai: AiSearchCriteria): Criteria {
+  return {
+    ...EMPTY_CRITERIA,
+    deal: ai.deal ?? EMPTY_CRITERIA.deal,
+    type: ai.type ?? EMPTY_CRITERIA.type,
+    sort: ai.sort ?? EMPTY_CRITERIA.sort,
+    search: ai.search ?? EMPTY_CRITERIA.search,
+    rooms: ai.rooms ?? null,
+    priceMin: ai.priceMin ?? null,
+    priceMax: ai.priceMax ?? null,
+    areaMin: ai.areaMin ?? null,
+    areaMax: ai.areaMax ?? null,
+  };
+}
 
 /** Is anything from the "Filtrlar" panel active, beyond the search box and chips? */
 export function hasAdvancedFilters(c: Criteria) {

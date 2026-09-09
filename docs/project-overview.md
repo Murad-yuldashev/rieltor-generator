@@ -1345,6 +1345,77 @@ reja: `docs/superpowers/plans/2026-09-08-phase-7.1-mortgage.md`.
   yo'l-xarita fazasi**) dekompozitsiyasi: **7.1** ipoteka kalkulyatori → **7.2** AI yordamchi →
   **7.3** xarita → **7.4** jurnal. **Keyingi: 7.2 — AI yordamchi.**
 
+## 4x. Phase 7.2 — AI yordamchi (2026-09-09)
+
+Bu yerda **Phase 7.2 — AI yordamchi** ochiladi: platformaning turli rollariga (xaridor, rieltor,
+quruvchi) **mavjud `GeminiService`ni qayta ishlatgan** AI yordamlarini qo'shadi — har bir bo'lak
+**qo'shimcha** (additiv) va **degradatsiyaga chidamli** (kalit yo'q / model uzilsa ilova avvalgidek
+ishlaydi). 7.2 to'rt bo'lakka dekompozitsiya qilingan: **7.2a** xaridor AI qidiruvi (tabiiy til →
+filtrlar) → **7.2b** rieltor lead-yordamchisi → **7.2c** rieltor AI-kontenti → **7.2d** quruvchi
+AI-tahlillari. Quyida **7.2a** bajarildi.
+
+### 7.2a — Xaridor AI qidiruvi (NL → filtrlar)
+
+Xaridor o'zbekcha erkin gap yozadi ("3 xonali Yunusobodda 1 mlrd gacha") va AI uni mavjud qidiruv
+**filtrlariga** aylantiradi — keyin **o'sha eski `/search` sahifasi** natijalarni chiqaradi. AI faqat
+**so'rovni parslaydi**, e'lonlarni **saralamaydi/tavsiya qilmaydi** — bu ishonch va soddalikni saqlaydi.
+Spec: `docs/superpowers/specs/2026-09-09-phase-7.2a-ai-search-design.md`,
+reja: `docs/superpowers/plans/2026-09-09-phase-7.2a-ai-search.md`.
+
+#### Ommaviy NL→filtr parslash endpointi
+
+- **`POST /api/ai/search-parse`** — **ommaviy, guard'siz** (xaridorga qaragan, `@Controller('objects')`
+  naqshi), mavjud **`GeminiService`ni qayta ishlatadi**. `@Controller('ai')` ostida bo'lsa-da,
+  himoyalangan `AiController`ning `/api/ai/description` yo'li bilan **to'qnashmaydi**.
+- **Modelga hech qachon ishonmaydi** — chiqishni qat'iy qatlamdan o'tkazadi: `JSON.parse`
+  `try/catch`da → Zod `safeParse` (o'ylab topilgan maydonlarni tashlaydi) → oraliqlarni **klamp**
+  qiladi (teskari `min>max` almashtiriladi). Yordamchi (`buildSearchResponse`) **hech qachon otmaydi**,
+  **500 bermaydi**.
+- **Degradatsiya** — kalit yo'q / model uzilsa / chiqish yaroqsiz (`null`, JSON emas, yaroqsiz tur,
+  bo'sh obyekt) bo'lsa → `fallback:true` + `criteria:{search:query}` (so'rov oddiy **kalit-so'z
+  qidiruvi**ga tushadi). Xatolik toast'i yo'q.
+- **Ommaviy chek** — kirish `AiSearchRequestSchema` bilan `≤200` belgiga cheklangan (oshsa
+  `ZodError → 400`), model chaqiruvi `maxTokens: 256` (public + pulli chaqiruv nazorati).
+- **Yagona manba DTO'lari** (shared): `AiSearchRequestSchema` (`query`, `≤200`) · `AiSearchCriteriaSchema`
+  (web klient `Criteria`ning qismi — `deal/type/rooms/priceMin/priceMax/areaMin/areaMax/sort/search`,
+  barchasi ixtiyoriy) · `AiSearchResponseSchema` (`fallback` / `criteria` / `summary`) — front va
+  back uchun bir manba.
+
+#### Parse-only, tahrirlanadigan chiplar (AI saralash yo'q)
+
+- Parslangan **to'liq** kriteriya `/search`ga **navigatsiya holati** (React Router `state`) orqali
+  o'tadi — query-string emas (u faqat `deal/type/search` tashiydi). Shu bilan AI qidiruv downstream'da
+  **qo'lda qidiruv bilan bir xil** (`aiCriteriaToCriteria` DTO'ni `EMPTY_CRITERIA`ga qo'shadi).
+- **Har bir parslangan maydon ko'rinadi va tahrirlanadi** — xona/tur allaqachon panelda; narx/maydon
+  oralig'i `FilterPanel`da seed qilinadi; hech bir yashirin filtr natijani jimgina cheklamaydi.
+- **"AI tushundi: …"** qatori (`buildSummary`) parslangan **har** maydonni sanaydi (bitim/tur/xona/narx
+  oralig'i/maydon oralig'i/saralash/erkin matn) — xaridor AI nimani tushunganini aniq ko'radi, hatto
+  panel input'i ko'rsata olmagan joyda ham. Chiplar tahrirlanadi (AI faqat parslaydi, tartiblamaydi).
+- **FSD chegara** — `features/ai-search` faqat **`shared`** import qiladi (raw DTO'ni nav holatida
+  tashiydi); `AiSearchCriteria`→`Criteria` mapper (`aiCriteriaToCriteria`) `features/listing-filters`da
+  yashaydi va uni **search sahifasi** chaqiradi (pages→feature ruxsat etilgan). AI qidiruv bar'i bosh
+  sahifa hero'siga qo'yildi.
+
+#### Ma'lumot modeli va env
+
+- **Yangi Prisma model YO'Q, yangi migratsiya YO'Q** — 7.2a sof web-feature + net-new shared DTO'lar +
+  bitta guard'siz endpoint (mavjud `GeminiService`ni qayta ishlatadi). **Yangi env qo'shilmagan**
+  (`GEMINI_API_KEY`/`GEMINI_MODEL` Phase 2.1'dayoq mavjud, ikkalasi ham ixtiyoriy). Marketplace, CRM va
+  boshqa oqimlarga **tegilmagan**.
+
+#### Non-goals (keyinroq)
+
+- **AI saralash/tavsiya/semantik qidiruv**; **server-tomon e'lon qidiruvi** (hozircha brauzer-tomon
+  filtr); **so'rov jurnali/analitika**; **saqlangan AI qidiruvlar**; **ko'p bosqichli chat**; **ovozli
+  kiritish**; **rate-limiting** (faqat kirish+token chegaralari bor). Bular ataylab keyinga qoldirilgan.
+
+### Kelasi
+
+- **7.2a yakunlandi** (ommaviy NL→filtr `POST /api/ai/search-parse` + qat'iy chiqish validatsiyasi +
+  degradatsiya + parse-only tahrirlanadigan chiplar + nav-holat orqali qayta ishlatilgan `/search`
+  sahifasi). Phase 7.2 (AI yordamchi) davomi: **7.2b** rieltor lead-yordamchisi → **7.2c** rieltor
+  AI-kontenti → **7.2d** quruvchi AI-tahlillari. So'ng **7.3** xarita → **7.4** jurnal.
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
