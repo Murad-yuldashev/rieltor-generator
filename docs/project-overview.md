@@ -1352,7 +1352,7 @@ quruvchi) **mavjud `GeminiService`ni qayta ishlatgan** AI yordamlarini qo'shadi 
 **qo'shimcha** (additiv) va **degradatsiyaga chidamli** (kalit yo'q / model uzilsa ilova avvalgidek
 ishlaydi). 7.2 to'rt bo'lakka dekompozitsiya qilingan: **7.2a** xaridor AI qidiruvi (tabiiy til →
 filtrlar) → **7.2b** rieltor lead-yordamchisi → **7.2c** rieltor AI-kontenti → **7.2d** quruvchi
-AI-tahlillari. Quyida **7.2a** bajarildi.
+AI-tahlillari. Quyida **7.2a** va **7.2b** bajarildi.
 
 ### 7.2a — Xaridor AI qidiruvi (NL → filtrlar)
 
@@ -1409,12 +1409,72 @@ reja: `docs/superpowers/plans/2026-09-09-phase-7.2a-ai-search.md`.
   filtr); **so'rov jurnali/analitika**; **saqlangan AI qidiruvlar**; **ko'p bosqichli chat**; **ovozli
   kiritish**; **rate-limiting** (faqat kirish+token chegaralari bor). Bular ataylab keyinga qoldirilgan.
 
+### 7.2b — Rieltor lead-yordamchisi
+
+Rieltor **o'zi olgan** (claimed) lead ustida bir bosishda AI yordam oladi: **keyingi qadam** tavsiyasi
+va mijozga yuboriladigan **nusxalanadigan murojaat namunasi**. AI faqat **matn tayyorlaydi** — hech
+narsa yubormaydi, hech narsa saqlamaydi (draft-only, stateless); rieltor namunani nusxalab o'zi
+jo'natadi. Bo'lak **mavjud `GeminiService`ni qayta ishlatadi** va **degradatsiyaga chidamli** — kalit
+yo'q / model uzilsa ham har doim ishlaydigan namuna qaytadi. Spec:
+`docs/superpowers/specs/2026-09-09-phase-7.2b-lead-assistant-design.md`,
+reja: `docs/superpowers/plans/2026-09-09-phase-7.2b-lead-assistant.md`.
+
+#### Himoyalangan, egalik-tekshiruvli assist endpointi
+
+- **`POST /api/leads/:id/assist`** — mavjud `@Controller('leads')` ostida (**`JwtGuard` + `RealtorGuard`**,
+  jonli obuna). Yo'l `GeminiService`ni qayta ishlatadi, xaridor ma'lumotini himoyalaydi.
+- **Egalik oldin, holat keyin** (4.3 `setOutcome` naqshini aks ettiradi): `claimedById !== caller` →
+  **403** (bu **ham** boshqa rieltorning lead'ini, **ham** umuman olinmagan lead'ni qamrab oladi —
+  olinmagan lead'ning `claimedById` `null`), **so'ng** `outcomeStage == null` → **409** (himoya
+  shoxobchasi — HTTP orqali yetib bo'lmaydi, chunki `claim()` `claimedById` + `outcomeStage`ni bitta
+  tranzaksiyada qo'yadi; faqat qo'lda seed qilingan qator unga tegadi), topilmasa → **404**. Rieltor
+  **hech qachon** boshqa rieltorning yoki olinmagan lead'ning yordamini (mijoz kontaktini) ololmaydi.
+
+#### Gibrid: doim ishlaydigan shablon + qat'iy chiqish validatsiyasi
+
+- **Sof shablon** (`buildAssistTemplate`) lead'ning **strukturaviy maydonlaridan** (bitim / tur / tuman /
+  xona / byudjet / izoh) + voronka bosqichidan **doim** hisoblanadi — kalit bo'lmasa ham foydali namuna
+  chiqadi. Shablon matnida hech qachon literal `"undefined"`/`"null"` bo'lmaydi.
+- **Modelga hech qachon ishonmaydi** — kalit bo'lsa Gemini boyitadi, lekin chiqish qat'iy yordamchidan
+  (`parseAssist`) o'tadi: `JSON.parse` `try/catch`da → Zod bilan `{nextAction, message}` validatsiya →
+  bo'lmasa **shablonga** tushadi (`ai:false`), hech qachon otmaydi. Yaroqli chiqish → `ai:true` (trimlangan).
+- Kalit yo'q / model uzilishida ham **503 bermaydi** — har doim shablon bilan `ai:false` qaytadi.
+  Javob shakli **yagona manba** shared DTO — **`LeadAssistResponseSchema`** `{ai, nextAction, message}`.
+
+#### Keyingi qadam + nusxalanadigan namuna (apps/agent)
+
+- **`apps/agent`** (rieltor kabineti) leads sahifasida har bir **olingan** lead kartasida **"AI yordam"**
+  tugmasi — bosilganda **keyingi qadam** matni + **nusxalanadigan murojaat namunasi** (readonly
+  `textarea` + **"Nusxa olish"** tugmasi, presentations naqshi: clipboard `try/catch`da + "Nusxa olindi"
+  toggle). `ai:false` holatida namuna **"(namuna)"** yorlig'i bilan ko'rsatiladi.
+- **FSD chegara** — `features/lead-assist` faqat **`shared`** + `@/shared/*` import qiladi (hech qachon
+  `@/features/*`); panel `leadId`ni **prop** sifatida oladi, leads **sahifasi** uni kompozitsiya qiladi.
+  `useLeadAssist` tarmoq/HTTP xatolarini ushlaydi → klient-tomon fallback (hech qachon ushlanmagan reject
+  bo'lmaydi).
+
+#### Ma'lumot modeli va env
+
+- **Yangi Prisma model YO'Q, yangi migratsiya YO'Q** — 7.2b **stateless**: assist hech narsa saqlamaydi,
+  har chaqiruv lead'ning joriy maydonlaridan qayta hisoblanadi. Net-new shared DTO + bitta himoyalangan
+  endpoint + `apps/agent` feature. **Yangi env qo'shilmagan** (`GEMINI_API_KEY`/`GEMINI_MODEL` Phase
+  2.1'dayoq mavjud, ixtiyoriy). Marketplace, CRM, pul-yo'li va boshqa lead yo'llariga **tegilmagan**.
+
+#### Non-goals (keyinroq)
+
+- **Xabarni haqiqatan YUBORISH** (Telegram/SMS/qo'ng'iroq integratsiyasi — hozircha draft-only); lead
+  uchun **AI e'lon mosligi**; **ko'p bosqichli chat**; **saqlangan assist/xabar tarixi**; **ohang/uzunlik
+  nazorati**; **ovozli kiritish**; assist'ni **saqlash**. Shuningdek Phase 7.2 boshqa bo'laklari: **7.2c**
+  rieltor AI-kontenti → **7.2d** quruvchi AI-tahlillari. Bular ataylab keyinga qoldirilgan.
+
 ### Kelasi
 
 - **7.2a yakunlandi** (ommaviy NL→filtr `POST /api/ai/search-parse` + qat'iy chiqish validatsiyasi +
   degradatsiya + parse-only tahrirlanadigan chiplar + nav-holat orqali qayta ishlatilgan `/search`
-  sahifasi). Phase 7.2 (AI yordamchi) davomi: **7.2b** rieltor lead-yordamchisi → **7.2c** rieltor
-  AI-kontenti → **7.2d** quruvchi AI-tahlillari. So'ng **7.3** xarita → **7.4** jurnal.
+  sahifasi).
+- **7.2b yakunlandi** (himoyalangan, egalik-tekshiruvli `POST /api/leads/:id/assist` + gibrid doim
+  ishlaydigan shablon + qat'iy chiqish validatsiyasi + `apps/agent` olingan-lead kartasida keyingi qadam +
+  nusxalanadigan murojaat namunasi; draft-only, stateless). Phase 7.2 (AI yordamchi) davomi: **7.2c**
+  rieltor AI-kontenti → **7.2d** quruvchi AI-tahlillari. So'ng **7.3** xarita → **7.4** jurnal.
 
 ## 5. Texnik stack
 
