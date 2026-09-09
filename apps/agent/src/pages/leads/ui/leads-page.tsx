@@ -8,6 +8,7 @@ import {
   type LeadStats,
 } from '@rieltor/shared';
 import { LISTING_TYPE_META } from '@/entities/listing';
+import { LeadAssistPanel } from '@/features/lead-assist';
 import { useMyLeads, useLeadStats, useSetOutcome, useFixate, useUnfixate } from '@/features/leads';
 import { ApiError } from '@/shared/api/client';
 import { Icon } from '@/shared/ui/icon';
@@ -257,6 +258,8 @@ function LeadCard({ lead }: { lead: Lead }) {
           Saqlab bo'lmadi. Qayta urinib ko'ring.
         </p>
       )}
+
+      <LeadAssistPanel leadId={lead.id} />
     </li>
   );
 }
