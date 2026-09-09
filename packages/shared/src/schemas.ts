@@ -454,6 +454,13 @@ export const LeadStatsSchema = z.object({
   lostReasons: LeadLostReasonCountsSchema,
 });
 
+/** The realtor lead-assistant result. ai=true → Gemini-authored; ai=false → structured template. */
+export const LeadAssistResponseSchema = z.object({
+  ai: z.boolean(),
+  nextAction: z.string(), // short Uzbek next-step recommendation
+  message: z.string(), // a copyable first-outreach draft (Uzbek)
+});
+
 /** Budget bucket a lead falls into, derived from `priceMaxSom`. */
 export const BudgetTierSchema = z.enum(['NONE', 'LOW', 'MID', 'HIGH']);
 
@@ -1165,6 +1172,7 @@ export type LeadOutcomeUpdate = z.infer<typeof LeadOutcomeUpdateSchema>;
 export type LeadFunnel = z.infer<typeof LeadFunnelSchema>;
 export type LeadLostReasonCounts = z.infer<typeof LeadLostReasonCountsSchema>;
 export type LeadStats = z.infer<typeof LeadStatsSchema>;
+export type LeadAssistResponse = z.infer<typeof LeadAssistResponseSchema>;
 export type BudgetTier = z.infer<typeof BudgetTierSchema>;
 export type ConversionSegment = z.infer<typeof ConversionSegmentSchema>;
 export type PlatformConversion = z.infer<typeof PlatformConversionSchema>;

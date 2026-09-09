@@ -4,6 +4,7 @@ import { RealtorGuard } from '../agent/realtor.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
 import { FixationService } from './fixation.service';
+import { LeadAssistService } from './lead-assist.service';
 import { LeadsService } from './leads.service';
 
 @Controller('leads')
@@ -12,6 +13,7 @@ export class LeadsController {
   constructor(
     private readonly leads: LeadsService,
     private readonly fixations: FixationService,
+    private readonly leadAssist: LeadAssistService,
   ) {}
 
   @Get()
@@ -56,5 +58,10 @@ export class LeadsController {
   @Delete(':id/fixate')
   unfixate(@Param('id') id: string, @CurrentUser() u: { id: string }) {
     return this.fixations.cancelFixation(u.id, id);
+  }
+
+  @Post(':id/assist')
+  assist(@Param('id') id: string, @CurrentUser() u: { id: string }) {
+    return this.leadAssist.assist(id, u.id);
   }
 }
