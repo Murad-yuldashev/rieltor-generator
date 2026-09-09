@@ -21,9 +21,13 @@ function Label({ children }: { children: string }) {
 
 function RangeInput({
   placeholder,
+  defaultText,
   onChange,
 }: {
   placeholder: string;
+  // Uncontrolled initial value (raw digits) so an AI-seeded price/area is visible
+  // and editable, while free-text typing ("500 mln") is left untouched.
+  defaultText?: string;
   onChange: (raw: string) => void;
 }) {
   return (
@@ -32,6 +36,7 @@ function RangeInput({
       inputMode="decimal"
       placeholder={placeholder}
       aria-label={placeholder}
+      defaultValue={defaultText}
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-xl bg-surface px-3.5 py-3 text-sm font-semibold outline-none placeholder:font-medium placeholder:text-ink-3 focus:ring-2 focus:ring-accent/40"
     />
@@ -48,10 +53,12 @@ export function FilterPanel({ value, onChange }: Props) {
         {/* "500 mln" / "1,5 mlrd" and raw digits are all understood. */}
         <RangeInput
           placeholder="dan · 500 mln"
+          defaultText={value.priceMin != null ? String(value.priceMin) : undefined}
           onChange={(raw) => patch({ priceMin: parsePriceInput(raw) })}
         />
         <RangeInput
           placeholder="gacha · 1,5 mlrd"
+          defaultText={value.priceMax != null ? String(value.priceMax) : undefined}
           onChange={(raw) => patch({ priceMax: parsePriceInput(raw) })}
         />
       </div>
@@ -79,10 +86,12 @@ export function FilterPanel({ value, onChange }: Props) {
       <div className="mb-4 flex gap-2">
         <RangeInput
           placeholder="dan · 40"
+          defaultText={value.areaMin != null ? String(value.areaMin) : undefined}
           onChange={(raw) => patch({ areaMin: parseNumberInput(raw) })}
         />
         <RangeInput
           placeholder="gacha · 120"
+          defaultText={value.areaMax != null ? String(value.areaMax) : undefined}
           onChange={(raw) => patch({ areaMax: parseNumberInput(raw) })}
         />
       </div>

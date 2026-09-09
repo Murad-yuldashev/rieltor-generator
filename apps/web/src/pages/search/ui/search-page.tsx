@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router';
-import type { ListingSummary } from '@rieltor/shared';
+import { useLocation, useSearchParams } from 'react-router';
+import type { AiSearchCriteria, ListingSummary } from '@rieltor/shared';
 import { ListingCard, ListingResultRow, listingsQuery } from '@/entities/listing';
 import { FavoriteButton } from '@/features/favorites';
 import {
   EMPTY_CRITERIA,
   FilterPanel,
+  aiCriteriaToCriteria,
   filterListings,
   parseSearchQuery,
   type Criteria,
@@ -41,11 +42,22 @@ export function SearchPage() {
   // ?deal=...&type=...&search=... — read once on mount, same as any other
   // deep link. Editing the filters afterwards no longer touches the URL.
   const [searchParams] = useSearchParams();
+  // The AI search bar (features/ai-search) navigates here carrying the RAW
+  // AiSearchCriteria DTO in navigation state. It is a higher-priority seed than
+  // the URL parse — converted here (pages may import listing-filters).
+  const location = useLocation();
+  const navState =
+    location.state && typeof location.state === 'object'
+      ? (location.state as { aiCriteria?: AiSearchCriteria; aiSummary?: unknown })
+      : null;
+  const aiCriteria = navState?.aiCriteria;
+  const aiSummary = typeof navState?.aiSummary === 'string' ? navState.aiSummary : '';
 
-  const [criteria, setCriteria] = useState<Criteria>(() => ({
-    ...EMPTY_CRITERIA,
-    ...parseSearchQuery(searchParams.toString()),
-  }));
+  const [criteria, setCriteria] = useState<Criteria>(() =>
+    aiCriteria
+      ? aiCriteriaToCriteria(aiCriteria)
+      : { ...EMPTY_CRITERIA, ...parseSearchQuery(searchParams.toString()) },
+  );
   // Uncontrolled <input>s hold the price/area text, so "clear" rebuilds the
   // panel under a fresh key instead of tracking every raw string in state.
   const [panelKey, setPanelKey] = useState(0);
@@ -53,7 +65,9 @@ export function SearchPage() {
   // filter form, not as a listing feed. A restored saved search is the one
   // exception: it should show results right away, same as if the user had
   // just pressed "Natijalarni ko'rsatish".
-  const [submitted, setSubmitted] = useState(() => searchParams.toString().length > 0);
+  const [submitted, setSubmitted] = useState(
+    () => aiCriteria != null || searchParams.toString().length > 0,
+  );
   const [limit, setLimit] = useState(PAGE_SIZE);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -170,6 +184,11 @@ export function SearchPage() {
         )}
 
         <SectionCard title="Filtrlar">
+          {aiSummary && (
+            <p className="mb-3 rounded-xl bg-accent-soft px-3.5 py-2.5 text-[13px] font-semibold text-accent">
+              AI tushundi: {aiSummary}
+            </p>
+          )}
           <FilterPanel key={panelKey} value={criteria} onChange={setCriteria} />
 
           <button

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { ListingCard, listingsQuery } from '@/entities/listing';
 import { useSession } from '@/entities/session';
+import { AiSearchBar } from '@/features/ai-search';
 import { LoginModal } from '@/features/auth';
 import { FavoriteButton } from '@/features/favorites';
 import {
@@ -88,6 +89,10 @@ export function HomePage() {
   return (
     <main>
       <ListingHero search={filters.search} onSearchChange={resetPaging(filters.setSearch)} />
+
+      {/* Natural-language entry into the marketplace — parses to filters and hands
+          off to /search. Additive beside the hero's plain keyword box. */}
+      <AiSearchBar />
 
       {/* "Qidiryapman" board entry — sits beside the valuation hook as the other
           seller-facing way in: browse buyers' reverse requests. Renders the same
