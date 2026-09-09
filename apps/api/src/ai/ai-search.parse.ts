@@ -31,6 +31,10 @@ function clampRanges(c: AiSearchCriteria): AiSearchCriteria {
   if (out.areaMin != null && out.areaMax != null && out.areaMin > out.areaMax) {
     [out.areaMin, out.areaMax] = [out.areaMax, out.areaMin];
   }
+  // The client's room filter has buckets 1..5 (5 = "5 or more"), and buildSummary/the FilterPanel
+  // assume that convention. The schema admits 0 and 6..20, which no bucket can show — clamp into
+  // [1, 5] so a seeded room filter always lights the matching bucket and matches the summary.
+  if (out.rooms != null) out.rooms = Math.min(Math.max(out.rooms, 1), 5);
   return out;
 }
 
