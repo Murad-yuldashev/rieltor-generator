@@ -43,6 +43,7 @@ export function LeadAssistPanel({ leadId }: { leadId: string }) {
           </p>
           <textarea
             readOnly
+            aria-label="Mijozga xabar"
             value={data.message}
             rows={4}
             className="mt-1.5 w-full resize-none rounded-[12px] border border-line bg-card px-3.5 py-2.5 text-[14px] font-medium text-ink outline-none"
