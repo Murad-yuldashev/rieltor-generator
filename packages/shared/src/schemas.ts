@@ -230,6 +230,33 @@ export const AiDescriptionRequestSchema = z.object({
 /** Response of `POST /api/ai/description` — one generated field, kept in shared so web and API agree. */
 export const AiDescriptionResultSchema = z.object({ description: z.string() });
 
+/** The request body for the buyer AI search parser. */
+export const AiSearchRequestSchema = z.object({
+  query: z.string().trim().min(1).max(200), // cap: public + paid model call
+});
+
+/** What the AI parser may fill — a partial of the web client's Criteria (client merges into EMPTY_CRITERIA).
+ *  deal/type/sort are enums; rooms/price/area are clamped numbers; search is free text
+ *  (district + landmark + anything unstructured, matched against title+district+landmark). */
+export const AiSearchCriteriaSchema = z.object({
+  deal: DealSchema.optional(),
+  type: ListingTypeSchema.optional(),
+  rooms: z.number().int().min(0).max(20).nullable().optional(), // 5 = "5+"
+  priceMin: z.number().int().min(0).max(1_000_000_000_000).nullable().optional(), // som
+  priceMax: z.number().int().min(0).max(1_000_000_000_000).nullable().optional(), // som
+  areaMin: z.number().int().min(0).max(100_000).nullable().optional(), // m²
+  areaMax: z.number().int().min(0).max(100_000).nullable().optional(), // m²
+  sort: z.enum(['NEW', 'CHEAP', 'EXPENSIVE']).optional(),
+  search: z.string().max(200).optional(),
+});
+
+/** The parser response. fallback=true → AI unavailable/unusable; run a plain keyword search. */
+export const AiSearchResponseSchema = z.object({
+  fallback: z.boolean(),
+  criteria: AiSearchCriteriaSchema,
+  summary: z.string(),
+});
+
 /** Modeling assumption for the price-history trailing curve: ~0.8%/month (~10%/yr). */
 export const MODELED_MONTHLY_GROWTH = 0.008;
 
@@ -1118,6 +1145,9 @@ export type ValuationRequest = z.infer<typeof ValuationRequestSchema>;
 export type ValuationResult = z.infer<typeof ValuationResultSchema>;
 export type AiDescriptionRequest = z.infer<typeof AiDescriptionRequestSchema>;
 export type AiDescriptionResult = z.infer<typeof AiDescriptionResultSchema>;
+export type AiSearchRequest = z.infer<typeof AiSearchRequestSchema>;
+export type AiSearchCriteria = z.infer<typeof AiSearchCriteriaSchema>;
+export type AiSearchResponse = z.infer<typeof AiSearchResponseSchema>;
 export type TrackedPropertyCreate = z.infer<typeof TrackedPropertyCreateSchema>;
 export type TrackedProperty = z.infer<typeof TrackedPropertySchema>;
 export type TrackedPropertyDetail = z.infer<typeof TrackedPropertyDetailSchema>;
