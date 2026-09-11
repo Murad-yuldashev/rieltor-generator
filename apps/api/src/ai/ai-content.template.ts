@@ -18,7 +18,10 @@ const TYPE_TAG: Record<ListingType, string> = {
   COMMERCIAL: '#tijorat',
 };
 
-const districtTag = (d: string): string => '#' + d.toLowerCase().replace(/\s+/g, '');
+// Strip EVERY non-alphanumeric (not just whitespace): Uzbek district names are Latin and can carry an
+// apostrophe (e.g. "Mirzo Ulug'bek tumani"), which terminates a hashtag on Instagram/Telegram — leaving
+// only "#mirzoulug". Removing apostrophes/punctuation yields a clean tag "#mirzoulugbektumani".
+const districtTag = (d: string): string => '#' + d.toLowerCase().replace(/[^a-z0-9]+/g, '');
 
 /** A ready-to-post Uzbek caption + hashtags from the listing fields (every field null-guarded). */
 export function buildContentTemplate(f: AiContentRequest): { caption: string; hashtags: string } {
