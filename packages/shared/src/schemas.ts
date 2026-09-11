@@ -230,6 +230,23 @@ export const AiDescriptionRequestSchema = z.object({
 /** Response of `POST /api/ai/description` — one generated field, kept in shared so web and API agree. */
 export const AiDescriptionResultSchema = z.object({ description: z.string() });
 
+/** The request body for the realtor AI social-content generator (fields the browse card already has). */
+export const AiContentRequestSchema = z.object({
+  type: ListingTypeSchema,
+  deal: DealSchema,
+  district: z.string().min(2),
+  rooms: z.number().int().nullable().optional(),
+  areaM2: z.number().positive(),
+  priceSom: z.string().regex(/^\d+$/), // BigInt-as-string (RENT = per month)
+});
+
+/** The AI social-content result. ai=true → Gemini-authored; ai=false → structured template. */
+export const AiContentResponseSchema = z.object({
+  ai: z.boolean(),
+  caption: z.string(),
+  hashtags: z.string(),
+});
+
 /** The request body for the buyer AI search parser. */
 export const AiSearchRequestSchema = z.object({
   query: z.string().trim().min(1).max(200), // cap: public + paid model call
@@ -1152,6 +1169,8 @@ export type ValuationRequest = z.infer<typeof ValuationRequestSchema>;
 export type ValuationResult = z.infer<typeof ValuationResultSchema>;
 export type AiDescriptionRequest = z.infer<typeof AiDescriptionRequestSchema>;
 export type AiDescriptionResult = z.infer<typeof AiDescriptionResultSchema>;
+export type AiContentRequest = z.infer<typeof AiContentRequestSchema>;
+export type AiContentResponse = z.infer<typeof AiContentResponseSchema>;
 export type AiSearchRequest = z.infer<typeof AiSearchRequestSchema>;
 export type AiSearchCriteria = z.infer<typeof AiSearchCriteriaSchema>;
 export type AiSearchResponse = z.infer<typeof AiSearchResponseSchema>;
