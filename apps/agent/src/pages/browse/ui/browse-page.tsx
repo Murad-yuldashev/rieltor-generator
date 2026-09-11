@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import type { ListingSummary, ListingType } from '@rieltor/shared';
 import { LISTING_TYPE_META, LISTING_TYPES, ListingCard, useListings } from '@/entities/listing';
 import { AddToCollectionModal } from '@/features/collections';
+import { ListingContentButton } from '@/features/listing-content';
 import { NoteEditor, useNotes } from '@/features/notes';
 import { Icon } from '@/shared/ui/icon';
 
@@ -129,14 +130,16 @@ export function BrowsePage() {
       ) : (
         <div className="flex flex-col gap-4">
           {filtered.map((listing, i) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              isFirst={i === 0}
-              hasNote={notedIds.has(listing.id)}
-              onNote={() => setEditing({ listingId: listing.id, title: listing.title })}
-              onCollect={() => setCollecting({ listingId: listing.id, title: listing.title })}
-            />
+            <div key={listing.id}>
+              <ListingCard
+                listing={listing}
+                isFirst={i === 0}
+                hasNote={notedIds.has(listing.id)}
+                onNote={() => setEditing({ listingId: listing.id, title: listing.title })}
+                onCollect={() => setCollecting({ listingId: listing.id, title: listing.title })}
+              />
+              <ListingContentButton listing={listing} />
+            </div>
           ))}
         </div>
       )}
