@@ -1352,7 +1352,7 @@ quruvchi) **mavjud `GeminiService`ni qayta ishlatgan** AI yordamlarini qo'shadi 
 **qo'shimcha** (additiv) va **degradatsiyaga chidamli** (kalit yo'q / model uzilsa ilova avvalgidek
 ishlaydi). 7.2 to'rt bo'lakka dekompozitsiya qilingan: **7.2a** xaridor AI qidiruvi (tabiiy til →
 filtrlar) → **7.2b** rieltor lead-yordamchisi → **7.2c** rieltor AI-kontenti → **7.2d** quruvchi
-AI-tahlillari. Quyida **7.2a** va **7.2b** bajarildi.
+AI-tahlillari. Quyida **7.2a**, **7.2b** va **7.2c** bajarildi.
 
 ### 7.2a — Xaridor AI qidiruvi (NL → filtrlar)
 
@@ -1466,6 +1466,70 @@ reja: `docs/superpowers/plans/2026-09-09-phase-7.2b-lead-assistant.md`.
   nazorati**; **ovozli kiritish**; assist'ni **saqlash**. Shuningdek Phase 7.2 boshqa bo'laklari: **7.2c**
   rieltor AI-kontenti → **7.2d** quruvchi AI-tahlillari. Bular ataylab keyinga qoldirilgan.
 
+### 7.2c — Rieltor AI-kontenti
+
+Rieltor kabinetdagi **har bir e'lon** uchun bir bosishda ijtimoiy tarmoq (Instagram/Telegram) **posti
+namunasini** oladi: jozibali o'zbekcha **caption** + **hashtag'lar**. AI faqat **matn tayyorlaydi** —
+hech qayerga joylamaydi, hech narsa saqlamaydi (draft-only, stateless); rieltor namunani nusxalab o'zi
+joylaydi. Bo'lak **mavjud `GeminiService`ni qayta ishlatadi** va **degradatsiyaga chidamli** — kalit yo'q /
+model uzilsa ham har doim ishlaydigan namuna qaytadi. Spec:
+`docs/superpowers/specs/2026-09-09-phase-7.2c-listing-content-design.md`,
+reja: `docs/superpowers/plans/2026-09-09-phase-7.2c-listing-content.md`.
+
+#### Himoyalangan, rieltorga-cheklangan kontent endpointi
+
+- **`POST /api/ai/content`** — **yangi `@Controller('ai')`** ostida (**`JwtGuard` + `RealtorGuard`**, jonli
+  obuna) — pulli marketing quroli. Yo'l `GeminiService`ni qayta ishlatadi; guarded `AiController`ning
+  `/description` yo'li va ommaviy `AiSearchController`ning `/search-parse` yo'li bilan **to'qnashmaydi**
+  (`/content` yangi). Auth yo'q → **401**, rieltor emas → **403**, yaroqsiz body → **400** (`ZodError`).
+- **`AiModule`** `AgentModule`ni import qiladi (`RealtorGuard` uchun) va `AiContentController`ni qo'shadi —
+  **modul sikli yo'q** (tekshirilgan); mavjud tavsif-yozuvchi va qidiruv-parser hamda ularning yo'llari
+  **o'zgarmagan**.
+- **Kirish maydonlari body'da** (e'lon kartasi allaqachon ushlab turgan): `AiContentRequestSchema`
+  (`type`/`deal`/`district`/`rooms?`/`areaM2`/`priceSom`). Model chaqiruvi `maxTokens: 400` bilan cheklangan.
+
+#### Gibrid: doim ishlaydigan shablon + qat'iy chiqish validatsiyasi
+
+- **Sof shablon** (`buildContentTemplate`) **doim** maydonlardan hisoblanadi — kalit bo'lmasa ham foydali
+  post chiqadi: jozibali o'zbekcha caption + hashtag'lar. Tuman **borligicha** interpolatsiya qilinadi
+  (`ListingSummary.district` allaqachon "… tumani" bilan tugaydi — takroran " tumani" qo'shilmaydi); narx
+  **ICU/Intl'siz** minglab guruhlanadi (7.2a darsi); tur so'zlari/teglari `Record<ListingType,string>`
+  (`noUncheckedIndexedAccess` ostida kompilyatsiya bo'ladi). Shablon matnida hech qachon literal
+  `"undefined"`/`"null"` bo'lmaydi.
+- **Modelga hech qachon ishonmaydi** — kalit bo'lsa Gemini boyitadi, lekin chiqish qat'iy yordamchidan
+  (`parseContent`) o'tadi: mumkin bo'lgan ` ```json ` panjaralari olib tashlanadi → `JSON.parse`
+  `try/catch`da → Zod bilan `{caption, hashtags}` validatsiya → bo'lmasa **shablonga** tushadi (`ai:false`),
+  hech qachon otmaydi. Yaroqli chiqish → `ai:true` (trimlangan).
+- Kalit yo'q / model uzilishida ham **503 bermaydi** — har doim shablon bilan `ai:false` qaytadi. Javob
+  shakli **yagona manba** shared DTO — **`AiContentResponseSchema`** `{ai, caption, hashtags}`.
+
+#### Nusxalanadigan caption + hashtag (apps/agent browse)
+
+- **`apps/agent`** (rieltor kabineti) e'lon-browser sahifasida har bir karta ostida **"📣 AI post"** tugmasi —
+  bosilganda **caption** + **hashtag'lar** ikki **readonly `textarea`da** (aria-label bilan: "Post matni" /
+  "Hashtag'lar") + bitta **"Nusxa olish"** tugmasi (presentations/7.2b naqshi: clipboard `try/catch`da +
+  "Nusxa olindi" toggle; nusxa caption + hashtag'larni birga oladi). `ai:false` holatida sarlavha
+  **"(namuna)"** yorlig'i bilan ko'rsatiladi.
+- **FSD chegara** — `features/listing-content` faqat **`shared`** import qiladi (hech qachon `@/entities/*`
+  yoki `@/features/*`); tugma **`ListingSummary`ni prop** sifatida oladi va uni `AiContentRequest`ga
+  aylantiradi; browse **sahifasi** uni kartadan keyin kompozitsiya qiladi (kartaning eslatma/kolleksiya
+  ishiga **tegmaydi**). `useListingContent` tarmoq/HTTP xatolarini ushlaydi → klient-tomon fallback (hech
+  qachon ushlanmagan reject bo'lmaydi).
+
+#### Ma'lumot modeli va env
+
+- **Yangi Prisma model YO'Q, yangi migratsiya YO'Q** — 7.2c **stateless**: kontent hech narsa saqlamaydi, har
+  chaqiruv e'lonning joriy maydonlaridan qayta hisoblanadi. Net-new shared DTO'lar + bitta himoyalangan
+  endpoint + `apps/agent` feature. **Yangi env qo'shilmagan** (`GEMINI_API_KEY`/`GEMINI_MODEL` Phase
+  2.1'dayoq mavjud, ixtiyoriy). Marketplace, CRM va boshqa oqimlarga **tegilmagan**.
+
+#### Non-goals (keyinroq)
+
+- **Instagram/Telegram'ga haqiqatan JOYLASH** (integratsiya — hozircha draft-only); **rasm/karusel/Stories-
+  slayd/video** generatsiyasi; **bir nechta variant / A-B**; **saqlangan post tarixi**; **ohang/til tanlash**;
+  kontentni **saqlash**. Shuningdek Phase 7.2 oxirgi bo'lagi: **7.2d** quruvchi AI-tahlillari. Bular ataylab
+  keyinga qoldirilgan.
+
 ### Kelasi
 
 - **7.2a yakunlandi** (ommaviy NL→filtr `POST /api/ai/search-parse` + qat'iy chiqish validatsiyasi +
@@ -1473,8 +1537,11 @@ reja: `docs/superpowers/plans/2026-09-09-phase-7.2b-lead-assistant.md`.
   sahifasi).
 - **7.2b yakunlandi** (himoyalangan, egalik-tekshiruvli `POST /api/leads/:id/assist` + gibrid doim
   ishlaydigan shablon + qat'iy chiqish validatsiyasi + `apps/agent` olingan-lead kartasida keyingi qadam +
-  nusxalanadigan murojaat namunasi; draft-only, stateless). Phase 7.2 (AI yordamchi) davomi: **7.2c**
-  rieltor AI-kontenti → **7.2d** quruvchi AI-tahlillari. So'ng **7.3** xarita → **7.4** jurnal.
+  nusxalanadigan murojaat namunasi; draft-only, stateless).
+- **7.2c yakunlandi** (rieltorga-cheklangan `POST /api/ai/content` + gibrid doim ishlaydigan shablon +
+  qat'iy chiqish validatsiyasi + `apps/agent` browse kartasida nusxalanadigan caption + hashtag namunasi;
+  draft-only, stateless). Phase 7.2 (AI yordamchi) davomi: **7.2d** quruvchi AI-tahlillari. So'ng **7.3**
+  xarita → **7.4** jurnal.
 
 ## 5. Texnik stack
 
