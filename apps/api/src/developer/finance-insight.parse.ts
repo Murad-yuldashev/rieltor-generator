@@ -15,7 +15,9 @@ export function buildInsightPrompt(summary: FinanceSummary, debtors: DebtorRow[]
     `Balans: ${formatPriceSom(summary.orgBalanceSom, 'SALE')}`,
     `Qarzdorlar soni: ${summary.debtorCount}`,
   ];
-  const top = debtors[0];
+  const top = debtors.length
+    ? debtors.reduce((max, d) => (BigInt(d.overdueSom) > BigInt(max.overdueSom) ? d : max))
+    : undefined;
   if (top) {
     facts.push(`Eng katta qarzdor: ${top.buyerName}, ${formatPriceSom(top.overdueSom, 'SALE')}`);
   }

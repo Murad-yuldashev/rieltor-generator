@@ -19,7 +19,9 @@ export function buildInsightTemplate(summary: FinanceSummary, debtors: DebtorRow
       `balans ${formatPriceSom(summary.orgBalanceSom, 'SALE')}${isDebt ? ' (qarz)' : ''}.`,
   ];
 
-  const top = debtors[0];
+  const top = debtors.length
+    ? debtors.reduce((max, d) => (BigInt(d.overdueSom) > BigInt(max.overdueSom) ? d : max))
+    : undefined;
   if (top) {
     lines.push(
       `${summary.debtorCount} ta qarzdor bor; eng kattasi ${top.buyerName} — ` +
