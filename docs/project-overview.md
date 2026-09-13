@@ -1352,7 +1352,7 @@ quruvchi) **mavjud `GeminiService`ni qayta ishlatgan** AI yordamlarini qo'shadi 
 **qo'shimcha** (additiv) va **degradatsiyaga chidamli** (kalit yo'q / model uzilsa ilova avvalgidek
 ishlaydi). 7.2 to'rt bo'lakka dekompozitsiya qilingan: **7.2a** xaridor AI qidiruvi (tabiiy til →
 filtrlar) → **7.2b** rieltor lead-yordamchisi → **7.2c** rieltor AI-kontenti → **7.2d** quruvchi
-AI-tahlillari. Quyida **7.2a**, **7.2b** va **7.2c** bajarildi.
+AI-tahlillari. Quyida **7.2a**, **7.2b**, **7.2c** va **7.2d** bajarildi.
 
 ### 7.2a — Xaridor AI qidiruvi (NL → filtrlar)
 
@@ -1530,6 +1530,69 @@ reja: `docs/superpowers/plans/2026-09-09-phase-7.2c-listing-content.md`.
   kontentni **saqlash**. Shuningdek Phase 7.2 oxirgi bo'lagi: **7.2d** quruvchi AI-tahlillari. Bular ataylab
   keyinga qoldirilgan.
 
+### 7.2d — Quruvchi AI-tahlillari
+
+Quruvchi (developer) **Moliya** sahifasidagi tashkilotning moliyaviy suratini bir bosishda o'zbekcha
+**tahlil-hikoya** ko'rinishida oladi: kontraktlangan/yig'ilgan/qoldiq/muddati o'tgan, net komissiya, balans
+va eng katta qarzdor ustidan qisqa sharh + bitta amaliy tavsiya. **Raqamlarni server hisoblaydi**
+(server-authoritative) — AI faqat **shu raqamlarni hikoya qiladi**, yangi son o'ylab topmaydi. Bo'lak
+**mavjud `GeminiService`ni qayta ishlatadi** va **degradatsiyaga chidamli** — kalit yo'q / model uzilsa ham
+har doim ishlaydigan namuna qaytadi. Spec:
+`docs/superpowers/specs/2026-09-13-phase-7.2d-developer-insights-design.md`,
+reja: `docs/superpowers/plans/2026-09-13-phase-7.2d-developer-insights.md`.
+
+#### Himoyalangan, org-doirasidagi insight endpointi
+
+- **`GET /api/crm/finance/insight`** — mavjud **`FinanceController`** ichida (`@Controller('crm')`,
+  **`JwtGuard` + `DeveloperGuard`**) — quruvchiga cheklangan. Bu **GET** (o'z tashkilotining suratini o'qish,
+  body yo'q); `/api/crm/finance` va `/api/crm/debtors` yo'llari bilan **to'qnashmaydi** (`/finance/insight`
+  yangi). Auth yo'q → **401**, quruvchi emas → **403**.
+- **Org-doirasida** — yo'l `developer.orgIdOf(user)` orqali **faqat chaqiruvchining tashkiloti** uchun
+  `FinanceService.summary` + `.debtors`ni (mavjud agregatsiyani qayta ishlatgan holda, parallel) yuklaydi;
+  boshqa tashkilot raqamlariga yetib bo'lmaydi.
+- **`DeveloperModule`** endi `GeminiService` uchun **`AiModule`ni import qiladi** — **modul sikli yo'q**
+  (tekshirilgan); mavjud developer yo'llari va agregatsiyalari **o'zgarmagan**.
+
+#### Gibrid: doim ishlaydigan shablon + ishonchsiz-chiqish parslash
+
+- **Sof shablon** (`buildInsightTemplate`) tashkilotning agregatlaridan **doim** hisoblanadi — kalit
+  bo'lmasa ham foydali o'zbekcha tahlil chiqadi. Yig'ilish foizi **BigInt-xavfsiz** (operandlar 2^53'dan
+  oshishi mumkin) va **nolga bo'linishdan himoyalangan**; pul **shared `formatPriceSom` bilan** (ICU/Intl'siz,
+  Moliya kartalari bilan bir xil) formatlanadi; manfiy balans **"(qarz)"** bilan belgilanadi; qarzdor
+  bo'lmagan holat uchun ham alohida shoxobcha bor. Matnda hech qachon literal `"undefined"`/`"null"` bo'lmaydi.
+- **Modelga hech qachon ishonmaydi** — prompt (`buildInsightPrompt`) faqat **agregat raqamlarni** va **ko'pi
+  bilan eng katta qarzdorning ismi + summasini** yuboradi, **hech qachon telefon emas** (PII-minimal, R6);
+  chiqish qat'iy yordamchidan (`parseInsight`) o'tadi: `null`/bo'sh → **shablon** `ai:false` bilan; aks holda
+  ` ``` ` panjaralari olib tashlanadi, trimlanadi va uzunligi cheklanadi. **Hech qachon otmaydi**, model
+  uzilsa ham **503 bermaydi**. Chiqish **oddiy hikoya matni** (JSON emas), `maxTokens: 300`.
+- Javob shakli **yagona manba** shared DTO — **`FinanceInsightResponseSchema`** `{ai, insight}` — front va
+  back uchun bir manba.
+
+#### "AI tahlil" paneli (apps/crm Moliya)
+
+- **`apps/crm`** (quruvchi kabineti) **Moliya** sahifasida kartalar ostida **"AI tahlil"** paneli:
+  **"Tahlil qilish"** tugmasi bosilganda insight **talab bo'yicha** (GET, avtomatik yuklanmaydi) olinadi va
+  hikoya **nusxalanadigan, readonly `textarea`da** ko'rsatiladi + **"Nusxa olish"** tugmasi (clipboard
+  `try/catch`da + "Nusxa olindi" toggle). Yorliq `ai:true` → **"AI tahlil"**, `ai:false` → **"Namuna tahlil"**.
+- **FSD chegara** — yangi feature `features/finance-insight` faqat **`shared`** + `@/shared/*` import qiladi
+  (hech qachon `@/features/*`); panelni Moliya **sahifasi** kartalar ostida kompozitsiya qiladi.
+  `useFinanceInsight` tarmoq/HTTP xatolarini ushlaydi → klient-tomon fallback (endpoint o'zi ham har qanday
+  AI/parse muammosida `ai:false` shablon qaytaradi — hech qachon ushlanmagan reject bo'lmaydi).
+
+#### Ma'lumot modeli va env
+
+- **Yangi Prisma model YO'Q, yangi migratsiya YO'Q** — 7.2d **stateless**: insight hech narsa saqlamaydi, har
+  chaqiruv tashkilotning joriy to'lov jadvallaridan qayta hisoblanadi (mavjud `FinanceService` agregatsiyasi).
+  Net-new shared DTO + bitta himoyalangan endpoint + `apps/crm` feature. **Yangi env qo'shilmagan**
+  (`GEMINI_API_KEY`/`GEMINI_MODEL` Phase 2.1'dayoq mavjud, ixtiyoriy). Marketplace, CRM pul-yo'li va boshqa
+  oqimlarga **tegilmagan**.
+
+#### Non-goals (keyinroq)
+
+- **Trend/vaqt bo'yicha taqqoslash** (hozircha joriy surat); **grafik/chart AI-izohlari**; **ko'p bosqichli
+  chat**; **saqlangan tahlil tarixi**; **avtomatik ogohlantirish/hisobot**; **eksport (PDF/CSV)**; tahlilni
+  **saqlash**. Bular ataylab keyinga qoldirilgan.
+
 ### Kelasi
 
 - **7.2a yakunlandi** (ommaviy NL→filtr `POST /api/ai/search-parse` + qat'iy chiqish validatsiyasi +
@@ -1540,8 +1603,11 @@ reja: `docs/superpowers/plans/2026-09-09-phase-7.2c-listing-content.md`.
   nusxalanadigan murojaat namunasi; draft-only, stateless).
 - **7.2c yakunlandi** (rieltorga-cheklangan `POST /api/ai/content` + gibrid doim ishlaydigan shablon +
   qat'iy chiqish validatsiyasi + `apps/agent` browse kartasida nusxalanadigan caption + hashtag namunasi;
-  draft-only, stateless). Phase 7.2 (AI yordamchi) davomi: **7.2d** quruvchi AI-tahlillari. So'ng **7.3**
-  xarita → **7.4** jurnal.
+  draft-only, stateless).
+- **7.2d yakunlandi** (quruvchiga-cheklangan, org-doirasidagi `GET /api/crm/finance/insight` + server
+  hisoblagan raqamlar ustidan gibrid doim ishlaydigan shablon + ishonchsiz-chiqish parslash + `DeveloperModule
+→ AiModule` ulanishi + `apps/crm` Moliya sahifasidagi nusxalanadigan "AI tahlil" paneli; stateless). Shu
+  bilan **Phase 7.2 (AI yordamchi) yakunlandi**. So'ng **7.3** xarita → **7.4** jurnal.
 
 ## 5. Texnik stack
 
