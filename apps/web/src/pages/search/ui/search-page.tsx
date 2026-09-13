@@ -248,6 +248,7 @@ export function SearchPage() {
                 <div className="flex rounded-full bg-surface p-0.5">
                   <button
                     type="button"
+                    aria-pressed={view === 'list'}
                     onClick={() => setView('list')}
                     className={`rounded-full px-3 py-1.5 text-[13px] font-bold ${view === 'list' ? 'bg-card text-ink shadow-card' : 'text-ink-3'}`}
                   >
@@ -255,6 +256,7 @@ export function SearchPage() {
                   </button>
                   <button
                     type="button"
+                    aria-pressed={view === 'map'}
                     onClick={() => setView('map')}
                     className={`rounded-full px-3 py-1.5 text-[13px] font-bold ${view === 'map' ? 'bg-card text-ink shadow-card' : 'text-ink-3'}`}
                   >

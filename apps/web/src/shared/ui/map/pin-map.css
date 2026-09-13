@@ -27,3 +27,34 @@
   width: auto !important;
   height: auto !important;
 }
+/* Leaflet's internal panes (z-index 200-1000) otherwise paint OVER the app's
+   sticky header and fixed bottom nav (both z-50). `isolation: isolate` gives the
+   map its own stacking context so those panes stay trapped below the app chrome. */
+.leaflet-container {
+  isolation: isolate;
+}
+/* Popup "mini card" opened on a price-pin tap (see `miniCard` in pin-map.tsx). */
+.pin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 120px;
+}
+.pin-card__label {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1f2937;
+}
+.pin-card__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #6d28d9;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}

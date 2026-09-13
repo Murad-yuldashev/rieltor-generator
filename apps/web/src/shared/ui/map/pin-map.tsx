@@ -37,6 +37,26 @@ const priceIcon = (label: string) => {
 };
 const locIcon = () => L.divIcon({ html: '📍', className: 'loc-pin', iconSize: undefined });
 
+// Popup "mini card" shown when a price pin is tapped: the price/label line plus a
+// "Batafsil ma'lumot" button that opens the detail route via `onOpen`. Built as a
+// DOM element (createElement + textContent), NEVER innerHTML/template-string — the
+// `label` is free user text (a complex name can be a fallback), so raw string HTML
+// would be a stored-XSS vector on the public map.
+const miniCard = (label: string, onOpen: () => void) => {
+  const box = document.createElement('div');
+  box.className = 'pin-card';
+  const title = document.createElement('div');
+  title.className = 'pin-card__label';
+  title.textContent = label;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pin-card__link';
+  btn.textContent = "Batafsil ma'lumot";
+  btn.addEventListener('click', onOpen);
+  box.append(title, btn);
+  return box;
+};
+
 /** Leaflet map primitive. Client-only (inits in useEffect); code-split by consumers via React.lazy. */
 export default function PinMap(props: Props) {
   const elRef = useRef<HTMLDivElement>(null);
@@ -54,7 +74,10 @@ export default function PinMap(props: Props) {
     if (propsRef.current.mode === 'pick') {
       map.on('click', (e: L.LeafletMouseEvent) => {
         const p = propsRef.current;
-        if (p.mode === 'pick') p.onPick(e.latlng.lat, e.latlng.lng);
+        // Wrap into the canonical [-180, 180] range: a click on a repeated world
+        // copy yields an out-of-range longitude that ListingDraftSchema rejects.
+        const w = e.latlng.wrap();
+        if (p.mode === 'pick') p.onPick(w.lat, w.lng);
       });
     }
     mapRef.current = map;
@@ -84,10 +107,14 @@ export default function PinMap(props: Props) {
       const bounds: L.LatLngTuple[] = [];
       for (const pin of p.pins) {
         const marker = L.marker([pin.lat, pin.lng], { icon: priceIcon(pin.label) });
-        marker.on('click', () => {
-          const cur = propsRef.current;
-          if (cur.mode === 'cluster') cur.onSelect(pin);
-        });
+        // A marker click opens the mini card (Leaflet default for a bound popup);
+        // only the card's "Batafsil ma'lumot" button navigates via onSelect.
+        marker.bindPopup(
+          miniCard(pin.label, () => {
+            const cur = propsRef.current;
+            if (cur.mode === 'cluster') cur.onSelect(pin);
+          }),
+        );
         cluster.addLayer(marker);
         bounds.push([pin.lat, pin.lng]);
       }
