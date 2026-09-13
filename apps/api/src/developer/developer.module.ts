@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AiModule } from '../ai/ai.module';
 import { AuthModule } from '../auth/auth.module';
 import { OrgWalletModule } from '../org-wallet/org-wallet.module';
 import { OrgWalletController } from '../org-wallet/org-wallet.controller';
@@ -21,7 +22,7 @@ import { WalletModule } from '../wallet/wallet.module';
   // WalletModule → WalletService (realtor commission credit at convert).
   // OrgWalletModule → OrgWalletService (org-wallet debit at convert + the CRM
   // /api/crm/wallet controller, which lives here to keep the dependency one-way).
-  imports: [AuthModule, WalletModule, OrgWalletModule],
+  imports: [AuthModule, WalletModule, OrgWalletModule, AiModule],
   controllers: [
     DeveloperController,
     BookingController,
