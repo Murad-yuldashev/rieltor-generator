@@ -13,6 +13,8 @@ const row = {
   district: 'Buxoro shahri',
   address: 'Manzil',
   landmark: 'Moljal',
+  latitude: null,
+  longitude: null,
   description: 'Tavsif',
   type: 'SECONDARY' as const,
   deal: 'SALE' as const,
