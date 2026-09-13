@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import type { DebtorRow, FinanceSummary } from '@rieltor/shared';
 import { formatPriceSom } from '@rieltor/shared';
 import { useDebtors, useFinanceSummary } from '@/features/finance';
+import { FinanceInsight } from '@/features/finance-insight';
 import { CabinetNav } from '@/widgets/cabinet-nav';
 import { cn } from '@/shared/lib/cn';
 
@@ -33,6 +34,7 @@ export function FinancePage() {
       ) : (
         <>
           <FinanceCards summary={summary} />
+          <FinanceInsight />
           <DebtorTable />
         </>
       )}
