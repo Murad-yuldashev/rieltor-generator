@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 import { AgentCard } from '@/entities/agent';
@@ -17,6 +18,8 @@ import { Gallery } from '@/widgets/gallery';
 import { NotFoundView } from '@/widgets/not-found';
 import { SiteHeader } from '@/widgets/site-header';
 import { StickyCTA } from '@/widgets/sticky-cta';
+
+const PinMap = lazy(() => import('@/shared/ui/map/pin-map'));
 
 function PageSkeleton() {
   return (
@@ -69,6 +72,20 @@ export function ListingPage() {
             <SectionCard title="Joylashuv" className="order-5 mx-4 lg:mx-0 desk:mx-0">
               <Location landmark={data.landmark} address={data.address} />
             </SectionCard>
+
+            {data.latitude != null && data.longitude != null && (
+              <section className="order-5 mx-4 lg:mx-0 desk:mx-0">
+                <h2 className="mb-2 text-[15px] font-extrabold text-ink">Xaritada</h2>
+                <Suspense fallback={<div className="h-[300px] w-full rounded-card bg-surface" />}>
+                  <PinMap
+                    mode="single"
+                    lat={data.latitude}
+                    lng={data.longitude}
+                    className="h-[300px] w-full overflow-hidden rounded-card border border-line"
+                  />
+                </Suspense>
+              </section>
+            )}
           </div>
 
           <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-3.5 desk:sticky desk:top-24 desk:flex desk:flex-col desk:gap-3.5">
