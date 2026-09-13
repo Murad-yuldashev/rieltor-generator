@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocation, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { formatPriceSom } from '@rieltor/shared';
 import type { AiSearchCriteria, ListingSummary } from '@rieltor/shared';
 import { ListingCard, ListingResultRow, listingsQuery } from '@/entities/listing';
+import { complexesQuery } from '@/entities/complex';
 import { FavoriteButton } from '@/features/favorites';
 import {
   EMPTY_CRITERIA,
@@ -17,6 +19,9 @@ import { useInfiniteScroll } from '@/shared/lib/use-infinite-scroll';
 import { Icon } from '@/shared/ui/icon';
 import { PageHeading } from '@/shared/ui/page-heading';
 import { SectionCard } from '@/shared/ui/section-card';
+import type { MapPin } from '@/shared/ui/map';
+
+const PinMap = lazy(() => import('@/shared/ui/map/pin-map'));
 
 /** The mockup lists four districts. */
 const TOP_DISTRICTS = 4;
@@ -73,6 +78,31 @@ export function SearchPage() {
 
   // Same function the home list uses, so the counter and the results always agree.
   const matches = filterListings(data, criteria);
+
+  const [view, setView] = useState<'list' | 'map'>('list');
+  const navigate = useNavigate();
+  const { data: complexes } = useQuery(complexesQuery());
+
+  const pins: MapPin[] = [
+    ...matches
+      .filter((l) => l.latitude != null && l.longitude != null)
+      .map((l) => ({
+        id: l.id,
+        lat: l.latitude as number,
+        lng: l.longitude as number,
+        label: formatPriceSom(l.priceSom, l.deal),
+        href: `/obj/${l.id}`,
+      })),
+    ...(complexes ?? [])
+      .filter((c) => c.latitude != null && c.longitude != null)
+      .map((c) => ({
+        id: `jk-${c.slug}`,
+        lat: c.latitude as number,
+        lng: c.longitude as number,
+        label: c.priceFromSom ? formatPriceSom(c.priceFromSom, 'SALE') : c.name,
+        href: `/jk/${c.slug}`,
+      })),
+  ];
   const districts = countByDistrict(data);
   const shown = matches.slice(0, limit);
   const hasMore = matches.length > shown.length;
@@ -214,48 +244,91 @@ export function SearchPage() {
           >
             <div className="flex items-center justify-between pt-1 pb-3">
               <p className="text-[15px] font-extrabold">Natijalar · {matches.length} ta</p>
-              {matches.length > 0 && (
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="rounded-full bg-accent-soft px-3.5 py-2 text-[13px] font-bold text-accent"
-                >
-                  Tozalash ✕
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-full bg-surface p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setView('list')}
+                    className={`rounded-full px-3 py-1.5 text-[13px] font-bold ${view === 'list' ? 'bg-card text-ink shadow-card' : 'text-ink-3'}`}
+                  >
+                    Ro'yxat
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setView('map')}
+                    className={`rounded-full px-3 py-1.5 text-[13px] font-bold ${view === 'map' ? 'bg-card text-ink shadow-card' : 'text-ink-3'}`}
+                  >
+                    Xarita
+                  </button>
+                </div>
+                {matches.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={reset}
+                    className="rounded-full bg-accent-soft px-3.5 py-2 text-[13px] font-bold text-accent"
+                  >
+                    Tozalash ✕
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Below `desk:` (1440px) this is a card grid — 1 col on phone, 2 on
-                tablet, 3 on laptop; from `desk:` it becomes the CIAN-style
-                three-column row list (spec §2.2). Only one of the two ever renders. */}
-            <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3 desk:hidden">
-              {shown.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  favoriteSlot={<FavoriteButton id={listing.id} />}
-                />
-              ))}
-            </div>
+            {view === 'list' && (
+              <>
+                {/* Below `desk:` (1440px) this is a card grid — 1 col on phone, 2 on
+                    tablet, 3 on laptop; from `desk:` it becomes the CIAN-style
+                    three-column row list (spec §2.2). Only one of the two ever renders. */}
+                <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3 desk:hidden">
+                  {shown.map((listing) => (
+                    <ListingCard
+                      key={listing.id}
+                      listing={listing}
+                      favoriteSlot={<FavoriteButton id={listing.id} />}
+                    />
+                  ))}
+                </div>
 
-            <div className="hidden desk:flex desk:flex-col desk:gap-5">
-              {shown.map((listing) => (
-                <ListingResultRow
-                  key={listing.id}
-                  listing={listing}
-                  favoriteSlot={<FavoriteButton id={listing.id} />}
-                />
-              ))}
-            </div>
+                <div className="hidden desk:flex desk:flex-col desk:gap-5">
+                  {shown.map((listing) => (
+                    <ListingResultRow
+                      key={listing.id}
+                      listing={listing}
+                      favoriteSlot={<FavoriteButton id={listing.id} />}
+                    />
+                  ))}
+                </div>
 
-            {matches.length === 0 && (
-              <p className="px-2 py-10 text-center text-[15px] leading-relaxed text-ink-2">
-                Bu shartlarga mos obyekt topilmadi. Filtrlarni kengaytirib ko'ring.
-              </p>
+                {matches.length === 0 && (
+                  <p className="px-2 py-10 text-center text-[15px] leading-relaxed text-ink-2">
+                    Bu shartlarga mos obyekt topilmadi. Filtrlarni kengaytirib ko'ring.
+                  </p>
+                )}
+
+                {/* Infinite scroll: auto-loads the next slice as this nears the viewport. */}
+                {hasMore && <div ref={sentinelRef} aria-hidden className="mt-4 h-px w-full" />}
+              </>
             )}
 
-            {/* Infinite scroll: auto-loads the next slice as this nears the viewport. */}
-            {hasMore && <div ref={sentinelRef} aria-hidden className="mt-4 h-px w-full" />}
+            {view === 'map' && (
+              <Suspense
+                fallback={
+                  <p className="py-10 text-center text-[14px] text-ink-3">Xarita yuklanmoqda…</p>
+                }
+              >
+                {pins.length > 0 ? (
+                  <PinMap
+                    mode="cluster"
+                    pins={pins}
+                    onSelect={(pin) => navigate(pin.href)}
+                    className="h-[70vh] w-full overflow-hidden rounded-card border border-line"
+                  />
+                ) : (
+                  <p className="px-2 py-10 text-center text-[15px] text-ink-2">
+                    Bu shartlarga mos, xaritada ko'rsatiladigan obyekt topilmadi.
+                  </p>
+                )}
+              </Suspense>
+            )}
           </div>
         )}
       </div>
