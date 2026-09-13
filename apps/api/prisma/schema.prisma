@@ -49,6 +49,9 @@ model Listing {
   district          String
   address           String
   landmark          String
+  /// Map pin (7.3); null until the owner drops a pin. WGS84.
+  latitude          Float?
+  longitude         Float?
   description       String
   type              ListingType
   /// The ten listings that predate this column were all sales.

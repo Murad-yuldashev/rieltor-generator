@@ -12,6 +12,8 @@ const fullListing = {
   district: 'Buxoro shahri',
   address: "Navoiy ko'chasi 12",
   landmark: 'Bukhara City yaqinida',
+  latitude: null,
+  longitude: null,
   description: 'Uch jumlalik tavsif.',
   type: 'SECONDARY',
   deal: 'SALE',
