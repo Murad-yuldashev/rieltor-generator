@@ -18,6 +18,8 @@ const listing = {
   description: 'Ikki xonali kvartira.',
   type: 'SECONDARY',
   deal: 'SALE',
+  latitude: null,
+  longitude: null,
   views: 3,
   listedAt: '2026-07-22',
   agentVerified: false,
