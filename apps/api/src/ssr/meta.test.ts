@@ -12,6 +12,8 @@ const listing = {
   district: 'Buxoro shahri',
   address: 'Manzil',
   landmark: 'Moljal',
+  latitude: null,
+  longitude: null,
   description: 'Birinchi jumla. Ikkinchi jumla. Uchinchi jumla.',
   type: 'NEW_BUILD' as const,
   deal: 'SALE' as const,

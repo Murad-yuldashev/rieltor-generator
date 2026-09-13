@@ -122,6 +122,8 @@ export class ComplexesPublicService {
       slug: c.slug ?? '',
       name: c.name,
       district: c.district,
+      latitude: c.latitude,
+      longitude: c.longitude,
       coverImage: c.images[0] ? this.toImage(c.images[0]) : null,
       buildStatus: c.status,
       priceFromSom: priceFrom != null ? String(priceFrom) : null,

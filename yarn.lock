@@ -2006,11 +2006,15 @@ __metadata:
     "@testing-library/jest-dom": "npm:^6.6.3"
     "@testing-library/react": "npm:^16.1.0"
     "@testing-library/user-event": "npm:^14.5.2"
+    "@types/leaflet": "npm:^1.9.12"
+    "@types/leaflet.markercluster": "npm:^1.5.4"
     "@types/react": "npm:^19.0.0"
     "@types/react-dom": "npm:^19.0.0"
     "@vitejs/plugin-react": "npm:^4.3.4"
     clsx: "npm:^2.1.1"
     jsdom: "npm:^25.0.1"
+    leaflet: "npm:^1.9.4"
+    leaflet.markercluster: "npm:^1.5.3"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
     react-router: "npm:^7.1.0"
@@ -2930,6 +2934,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/geojson@npm:*":
+  version: 7946.0.16
+  resolution: "@types/geojson@npm:7946.0.16"
+  checksum: 10c0/1ff24a288bd5860b766b073ead337d31d73bdc715e5b50a2cee5cb0af57a1ed02cc04ef295f5fa68dc40fe3e4f104dd31282b2b818a5ba3231bc1001ba084e3c
+  languageName: node
+  linkType: hard
+
 "@types/http-errors@npm:*":
   version: 2.0.5
   resolution: "@types/http-errors@npm:2.0.5"
@@ -2951,6 +2962,24 @@ __metadata:
     "@types/ms": "npm:*"
     "@types/node": "npm:*"
   checksum: 10c0/0688ac8fb75f809201cb7e18a12b9d80ce539cb9dd27e1b01e11807cb1a337059e899b8ee3abc3f2c9417f02e363a3069d9eab9ef9724b1da1f0e10713514f94
+  languageName: node
+  linkType: hard
+
+"@types/leaflet.markercluster@npm:^1.5.4":
+  version: 1.5.6
+  resolution: "@types/leaflet.markercluster@npm:1.5.6"
+  dependencies:
+    "@types/leaflet": "npm:^1.9"
+  checksum: 10c0/d49f03f0cf8880c12b827ec82377ccb26ad5df7d27c779306cd278024580f9f9fc6f2fe124a7fe3e264b05aa030b7a1f0b8a98a8a322ed36c1218bfc44e8b77f
+  languageName: node
+  linkType: hard
+
+"@types/leaflet@npm:^1.9, @types/leaflet@npm:^1.9.12":
+  version: 1.9.22
+  resolution: "@types/leaflet@npm:1.9.22"
+  dependencies:
+    "@types/geojson": "npm:*"
+  checksum: 10c0/ce2e09d0f208244478c6103ba64726b33a474f89f303860c7b0494ca1bb44f1744285d93c90093c95669497c7dbdc7c206495af0b741fe6e251bf106b0415593
   languageName: node
   linkType: hard
 
@@ -6472,6 +6501,22 @@ __metadata:
   dependencies:
     json-buffer: "npm:3.0.1"
   checksum: 10c0/aa52f3c5e18e16bb6324876bb8b59dd02acf782a4b789c7b2ae21107fab95fab3890ed448d4f8dba80ce05391eeac4bfabb4f02a20221342982f806fa2cf271e
+  languageName: node
+  linkType: hard
+
+"leaflet.markercluster@npm:^1.5.3":
+  version: 1.5.3
+  resolution: "leaflet.markercluster@npm:1.5.3"
+  peerDependencies:
+    leaflet: ^1.3.1
+  checksum: 10c0/ce2d4065da00c727f5b05fe4568e5239ebd2556e45d859307ff9c44a6f7ecb9658cd91d055f5723d93f3e491c48949cf78109f50533b0b36b9a226e4d339213f
+  languageName: node
+  linkType: hard
+
+"leaflet@npm:^1.9.4":
+  version: 1.9.4
+  resolution: "leaflet@npm:1.9.4"
+  checksum: 10c0/f639441dbb7eb9ae3fcd29ffd7d3508f6c6106892441634b0232fafb9ffb1588b05a8244ec7085de2c98b5ed703894df246898477836cfd0ce5b96d4717b5ca1
   languageName: node
   linkType: hard
 

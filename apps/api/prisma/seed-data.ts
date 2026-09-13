@@ -13,6 +13,9 @@ export interface SeedListing {
   district: string;
   address: string;
   landmark: string;
+  /** Map pin (7.3), WGS84 — a plausible Tashkent district centroid. */
+  latitude: number;
+  longitude: number;
   description: string;
   type: ListingType;
   deal: Deal;
@@ -43,6 +46,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Yunusobod tumani',
     address: 'Kashtan turar-joy majmuasi, Yunusobod 10-kvartal',
     landmark: "265-maktab va so'nggi bekat yaqinida",
+    latitude: 41.365,
+    longitude: 69.289,
     description:
       "Yunusobod 10-kvartalidagi Kashtan turar-joy majmuasida uch xonali kvartira sotiladi. Umumiy maydoni 72 m², g'isht binoning 7-qavatida joylashgan (mansarda emas). Kvartira quti holatida topshiriladi — ta'mirni o'z didingizga qarab qilasiz. Balkon bor, undan Teleminora manzarasi ochiladi. Yaqin atrofda maktab, bolalar bog'chasi, Korzinka va masjid joylashgan.",
     type: 'NEW_BUILD',
@@ -61,6 +66,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Mirobod tumani',
     address: "Nukus ko'chasi, 9 qavatli bino",
     landmark: 'Makro savdo markazi yaqinida',
+    latitude: 41.293,
+    longitude: 69.29,
     description:
       "Mirobod tumanidagi Nukus ko'chasida uch xonali kvartira sotiladi. Umumiy maydoni 95 m², to'qqiz qavatli binoning 5-qavatida joylashgan. Ta'mir o'rta holatda — yashash uchun tayyor. Balkon va alohida oshxona bor, mebelning bir qismi kvartira bilan qoladi. Orientir sifatida Makro savdo markazi xizmat qiladi, atrofda maktab va bekat yaqin.",
     type: 'SECONDARY',
@@ -79,6 +86,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Yashnobod tumani',
     address: 'Olmos mahallasi, burchak uchastka',
     landmark: 'Mahalla markazi va maktab yaqinida',
+    latitude: 41.29,
+    longitude: 69.343,
     description:
       "Yashnobod tumani Olmos mahallasida yangi qurilgan burchak hovli uy sotiladi. Yer maydoni 3 sotix, uyning umumiy maydoni 300 m². Beshta xona, alohida oshxona, yerto'la va to'rtta sanuzel mavjud. Uy jihozlari bilan birga sotiladi — ko'chib kirib yashash mumkin. Burchak uchastka bo'lgani uchun ikki tomondan kirish imkoni bor.",
     type: 'HOUSE',
@@ -97,6 +106,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Chilonzor tumani',
     address: "Chilonzor-1 kvartali, Muqimiy ko'chasi",
     landmark: 'Pionerskiy va Oq Saroy restorani yaqinida',
+    latitude: 41.285,
+    longitude: 69.204,
     description:
       "Chilonzor-1 kvartalida uch xonali kvartira sotiladi. Umumiy maydoni 87 m², to'rt qavatli binoning 3-qavatida joylashgan, shiftlari baland. Kvartirada yevro ta'mir qilingan, mebel va maishiy texnika bilan birga topshiriladi. Orientir: Pionerskiy, Oq Saroy restorani, Muqimiy ko'chasi. Chilonzor metro bekati va bozor yaqin.",
     type: 'SECONDARY',
@@ -115,6 +126,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Shayxontohur tumani',
     address: "Nurafshon ko'chasi, 50-uy",
     landmark: "Riviera savdo markazi ro'parasida",
+    latitude: 41.323,
+    longitude: 69.229,
     description:
       "Shayxontohur tumanidagi Nurafshon ko'chasida yangi binoda ikki xonali kvartira sotiladi. Umumiy maydoni 45.23 m², 11 qavatli binoning 11-qavatida, shift balandligi 3.3 m. Kadastr va gaz ulangan. Yangi yevro ta'mir: mebel, idish-tovoq va texnika (2 ta konditsioner, muzlatgich, televizor, pishirish paneli, so'rg'ich, kir yuvish mashinasi, duxovka, kotyol va boyler) qoladi. Issiq pol o'rnatilgan.",
     type: 'NEW_BUILD',
@@ -133,6 +146,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: "Mirzo Ulug'bek tumani",
     address: 'Darhan Residence turar-joy majmuasi',
     landmark: "Darhan, Novomoskovskaya ko'chasi yaqinida",
+    latitude: 41.33,
+    longitude: 69.34,
     description:
       "Mirzo Ulug'bek tumanidagi Darhan Residence majmuasida ikki xonali kvartira sotiladi. Umumiy maydoni 50 m², 12 qavatli binoning 2-qavatida joylashgan. Yevro lyuks ta'mir qilingan, mebel va maishiy texnika bilan topshiriladi, kadastri tayyor. Majmuada yopiq hovli va yer osti avtoturargohi bor, kvartiraning ochiq terrassasi mavjud.",
     type: 'NEW_BUILD',
@@ -151,6 +166,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Yakkasaroy tumani',
     address: "Bog'ibo'ston ko'chasi, Salamatina turar-joy majmuasi",
     landmark: 'Yakkasaroy masjidi va Birodarlar qabri yodgorligi yaqinida',
+    latitude: 41.293,
+    longitude: 69.263,
     description:
       "Yakkasaroy masjidi yonidagi Salamatina turar-joy majmuasida kvartira sotiladi. Bog'ibo'ston ko'chasi bilan Yakkasaroy ko'chasi kesishmasida, Kichik Halqa Yo'liga yaqin. Umumiy maydoni 61.43 m², 11 qavatli g'isht binoning 10-qavatida. Ikki xonali kvartira sifatli yevro ta'mirdan so'ng uch xonaga aylantirilgan, yangi mebel, idish-tovoq va maishiy texnika bilan jihozlangan.",
     type: 'SECONDARY',
@@ -169,6 +186,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Olmazor tumani',
     address: 'Olmazor City turar-joy majmuasi',
     landmark: "Olmazor tumani markazi, qo'riqlanadigan yopiq hudud",
+    latitude: 41.36,
+    longitude: 69.207,
     description:
       "Olmazor City biznes klass turar-joy majmuasida uch xonali kvartira sotiladi. Umumiy maydoni 80 m², to'qqiz qavatli yangi binoning 9-qavatida. Zamonaviy «kalit topshirish» ta'miri qilingan, butun mebel va texnika qoladi. Ikkita sanuzel, yorug' va qulay planirovka, balkondan chiroyli manzara ochiladi. Majmua hududi qo'riqlanadi, infratuzilma rivojlangan — ko'chib kirib yashash mumkin.",
     type: 'NEW_BUILD',
@@ -187,6 +206,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Sergeli tumani',
     address: 'Ikki qavatli kottej, quruvchi kompaniyadan',
     landmark: 'Metro bekatiga 350–400 metr',
+    latitude: 41.223,
+    longitude: 69.221,
     description:
       "Quruvchi kompaniyadan to'g'ridan-to'g'ri, vositachisiz premium darajadagi g'isht kottej sotiladi. Umumiy maydoni 290 m², oltita xona, ikki qavat. Barcha qurilish texnologiyalariga rioya qilib, sifatli materiallardan qurilgan, mualliflik ta'miri qilingan. Uy yashashga to'liq tayyor va katta oila uchun mos. Metro bekatiga atigi 350–400 metr.",
     type: 'HOUSE',
@@ -205,6 +226,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Uchtepa tumani',
     address: 'Urikzor Residence turar-joy majmuasi',
     landmark: "Majmuaning o'z maktabi va bog'chasi yonida",
+    latitude: 41.287,
+    longitude: 69.183,
     description:
       "Urikzor Residence yangi turar-joy majmuasida ikki xonali yevrokvartira sotiladi. Umumiy maydoni 58 m², 16 qavatli monolit binoning 14-qavatida, kadastri tayyor. Yonginasida majmuaning o'z maktabi va bolalar bog'chasi bor. Hudud 24/7 qo'riqlanadi, kirish faqat uy aholisining avtomobillari uchun. Har bir podyezdda ikkitadan lift, ular elektr o'chganda generatorga ulanadi. Ipoteka rasmiylashtirish mumkin.",
     type: 'NEW_BUILD',
@@ -223,6 +246,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Yakkasaroy tumani',
     address: 'Uzbegim turar-joy majmuasi',
     landmark: "Qo'riqlanadigan yashil hudud ichida",
+    latitude: 41.293,
+    longitude: 69.263,
     description:
       "Yakkasaroy tumanidagi Uzbegim turar-joy majmuasida uch xonali kvartira uzoq muddatga ijaraga beriladi. Umumiy maydoni 110 m², monolit binoning 4-qavatida, shift balandligi 3 m. Mualliflik loyihasi bo'yicha ta'mirlangan, ikkita sanuzel, to'liq mebel va maishiy texnika bilan topshiriladi — ko'chib kirib yashash mumkin. Majmua hududi qo'riqlanadi, avtoturargoh va bolalar maydonchasi bor. Vositachilik haqi olinmaydi.",
     type: 'NEW_BUILD',
@@ -241,6 +266,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: "Mirzo Ulug'bek tumani",
     address: "Buz bozor, Buyuk Ipak Yo'li metrosi atrofi",
     landmark: "Buyuk Ipak Yo'li metrosiga piyoda",
+    latitude: 41.33,
+    longitude: 69.34,
     description:
       "Mirzo Ulug'bek tumanida, Buyuk Ipak Yo'li metrosi yaqinida uch xonali kvartira ijaraga beriladi. Umumiy maydoni 70 m², g'isht binoning 5-qavatida. Xonalar alohida ajratilgan, 2×6 metrli balkon bor. Kvartira mebel va maishiy texnika bilan topshiriladi, ta'mir o'rta holatda. Agentlik xizmati bir oylik ijara haqining 50 foizini tashkil qiladi.",
     type: 'SECONDARY',
@@ -259,6 +286,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Chilonzor tumani',
     address: "Chilonzor tumani, 76-seriya g'isht bino",
     landmark: 'Hamza metrosi yaqinida',
+    latitude: 41.285,
+    longitude: 69.204,
     description:
       "Chilonzor tumanida, Hamza metrosi yonida ikki xonali kvartira ijaraga beriladi. Umumiy maydoni 48 m², 76-seriyali to'rt qavatli g'isht binoning 4-qavatida. Ikkala xona ham keng, ta'mir yaxshi holatda. Kvartira to'liq jihozlangan — kerakli maishiy texnika bor, darhol ko'chib kirish mumkin. Atrofda do'konlar, transport va butun infratuzilma mavjud.",
     type: 'SECONDARY',
@@ -277,6 +306,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Mirobod tumani',
     address: 'Mirabad Avenue turar-joy majmuasi',
     landmark: 'Shahar markazi, infratuzilma piyoda masofada',
+    latitude: 41.293,
+    longitude: 69.29,
     description:
       "Mirobod tumanidagi Mirabad Avenue majmuasida premium darajadagi uch xonali kvartira ijaraga beriladi. Umumiy maydoni 120 m², 12 qavatli binoning 6-qavatida: ikkita yotoqxona, ikkita sanuzel va studiya oshxona. Mualliflik loyihasi bo'yicha yangi ta'mirlangan, «aqlli uy» tizimi o'rnatilgan. Maktab, bog'cha, do'kon va kafelar piyoda masofada joylashgan.",
     type: 'NEW_BUILD',
@@ -295,6 +326,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: "Mirzo Ulug'bek tumani",
     address: 'C-1 mavzesi, Dolce Italia yonida',
     landmark: "Yo'l bo'yi, birinchi liniya",
+    latitude: 41.33,
+    longitude: 69.34,
     description:
       "Mirzo Ulug'bek tumanida, C-1 mavzesida Dolce Italia yonidagi tijorat xonasi ijaraga beriladi. Maydoni 96 m², to'rt qavatli binoning 1-qavatida, yo'l bo'yidagi birinchi liniyada. Yevro ta'mir qilingan va mebel bilan topshiriladi; barcha kommunikatsiyalar, konditsioner, video kuzatuv hamda yong'in signalizatsiyasi ulangan. Salon, kafe, do'kon yoki ofis sifatida foydalanish mumkin, avtoturargoh bor.",
     type: 'COMMERCIAL',
@@ -313,6 +346,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Shayxontohur tumani',
     address: 'Nest One majmuasi, biznes markaz bloki',
     landmark: 'Konservatoriya tomon manzara ochiladi',
+    latitude: 41.323,
+    longitude: 69.229,
     description:
       "Shayxontohur tumanidagi Nest One biznes markazida ofis ijaraga beriladi. Kadastr bo'yicha maydoni 58 m², 20 qavatli binoning 19-qavatida — derazadan konservatoriya tomon manzara ochiladi. Mualliflik loyihasi bo'yicha ta'mirlangan; internet, konditsioner, video kuzatuv va kecha-kunduz qo'riqlash mavjud. Kommunal to'lovlar hamda soliq ijara narxidan alohida hisoblanadi, kamida uch oylik oldindan to'lov talab qilinadi.",
     type: 'COMMERCIAL',
@@ -331,6 +366,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: "Mirzo Ulug'bek tumani",
     address: "C-1 mavzesi, Eko park ro'parasi",
     landmark: 'ChayKofe kafesi yonida, birinchi liniya',
+    latitude: 41.33,
+    longitude: 69.34,
     description:
       "Mirzo Ulug'bek tumanida, C-1 mavzesida Eko park ro'parasidagi noturar xona sotiladi. Maydoni 48 m², to'rt qavatli binoning 1-qavatida, shift balandligi 3 m. Birinchi liniyada joylashgan, yevro ta'mir qilingan va barcha kommunikatsiyalar ulangan. Uch-to'rtta avtomobil uchun turargoh bor. Har qanday biznes turi uchun mos — do'kon, kafe, ofis yoki omborxona.",
     type: 'COMMERCIAL',
@@ -349,6 +386,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     district: 'Chilonzor tumani',
     address: "Chilonzor 6-kvartal, Dream Park ro'parasi",
     landmark: "Korzinka yonida, yo'l bo'yi birinchi liniya",
+    latitude: 41.285,
+    longitude: 69.204,
     description:
       "Chilonzor tumanining 6-kvartalida, Dream Park ro'parasidagi noturar xona sotiladi. Maydoni 41 m², to'rt qavatli binoning 1-qavatida, yo'l bo'yidagi birinchi liniyada, shift balandligi 3 m. Xona tayyor ijarachi bilan o'tadi — oyiga 1 200 dollar daromad keltiradi, ya'ni investitsiya sifatida darhol ishlaydi. Kecha-kunduz qo'riqlash, signalizatsiya, video kuzatuv va 4–5 ta turargoh joyi mavjud. Narxda kelishuv mumkin.",
     type: 'COMMERCIAL',

@@ -1593,6 +1593,67 @@ reja: `docs/superpowers/plans/2026-09-13-phase-7.2d-developer-insights.md`.
   chat**; **saqlangan tahlil tarixi**; **avtomatik ogohlantirish/hisobot**; **eksport (PDF/CSV)**; tahlilni
   **saqlash**. Bular ataylab keyinga qoldirilgan.
 
+### 7.3 — Xarita
+
+Platforma endi e'lonlar va yangi qurilishlarni **xaritada** ko'rsatadi: xaridor `/search`da ro'yxat bilan
+xarita orasida almashadi, e'lon sahifasi joyni bitta pin bilan ko'rsatadi, ega e'lon joylashda pinni **qo'lda
+tanlaydi**. Xarita **Leaflet + OpenStreetMap** (keysiz, bepul) ustida, **faqat klient tomonda** va
+**kod-bo'lingan** (`React.lazy`) — mavjud sahifalarga tegmasdan qo'shildi. Koordinatalar **yangi endpoint
+yaratmasdan** mavjud feedlarga qo'shildi, xarita esa ro'yxat bilan **bir xil** natijalarni chizadi (list ↔ map
+pariteti). Spec: `docs/superpowers/specs/2026-09-13-phase-7.3-map-design.md`,
+reja: `docs/superpowers/plans/2026-09-13-phase-7.3-map.md`.
+
+#### Koordinatalar — additiv, mavjud feedlarda
+
+- **Additiv migratsiya** (`phase_7_3_map_coords`) — `Listing`ga `latitude`/`longitude` (`Float?`, **nullable**)
+  qo'shadi; mavjud ustunlarga tegilmaydi (`Complex` lat/lng Phase 5.3'dayoq bor edi). Koordinatasiz e'lon
+  xaritada pin bermaydi, ro'yxatda avvalgidek ko'rinaveradi.
+- **Yangi endpoint YO'Q** — koordinatalar **mavjud** feedlarda tashiladi: **`GET /api/objects`**,
+  **`GET /api/objects/:id`** (e'lonlar) va **`GET /api/jk`** (yangi qurilishlar). Xarita alohida so'rov
+  yubormaydi — ro'yxat qaysi ma'lumotni yuklasa, xarita ham o'shani chizadi.
+- **Yagona manba DTO'lari** (shared) — `ListingSummary`/`ListingDetail`/`PublicComplexSummary`ga
+  `latitude`/`longitude` (`number | null`, **doim to'ldirilgan**) qo'shildi; `ListingDraft`da esa ular
+  **ixtiyoriy** va **WGS84 tekshiruvli** (`lat −90..90`, `lng −180..180`).
+
+#### List ↔ map pariteti (klient-tomon)
+
+- Xarita **yangi qidiruv yozmaydi** — u ro'yxat ishlatgan **o'sha klient-filtrlangan `matches`** ustidan
+  chizadi (brauzer-tomon filtr, §6), plus `complexesQuery()` orqali yangi qurilish pinlari. Shu bilan ro'yxat
+  va xarita **doim bir xil** e'lon to'plamini ko'rsatadi.
+- **Koordinatasi bor** e'lonlargina pin oladi (`null` lat/lng chiqarib tashlanadi); qolgani ro'yxatda qoladi.
+
+#### Xarita primitivi — Leaflet + OSM, klient-only, kod-bo'lingan
+
+- **`shared/ui/map`dagi `PinMap`** — Leaflet ustidagi yagona primitiv: `useEffect`da initsializatsiya
+  (SSR'siz, **faqat klient**), consumerlar uni **`React.lazy`** bilan alohida chunk qilib yuklaydi
+  (Leaflet + cluster bundle asosiy yukka tushmaydi).
+- **Narx pinlari `divIcon`** bilan chiziladi (Leaflet'ning default PNG markerlarisiz — Vite ularni resolve
+  qilmaydi, buzilgan rasm chiqardi); yorliq `textContent` orqali qo'yiladi (kompleks nomidan innerHTML XSS
+  yo'q). Ko'p pin **klasterlanadi** (`leaflet.markercluster`).
+- **Keysiz** — OSM tile (`tile.openstreetmap.org`); API kalit ham, hisob ham kerak emas (**yangi env yo'q**).
+
+#### Uch consumer
+
+- **`/search` toggle** — "Ro'yxat" / "Xarita" almashtirgichi; xarita ko'rinishi o'sha `matches` + yangi
+  qurilish pinlarini klaster bilan chizadi, pin bosilsa e'lon/kompleksga o'tadi.
+- **E'lon sahifasi "Xaritada"** — koordinatasi bor e'lon uchun bitta pinli mini-xarita (koordinatasiz bo'lsa
+  blok ko'rinmaydi).
+- **E'lon joylash sehrgari (`LocationStep`)** — **pin-tanlagich**: ega xaritani bosib joyni belgilaydi,
+  koordinata draftga tushadi. Pin **ixtiyoriy** — belgilamasa e'lon baribir joylanadi.
+
+#### Ega pini + validatsiya + seed
+
+- **Ega pini ixtiyoriy** va **WGS84 tekshiruvli** — `ListingDraft` diapazondan chiqqan koordinatani
+  (`lat`/`lng` chegaradan tashqari) **400** bilan rad etadi (shared Zod → global `ZodError → 400`).
+- **Seed** e'lonlarga koordinata beradi (Toshkent) — demo e'lonlar darrov xaritada ko'rinadi; yangi qurilish
+  pinlari esa **istalgan CRM'da chop etilgan kompleks** uchun runtime'da chiqadi (`Complex` koordinatasidan).
+
+#### Ma'lumot modeli va env
+
+- **Bitta additiv migratsiya** (`Listing` += `latitude`/`longitude` `Float?`) — yangi Prisma model YO'Q, yangi
+  jadval YO'Q. **Yangi env qo'shilmagan** (OSM keysiz). Marketplace, CRM va boshqa oqimlarga **tegilmagan** —
+  koordinatalar mavjud feedlarga qo'shildi, xarita mavjud `matches` ustidan chizadi.
+
 ### Kelasi
 
 - **7.2a yakunlandi** (ommaviy NL→filtr `POST /api/ai/search-parse` + qat'iy chiqish validatsiyasi +
@@ -1607,7 +1668,12 @@ reja: `docs/superpowers/plans/2026-09-13-phase-7.2d-developer-insights.md`.
 - **7.2d yakunlandi** (quruvchiga-cheklangan, org-doirasidagi `GET /api/crm/finance/insight` + server
   hisoblagan raqamlar ustidan gibrid doim ishlaydigan shablon + ishonchsiz-chiqish parslash + `DeveloperModule
 → AiModule` ulanishi + `apps/crm` Moliya sahifasidagi nusxalanadigan "AI tahlil" paneli; stateless). Shu
-  bilan **Phase 7.2 (AI yordamchi) yakunlandi**. So'ng **7.3** xarita → **7.4** jurnal.
+  bilan **Phase 7.2 (AI yordamchi) yakunlandi**.
+- **7.3 yakunlandi** (additiv `Listing` lat/lng migratsiyasi + koordinatalar mavjud `GET /api/objects` ·
+  `/api/objects/:id` · `/api/jk` feedlarida — **yangi endpoint yo'q** + Leaflet/OSM keysiz, klient-only,
+  kod-bo'lingan `PinMap` primitivi (divIcon narx pinlari + klaster) + `/search` ro'yxat↔xarita toggle · e'lon
+  "Xaritada" · sehrgar pin-tanlagich + WGS84-tekshiruvli ega pini + seed koordinatalari; list ↔ map pariteti).
+  So'ng **7.4** jurnal.
 
 ## 5. Texnik stack
 

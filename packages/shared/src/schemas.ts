@@ -50,6 +50,10 @@ export const ListingSummarySchema = z.object({
   district: z.string(),
   /** The geo line on a card: "Metro «Shahriston» 10 daq." */
   landmark: z.string(),
+  /** Map pin latitude (7.3); null until set. */
+  latitude: z.number().nullable(),
+  /** Map pin longitude (7.3); null until set. */
+  longitude: z.number().nullable(),
   /** Drives the coloured badge on a card (new build / secondary / house / commercial). */
   type: ListingTypeSchema,
   /** Drives the "Sotib olish / Ijara" segment and the "/oy" price suffix. */
@@ -159,6 +163,8 @@ export const ListingDraftSchema = z.object({
   district: z.string().min(2).optional(),
   address: z.string().min(4).optional(),
   landmark: z.string().min(2).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   rooms: z.number().int().min(0).max(20).nullable().optional(),
   areaM2: z.number().positive().max(10_000).optional(),
   floor: z.string().nullable().optional(),
@@ -975,6 +981,10 @@ export const PublicComplexSummarySchema = z.object({
   slug: z.string(),
   name: z.string(),
   district: z.string(),
+  /** Map pin latitude (5.3); null until set. */
+  latitude: z.number().nullable(),
+  /** Map pin longitude (5.3); null until set. */
+  longitude: z.number().nullable(),
   coverImage: ImageSchema.nullable(),
   buildStatus: ComplexStatusSchema,
   priceFromSom: z.string().nullable(), // cheapest available unit, BigInt-as-string

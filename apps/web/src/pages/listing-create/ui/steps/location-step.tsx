@@ -1,5 +1,8 @@
+import { lazy, Suspense } from 'react';
 import type { ListingDraftState } from '../../model/use-listing-draft';
 import { WizardNav } from '../wizard-nav';
+
+const PinMap = lazy(() => import('@/shared/ui/map/pin-map'));
 
 const inputClass =
   'w-full rounded-[14px] border border-line bg-surface px-3.5 py-3 text-[14.5px] font-medium outline-none placeholder:text-ink-3 focus:border-accent';
@@ -8,7 +11,7 @@ interface Props {
   draft: ListingDraftState;
 }
 
-/** Step 2: address as plain text. No map — out of scope for Phase 1 (mirrors the read-side Location component). */
+/** Step 2: address as plain text plus an optional map pin-picker (writes latitude/longitude to the draft). */
 export function LocationStep({ draft }: Props) {
   const { fields, patch, next, back, isSaving } = draft;
 
@@ -48,10 +51,27 @@ export function LocationStep({ draft }: Props) {
           placeholder="Masalan: Metro «Shahriston» 10 daq."
           className={inputClass}
         />
-        <span className="mt-1.5 block text-[12px] text-ink-3">
-          Xarita hozircha mavjud emas — manzilni matn shaklida kiriting.
-        </span>
       </label>
+
+      <div className="mt-4">
+        <p className="mb-1.5 text-[13px] font-bold text-ink-2">
+          Xaritada joyni belgilang (ixtiyoriy)
+        </p>
+        <Suspense fallback={<div className="h-[320px] w-full rounded-card bg-surface" />}>
+          <PinMap
+            mode="pick"
+            lat={fields.latitude ?? null}
+            lng={fields.longitude ?? null}
+            onPick={(latitude, longitude) => patch({ latitude, longitude })}
+            className="h-[320px] w-full overflow-hidden rounded-card border border-line"
+          />
+        </Suspense>
+        {fields.latitude != null && (
+          <p className="mt-1.5 text-[12px] font-semibold text-ink-3">
+            Belgilandi: {fields.latitude.toFixed(4)}, {fields.longitude?.toFixed(4)}
+          </p>
+        )}
+      </div>
 
       <WizardNav
         onBack={back}
