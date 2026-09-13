@@ -1150,6 +1150,12 @@ export const DebtorRowSchema = z.object({
   remainingSom: z.string().regex(/^\d+$/),
 });
 
+/** The developer AI finance-insight result. ai=true → Gemini-authored; ai=false → template narration. */
+export const FinanceInsightResponseSchema = z.object({
+  ai: z.boolean(),
+  insight: z.string(),
+});
+
 export type Agent = z.infer<typeof AgentSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type ListingType = z.infer<typeof ListingTypeSchema>;
@@ -1281,3 +1287,4 @@ export type PaymentScheduleCreate = z.infer<typeof PaymentScheduleCreateSchema>;
 export type PaymentRecord = z.infer<typeof PaymentRecordSchema>;
 export type FinanceSummary = z.infer<typeof FinanceSummarySchema>;
 export type DebtorRow = z.infer<typeof DebtorRowSchema>;
+export type FinanceInsightResponse = z.infer<typeof FinanceInsightResponseSchema>;
