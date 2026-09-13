@@ -1,0 +1,29 @@
+.price-pin {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: #6d28d9;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+  border: 1.5px solid #fff;
+}
+.loc-pin {
+  font-size: 26px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.4));
+}
+/* Leaflet writes the icon as `class="leaflet-marker-icon <className>"` (NOT
+   `leaflet-div-icon`), so the override MUST target `.leaflet-marker-icon.*`.
+   With `iconSize: undefined` (see the divIcon calls) Leaflet writes no inline
+   width/height, so the label sizes itself; these rules strip the default box. */
+.leaflet-marker-icon.price-pin,
+.leaflet-marker-icon.loc-pin {
+  background: transparent;
+  border: none;
+  width: auto !important;
+  height: auto !important;
+}
