@@ -4,6 +4,7 @@ import {
   OG_IMAGE_WIDTH,
   formatPriceSom,
   imageSrcSet,
+  type ArticleDetail,
   type ListingDetail,
   type PublicComplexDetail,
   type PublicPresentation,
@@ -145,6 +146,54 @@ export function buildRealtorMetaTags(
     meta('name', 'description', description),
     `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
     meta('property', 'og:type', 'website'),
+    meta('property', 'og:site_name', 'Rieltor'),
+    meta('property', 'og:url', pageUrl),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
+    meta('name', 'twitter:card', 'summary_large_image'),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
+  ];
+
+  if (relativeImage) {
+    // Telegram does not follow relative paths — an absolute URL is required.
+    const absolute = `${baseUrl}${relativeImage}`;
+    tags.push(
+      meta('property', 'og:image', absolute),
+      meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
+      meta('property', 'og:image:height', String(OG_IMAGE_HEIGHT)),
+      meta('name', 'twitter:image', absolute),
+    );
+  }
+
+  return tags.join('\n    ');
+}
+
+/**
+ * OG/head tags for a public journal article page (/jurnal/:slug). Mirrors
+ * buildComplexMetaTags: the Telegram/link preview is the whole point of the SSR
+ * shell for a share link. The title is the article title; the description is the
+ * excerpt (truncated, since the excerpt max is 300 but a description caps at 200);
+ * the preview image is the cover, or omitted (like the complex branch) when the
+ * article has none.
+ */
+export function buildArticleMetaTags(
+  article: ArticleDetail,
+  slug: string,
+  baseUrl: string,
+): string {
+  const title = article.title;
+  const description = truncate(article.excerpt);
+  const pageUrl = `${baseUrl}/jurnal/${slug}`;
+  // The cover is a renderable relative URL; omitted (no og:image tag) when the
+  // article has no cover, same as the complex/realtor branches.
+  const relativeImage = article.cover?.ogUrl ?? null;
+
+  const tags = [
+    `<title>${escapeHtml(title)}</title>`,
+    meta('name', 'description', description),
+    `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    meta('property', 'og:type', 'article'),
     meta('property', 'og:site_name', 'Rieltor'),
     meta('property', 'og:url', pageUrl),
     meta('property', 'og:title', title),

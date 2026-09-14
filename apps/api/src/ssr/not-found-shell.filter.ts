@@ -3,10 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { ComplexesPublicService } from '../complexes-public/complexes-public.service';
 import type { Env } from '../config/env';
+import { JournalPublicService } from '../journal-public/journal-public.service';
 import { PresentationsService } from '../presentations/presentations.service';
 import { RealtorPublicService } from '../realtor-public/realtor-public.service';
 import { HtmlCacheService } from './html-cache.service';
-import { buildComplexMetaTags, buildPresentationMetaTags, buildRealtorMetaTags } from './meta';
+import {
+  buildArticleMetaTags,
+  buildComplexMetaTags,
+  buildPresentationMetaTags,
+  buildRealtorMetaTags,
+} from './meta';
 
 /** Public presentation page path: /p/:token (a single token segment). */
 const PRESENTATION_PATH = /^\/p\/([^/]+)\/?$/;
@@ -19,6 +25,12 @@ const COMPLEX_PATH = /^\/jk\/([^/]+)\/?$/;
 
 /** Public ЖК marketplace browse page path: /jk (no slug). */
 const COMPLEX_BROWSE_PATH = /^\/jk\/?$/;
+
+/** Public journal article detail page path: /jurnal/:slug (a single slug segment). */
+const JOURNAL_PATH = /^\/jurnal\/([^/]+)\/?$/;
+
+/** Public journal list browse page path: /jurnal (no slug). */
+const JOURNAL_BROWSE_PATH = /^\/jurnal\/?$/;
 
 /**
  * Catches NotFoundException thrown either by NestJS itself (the "Cannot GET /x"
@@ -56,6 +68,14 @@ const COMPLEX_BROWSE_PATH = /^\/jk\/?$/;
  * /jk/:slug gets its complex og-meta for a live slug (200) or the plain 404 shell
  * for an unknown one; /jk is a real browse page, so it gets the plain shell with
  * a 200 (site-default OG) — it need not fetch any complex.
+ *
+ * The public journal pages are the same special case again: 'jurnal' is ALSO an
+ * API controller (@Controller('jurnal') → /api/jurnal, /api/jurnal/:slug), so it
+ * cannot be a prefix-excluded SSR route without un-prefixing that API GET. Both
+ * the article page (GET /jurnal/:slug) and the list browse page (GET /jurnal)
+ * land here: /jurnal/:slug gets its article og-meta for a live PUBLISHED slug
+ * (200) or the plain 404 shell for an unknown/draft one (never leaks a draft);
+ * /jurnal is a real browse page, so it gets the plain shell with a 200.
  */
 @Catch(NotFoundException)
 export class NotFoundShellFilter implements ExceptionFilter {
@@ -64,6 +84,7 @@ export class NotFoundShellFilter implements ExceptionFilter {
     private readonly presentations: PresentationsService,
     private readonly realtors: RealtorPublicService,
     private readonly complexes: ComplexesPublicService,
+    private readonly journal: JournalPublicService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -132,10 +153,35 @@ export class NotFoundShellFilter implements ExceptionFilter {
       }
     }
 
+    const journalMatch = req.method === 'GET' ? JOURNAL_PATH.exec(req.path) : null;
+    const articleSlug = journalMatch?.[1];
+    if (articleSlug) {
+      try {
+        const article = await this.journal.getBySlug(articleSlug);
+        const baseUrl = this.config.get('PUBLIC_BASE_URL', { infer: true });
+        res
+          .status(200)
+          .type('html')
+          .send(this.html.injectMeta(shell, buildArticleMetaTags(article, articleSlug, baseUrl)));
+        return;
+      } catch (error) {
+        // Unknown/draft slug → fall through to the plain 404 shell, same as obj/:id.
+        if (!(error instanceof NotFoundException)) throw error;
+      }
+    }
+
     // The ЖК marketplace browse page (GET /jk) is a real SPA page, not a missing
     // route: serve the plain shell (site-default OG) with a 200 so a hard refresh
     // or shared /jk link opens the list, mirroring the SPA_ROUTES browse pages.
     if (req.method === 'GET' && COMPLEX_BROWSE_PATH.test(req.path)) {
+      res.status(200).type('html').send(shell);
+      return;
+    }
+
+    // The journal list browse page (GET /jurnal) is a real SPA page, not a missing
+    // route: serve the plain shell (site-default OG) with a 200 so a hard refresh
+    // or shared /jurnal link opens the list, mirroring the /jk browse branch.
+    if (req.method === 'GET' && JOURNAL_BROWSE_PATH.test(req.path)) {
       res.status(200).type('html').send(shell);
       return;
     }
