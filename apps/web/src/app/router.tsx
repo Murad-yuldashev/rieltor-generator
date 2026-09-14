@@ -10,6 +10,7 @@ import { ListingPage } from '@/pages/listing';
 import { ListingCreatePage } from '@/pages/listing-create';
 import { ModerationConversionPage } from '@/pages/moderation-conversion';
 import { ModerationDevelopersPage } from '@/pages/moderation-developers';
+import { ModerationJournalPage } from '@/pages/moderation-journal';
 import { ModerationRealtorsPage } from '@/pages/moderation-realtors';
 import { ModerationReviewsPage } from '@/pages/moderation-reviews';
 import { MortgagePage } from '@/pages/mortgage';
@@ -80,6 +81,8 @@ export const router = createBrowserRouter([
       { path: '/moderation/conversion', element: <ModerationConversionPage /> },
       // Moderator-only developer verification queue — same admin surface, role-gated in-page.
       { path: '/moderation/developers', element: <ModerationDevelopersPage /> },
+      // Moderator-only journal authoring (CRUD) — same admin surface, role-gated in-page.
+      { path: '/moderation/journal', element: <ModerationJournalPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
