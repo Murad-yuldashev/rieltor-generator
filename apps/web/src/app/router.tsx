@@ -4,6 +4,8 @@ import { ComplexesPage } from '@/pages/complexes';
 import { ContactPage } from '@/pages/contact';
 import { FavoritesPage } from '@/pages/favorites';
 import { HomePage } from '@/pages/home';
+import { JurnalArticlePage } from '@/pages/jurnal-article';
+import { JurnalPage } from '@/pages/jurnal';
 import { ListingPage } from '@/pages/listing';
 import { ListingCreatePage } from '@/pages/listing-create';
 import { ModerationConversionPage } from '@/pages/moderation-conversion';
@@ -37,6 +39,8 @@ export const router = createBrowserRouter([
           { path: '/search', element: <SearchPage /> },
           // Public ЖК browse — shares the tab chrome so the nav highlights (T9 adds /jk/:slug outside).
           { path: '/jk', element: <ComplexesPage /> },
+          // Public journal browse — shares the tab chrome; /jurnal/:slug sits outside (own reading chrome).
+          { path: '/jurnal', element: <JurnalPage /> },
           { path: '/favorites', element: <FavoritesPage /> },
           { path: '/my/listings', element: <MyListingsPage /> },
           { path: '/my/properties', element: <MyPropertiesPage /> },
@@ -56,6 +60,8 @@ export const router = createBrowserRouter([
       // The public ЖК detail sits outside TabLayout too: full-bleed gallery + its own
       // sticky inquiry CTA, mirroring /obj/:id and /r/:slug (own chrome, no bottom nav).
       { path: '/jk/:slug', element: <ComplexPage /> },
+      // The public article sits outside TabLayout too: its own reading chrome, no bottom nav.
+      { path: '/jurnal/:slug', element: <JurnalArticlePage /> },
       // Public client presentation — token-gated, no auth, no bottom nav.
       { path: '/p/:token', element: <PresentationPage /> },
       // Public realtor microsite — slug-gated, no auth, no bottom nav.

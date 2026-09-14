@@ -148,6 +148,19 @@ export function SiteHeader() {
             <Icon name="doc" className="h-[17px] w-[17px]" strokeWidth={2.1} />
             <span className="hidden lg:inline">Ipoteka</span>
           </NavLink>
+
+          {/* Journal — desktop-only entry, same treatment as the valuation/mortgage links. */}
+          <NavLink
+            to="/jurnal"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
+                isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
+              }`
+            }
+          >
+            <Icon name="doc" className="h-[17px] w-[17px]" strokeWidth={2.1} />
+            <span className="hidden lg:inline">Jurnal</span>
+          </NavLink>
         </nav>
 
         <AccountArea onOpenLogin={openLoginModal} />
