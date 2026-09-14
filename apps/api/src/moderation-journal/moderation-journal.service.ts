@@ -139,7 +139,7 @@ export class ModerationJournalService {
   private async uniqueSlug(title: string, selfId?: string): Promise<string> {
     const base = slugify(title);
     for (let i = 0; ; i++) {
-      const candidate = i === 0 ? base : `${base}-${i}`.slice(0, 40);
+      const candidate = i === 0 ? base : `${base}-${i}`;
       const clash = await this.prisma.article.findFirst({
         where: { slug: candidate, ...(selfId ? { NOT: { id: selfId } } : {}) },
         select: { id: true },
