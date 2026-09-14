@@ -30,6 +30,12 @@ function Shell({ children }: { children: React.ReactNode }) {
           >
             Konversiya →
           </Link>
+          <Link
+            to="/moderation/journal"
+            className="text-[13px] font-bold text-accent hover:underline"
+          >
+            Jurnal →
+          </Link>
         </div>
       </div>
       <div className="mt-4">{children}</div>

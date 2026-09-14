@@ -1,4 +1,4 @@
-import type { Deal, ListingType } from '@prisma/client';
+import type { ArticleCategory, Deal, ListingType } from '@prisma/client';
 
 export interface SeedListing {
   id: string;
@@ -468,5 +468,93 @@ export const mortgagePrograms: SeedMortgageProgram[] = [
     minDownBps: 2000,
     maxAmountSom: 1_000_000_000n,
     position: 6,
+  },
+];
+
+export interface SeedArticle {
+  slug: string;
+  title: string;
+  excerpt: string;
+  /** Uzbek markdown source, rendered safely (react-markdown, no raw HTML) on the public page. */
+  body: string;
+  category: ArticleCategory;
+  publishedAt: Date;
+}
+
+/**
+ * Demo journal articles for the 7.4 SEO landing pages. Bodies are Uzbek markdown
+ * (a few ## headings, a paragraph, a bullet list and a bold run). Seeded as
+ * PUBLISHED and authored by the seed moderator (see seed.ts). Idempotent by slug.
+ */
+export const SEED_ARTICLES: SeedArticle[] = [
+  {
+    slug: 'toshkent-kvartira-narxlari-2026',
+    title: 'Toshkentda kvartira narxlari: 2026-yil tahlili',
+    excerpt:
+      "Poytaxt bozorida narxlar qanday o'zgarayapti, qaysi tumanlar qimmatlashmoqda va xaridor nimaga e'tibor berishi kerak.",
+    category: 'BOZOR',
+    publishedAt: new Date('2026-08-15T09:00:00Z'),
+    body: [
+      '## Bozorning umumiy holati',
+      '',
+      "2026-yilda Toshkent ko'chmas mulk bozori barqaror o'sishda davom etmoqda. Yangi qurilish majmualari soni ortgani sayin, xaridorlar tanlovi ham kengaymoqda. Ayni paytda ikkilamchi bozor narxlari yangi binolarga nisbatan sekinroq oshib bormoqda.",
+      '',
+      '## Qaysi tumanlar yetakchi',
+      '',
+      'Narx dinamikasi tumanma-tuman farq qiladi. Eng faol segmentlar quyidagilar:',
+      '',
+      '- **Yunusobod** — yangi majmualar va rivojlangan infratuzilma',
+      '- **Mirzo Ulugʻbek** — biznes markazlar va talab yuqori',
+      '- **Chilonzor** — metro yaqinligi narxni ushlab turadi',
+      '',
+      'Xaridor uchun asosiy maslahat: narxni faqat maydonga emas, balki joylashuv va uy holatiga qarab baholang.',
+    ].join('\n'),
+  },
+  {
+    slug: 'ipoteka-qanday-rasmiylashtiriladi',
+    title: "Ipoteka qanday rasmiylashtiriladi: bosqichma-bosqich qo'llanma",
+    excerpt:
+      "Ipoteka olishdan oldin bilishingiz kerak bo'lgan hujjatlar, boshlang'ich to'lov va bank talablari haqida amaliy qo'llanma.",
+    category: 'QOLLANMA',
+    publishedAt: new Date('2026-08-22T09:00:00Z'),
+    body: [
+      '## Ipoteka nima va u kimga mos',
+      '',
+      "Ipoteka — bu uy-joyni garovga qo'yib, bankdan uzoq muddatli kredit olish. Agar butun summani birdaniga to'lash imkoni bo'lmasa, ipoteka eng keng tarqalgan yechim hisoblanadi.",
+      '',
+      '## Asosiy bosqichlar',
+      '',
+      'Rasmiylashtirish odatda quyidagi tartibda kechadi:',
+      '',
+      '- Daromadni tasdiqlovchi hujjatlarni tayyorlash',
+      "- Bank tomonidan **to'lov qobiliyatini** baholash",
+      "- Boshlang'ich to'lovni to'lash (odatda narxning 15–30 foizi)",
+      '- Shartnoma imzolash va uyni garovga rasmiylashtirish',
+      '',
+      "Maslahat: bir nechta bank taklifini solishtiring — foiz stavkasi va muddat umumiy to'lovga sezilarli ta'sir qiladi.",
+    ].join('\n'),
+  },
+  {
+    slug: 'yangi-qurilish-majmualari-yangiliklari',
+    title: "Yangi qurilish majmualari: so'nggi yangiliklar",
+    excerpt:
+      'Poytaxtda ochilgan yangi turar-joy majmualari, topshirish muddatlari va xaridorlar uchun yangi imkoniyatlar.',
+    category: 'YANGILIK',
+    publishedAt: new Date('2026-09-01T09:00:00Z'),
+    body: [
+      '## Bozorga yangi majmualar chiqmoqda',
+      '',
+      "So'nggi oylarda Toshkentning bir necha tumanida yangi turar-joy majmualari qurilishi yakunlanib, xaridorlarga taklif etila boshlandi. Ko'pchilik majmualarda maktab, bogʻcha va avtoturargoh kabi infratuzilma majmua hududining o'zida joylashgan.",
+      '',
+      '## Xaridor uchun nima o‘zgaradi',
+      '',
+      "Yangi majmualarning ko'payishi tanlovni kengaytiradi va raqobatni oshiradi. Bu esa xaridor foydasiga ishlaydi:",
+      '',
+      "- Ko'proq **to'lov rejalari** va chegirmalar",
+      '- Kadastr va hujjatlar tayyor holda topshirish',
+      '- Ipoteka bilan xarid qilish imkoniyati kengaydi',
+      '',
+      "Yangi majmuani tanlashda quruvchi kompaniyaning oldingi loyihalari va topshirish tarixiga e'tibor bering.",
+    ].join('\n'),
   },
 ];
