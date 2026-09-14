@@ -62,6 +62,7 @@ export function JurnalArticlePage() {
               <img
                 srcSet={imageSrcSet(data.cover.base)}
                 src={imageFallbackSrc(data.cover.base)}
+                sizes="(max-width: 736px) 100vw, 736px"
                 width={data.cover.width}
                 height={data.cover.height}
                 alt=""

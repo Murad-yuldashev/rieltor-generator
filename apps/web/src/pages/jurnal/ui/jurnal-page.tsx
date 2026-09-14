@@ -32,6 +32,7 @@ export function JurnalPage() {
       <div className="flex gap-2 overflow-x-auto px-4 pt-3.5 pb-1 desk:px-0">
         <button
           type="button"
+          aria-pressed={category === null}
           onClick={() => setCategory(null)}
           className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-bold transition-colors ${
             category === null ? 'bg-accent text-white' : 'bg-surface text-ink-2'
@@ -43,6 +44,7 @@ export function JurnalPage() {
           <button
             key={c}
             type="button"
+            aria-pressed={category === c}
             onClick={() => setCategory(c)}
             className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-bold transition-colors ${
               category === c ? 'bg-accent text-white' : 'bg-surface text-ink-2'

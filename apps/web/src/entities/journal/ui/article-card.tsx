@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import {
+  IMAGE_SIZES,
   formatListedAt,
   imageFallbackSrc,
   imageSrcSet,
@@ -31,6 +32,7 @@ export function ArticleCard({ article }: Props) {
             <img
               srcSet={imageSrcSet(cover.base)}
               src={imageFallbackSrc(cover.base)}
+              sizes={IMAGE_SIZES}
               width={cover.width}
               height={cover.height}
               alt=""

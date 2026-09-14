@@ -5,6 +5,7 @@ import {
   ArticleCategorySchema,
   ArticleCreateSchema,
   ArticleUpdateSchema,
+  IMAGE_SIZES,
   ModeratorArticleDetailSchema,
   formatListedAt,
   imageFallbackSrc,
@@ -238,6 +239,7 @@ function ArticleForm({
               <img
                 srcSet={imageSrcSet(detail.data.cover.base)}
                 src={imageFallbackSrc(detail.data.cover.base)}
+                sizes={IMAGE_SIZES}
                 width={detail.data.cover.width}
                 height={detail.data.cover.height}
                 alt=""
