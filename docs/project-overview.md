@@ -1675,6 +1675,101 @@ reja: `docs/superpowers/plans/2026-09-13-phase-7.3-map.md`.
   "Xaritada" · sehrgar pin-tanlagich + WGS84-tekshiruvli ega pini + seed koordinatalari; list ↔ map pariteti).
   So'ng **7.4** jurnal.
 
+## 4y. Phase 7.4 — Jurnal (2026-09-14)
+
+Phase 7 ning **oxirgi bo'lagi**: platformaga **jurnal/blog** (SEO qo'nish sahifalari) qo'shadi — bozor
+tahlillari, qo'llanmalar va yangiliklar. Maqsad — organik trafik: xaridor Google'dan "Toshkentda kvartira
+narxlari" kabi so'rov bilan kelib, maqolani o'qiydi va marketplace'ga tushadi. Bo'lak **butunlay additiv** —
+mavjud oqimlarga tegmaydi; maqola tanasi **Markdown**, ommaviy sahifada **xavfsiz** (raw HTML render
+qilinmaydi → XSS yo'q) render qilinadi. Spec:
+`docs/superpowers/specs/2026-09-13-phase-7.4-journal-design.md`,
+reja: `docs/superpowers/plans/2026-09-14-phase-7.4-journal.md`.
+
+### Ma'lumot modeli (additiv) + seed
+
+- Yangi **`Article`** Prisma modeli: `slug` (`@unique`), `title`, `excerpt`, **Markdown** `body`,
+  `category` (**`ArticleCategory`** enum — `BOZOR`/`QOLLANMA`/`YANGILIK`), `status` (**`ArticleStatus`** —
+  `DRAFT`/`PUBLISHED`, default `DRAFT`), `publishedAt DateTime?`, ixtiyoriy muqova maydonlari
+  (`coverBase`/`coverOgUrl`/`coverWidth`/`coverHeight` — `null` = muqovasiz), `authorId` (moderator muallif,
+  `User`ga FK). Migratsiya **additiv** (`20260914094616_phase_7_4_journal` — bitta `CREATE TABLE` +
+  `[status, publishedAt]` indeks, mavjud jadvallarga tegilmaydi).
+- **Seed** avval bitta **MODERATOR** `User` yaratadi (telefon bo'yicha idempotent upsert — seed'da boshqa
+  foydalanuvchi yo'q edi, `Article.authorId` majburiy FK) va uning nomidan **3 ta PUBLISHED namuna maqola**
+  qo'shadi (har kategoriyadan bittadan: `toshkent-kvartira-narxlari-2026` · `ipoteka-qanday-rasmiylashtiriladi`
+  · `yangi-qurilish-majmualari-yangiliklari`) — slug bo'yicha upsert (qayta ishga tushirish takrorlamaydi).
+
+### Ommaviy jurnal — `GET /api/jurnal(+/:slug)`
+
+- **`GET /api/jurnal`** — **ommaviy, guard'siz** `PUBLISHED` maqolalar ro'yxati (`publishedAt` desc), ixtiyoriy
+  **`?category=`** filtri (`ArticleCategorySchema` bilan tekshiriladi; yaroqsiz qiymat — filtrsiz e'tiborsiz
+  qoldiriladi). **`GET /api/jurnal/:slug`** — bitta `PUBLISHED` maqola; noma'lum yoki **DRAFT** slug →
+  **404** (qoralama hech qachon sizib chiqmaydi).
+- Public controller **`@ApiExcludeController()`** bilan Swagger'dan chiqarilgan (complexes-public/realtor-public
+  naqshi). **Yagona manba DTO'lari** (shared): `ArticleCategorySchema`/`ArticleStatusSchema`,
+  `ArticleCoverSchema` (`{base, ogUrl, width, height}`), `ArticleSummarySchema`, `ArticleDetailSchema` — front
+  va back uchun bir manba.
+
+### SSR meta + marshrutlash seam'i
+
+- **`buildArticleMetaTags`** (`ssr/meta.ts`) `/jurnal/:slug` uchun Telegram/link-preview og-teglarini beradi
+  (sarlavha = maqola nomi, tavsif = **qisqartirilgan** excerpt, og:image = muqova yoki muqovasiz bo'lsa
+  tashlab ketiladi) — `buildComplexMetaTags` naqshini aks ettiradi.
+- Sahifa **`NotFoundShellFilter`** orqali xizmat qilinadi va **`SPA_ROUTES`ga qo'shilmaydi**: `jurnal`
+  **ham** API controller (`@Controller('jurnal')` → `/api/jurnal`, `/api/jurnal/:slug`), shuning uchun uni
+  `setGlobalPrefix` exclude'iga qo'shish API GET'ini un-prefiks qilardi (`/p/:token`, `/r/:slug`, `/jk` bilan
+  bir xil dars). Filtrda ikki shoxobcha: `JOURNAL_PATH` (`/jurnal/:slug`) jonli `PUBLISHED` slug uchun maqola
+  og-metasi bilan to'ldirilgan shell, noma'lum slug → oddiy 404 shell; `JOURNAL_BROWSE_PATH` (`/jurnal`) esa
+  haqiqiy browse sahifa → oddiy shell + **200** (mavjud `JournalPublicService.getBySlug` qayta ishlatiladi).
+
+### Moderatsiya — `moderation/journal` (CRUD + publish + cover)
+
+- **`@Controller('moderation/journal')`** (**`JwtGuard` + `RolesGuard`**, `MODERATOR`/`ADMIN`): ro'yxat / detal /
+  **create** / **update** / **`:id/publish`** / **`:id/unpublish`** / **`:id/cover`** (muqova yuklash).
+  DTO'lar `ArticleCreateSchema`/`ArticleUpdateSchema` bilan tekshiriladi; slug `slugify` (`../developer/slug`
+  qayta ishlatilgan) bilan sarlavhadan hosil qilinadi.
+- Muqova yuklash mavjud **`processImage`** (sharp) quvuridan o'tadi (complex-image upload naqshi) — faqat
+  JPEG/PNG/WebP, ≤10 MB; natija `ArticleCover` shakliga (`{base, ogUrl, width, height}`) yoziladi va kartaning
+  muqovasi hamda og:image'ni haydaydi. Moderator DTO'lari `ModeratorArticleRowSchema`/`ModeratorArticleDetailSchema`
+  (DRAFT'lar ham ko'rinadi — public DTO'dan alohida).
+
+### Frontend (`apps/web`) — xavfsiz Markdown, kod-bo'lingan
+
+- **`/jurnal`** — maqolalar ro'yxati (kategoriya filtri, `ArticleCard` — muqova **raw `<img>`** bilan
+  `imageSrcSet`/`imageFallbackSrc` orqali; `ResponsiveImage` emas, chunki `ArticleCover`da uning talab qiladigan
+  `position` maydoni yo'q). **`/jurnal/:slug`** — maqola sahifasi, Markdown tanani **xavfsiz** render qiladi.
+- **Markdown xavfsizligi (R1)** — `shared/ui/markdown`dagi `Markdown` komponenti **react-markdown**ni **rehype-raw
+  siz** ishlatadi: manbadagi raw HTML render qilinmaydi va react-markdown'ning standart URL-transform'i
+  `javascript:` havolalarini olib tashlaydi → zararli tana (`<img onerror=…>`, `javascript:` link) **bajarilmaydi**.
+  Hech qanday `dangerouslySetInnerHTML` yo'q.
+- **Kod-bo'linish (R6)** — `Markdown` default-eksport va **`React.lazy` bilan modul yo'li orqali**
+  (`@/shared/ui/markdown/markdown`, barrel emas) yuklanadi → react-markdown + uning micromark daraxti entry
+  bundle'iga tushmasdan o'z async chunk'ida qoladi. Header'da **"Jurnal"** nav havolasi.
+- **`/moderation/journal`** — moderator CRUD sahifasi: Markdown textarea + **jonli preview** (o'sha lazy Markdown
+  modulini import qiladi), publish/unpublish, muqova yuklash (moderation-developers naqshi).
+
+### Ma'lumot modeli va env
+
+- **1 yangi Prisma model** (`Article`) + `ArticleCategory`/`ArticleStatus` enumlar + additiv migratsiya
+  (`20260914094616_phase_7_4_journal`) + 1 MODERATOR va 3 namuna maqola seed. **Yangi env qo'shilmagan**
+  (`PUBLIC_BASE_URL` va rasm quvuri mavjud edi). Marketplace, CRM, AI, xarita va boshqa oqimlarga **tegilmagan**.
+
+### Non-goals (keyinroq)
+
+- **Ommaviy izohlar/reaksiyalar**; **muallif commentlari**; **teglar/qidiruv**; **RSS/sitemap
+  generatsiyasi**; **bog'liq maqolalar/tavsiya**; **AI kontent generatsiyasi** (maqola qo'lda yoziladi);
+  **ko'p tilli maqolalar**. Bular ataylab keyinga qoldirilgan.
+
+### Kelasi
+
+- **7.4 yakunlandi** (additiv `Article` modeli + MODERATOR va 3 namuna maqola seed + ommaviy `GET /api/jurnal`
+  va `GET /api/jurnal/:slug` — faqat PUBLISHED, qoralama sizmaydi + `buildArticleMetaTags` va `NotFoundShellFilter`
+  seam'i (`SPA_ROUTES`ga qo'shilmagan) + `moderation/journal` RolesGuard CRUD/publish/muqova + `apps/web`
+  `/jurnal` ro'yxat · `/jurnal/:slug` react-markdown bilan **xavfsiz** (raw HTML yo'q → XSS yo'q), kod-bo'lingan
+  Markdown render · header "Jurnal" havolasi · `/moderation/journal` CRUD + jonli preview).
+- Shu bilan **Phase 7 (o'sish qatlami) TO'LIQ TUGADI** — 7.1 ipoteka kalkulyatori · 7.2 AI yordamchi · 7.3
+  xarita · 7.4 jurnal hammasi bajarildi. **Rejalashtirilgan yo'l xaritasi ham to'liq yakunlandi.** Keyingi ish
+  yo'l-xaritadan tashqari (yangi faza rejalashtirilganda belgilanadi).
+
 ## 5. Texnik stack
 
 - **Monorepo:** Yarn 4 workspaces + Turborepo — `apps/web`, `apps/api`, `packages/shared`
