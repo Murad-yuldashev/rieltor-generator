@@ -115,6 +115,58 @@ export const MortgageProgramSchema = z.object({
   maxAmountSom: z.string().regex(/^\d+$/).nullable(), // BigInt-as-string; null = uncapped
 });
 
+// --- Journal / blog (Phase 7.4) — SEO landing articles + moderator authoring. ---
+
+export const ArticleCategorySchema = z.enum(['BOZOR', 'QOLLANMA', 'YANGILIK']);
+export const ArticleStatusSchema = z.enum(['DRAFT', 'PUBLISHED']);
+
+/** A single article cover — the fields the card + og:image need. */
+export const ArticleCoverSchema = z.object({
+  base: z.string(),
+  ogUrl: z.string().nullable(),
+  width: z.number().int(),
+  height: z.number().int(),
+});
+
+export const ArticleSummarySchema = z.object({
+  slug: z.string(),
+  title: z.string(),
+  excerpt: z.string(),
+  category: ArticleCategorySchema,
+  cover: ArticleCoverSchema.nullable(),
+  publishedAt: z.string().nullable(),
+});
+
+export const ArticleDetailSchema = ArticleSummarySchema.extend({
+  body: z.string(),
+  authorName: z.string(),
+});
+
+/** Moderator create/update payload — status + slug are server-managed. */
+export const ArticleCreateSchema = z.object({
+  title: z.string().trim().min(3).max(160),
+  excerpt: z.string().trim().min(10).max(300),
+  body: z.string().trim().min(20).max(50000),
+  category: ArticleCategorySchema,
+});
+export const ArticleUpdateSchema = ArticleCreateSchema;
+
+export const ModeratorArticleRowSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  title: z.string(),
+  category: ArticleCategorySchema,
+  status: ArticleStatusSchema,
+  publishedAt: z.string().nullable(),
+  updatedAt: z.string(),
+});
+
+export const ModeratorArticleDetailSchema = ModeratorArticleRowSchema.extend({
+  excerpt: z.string(),
+  body: z.string(),
+  cover: ArticleCoverSchema.nullable(),
+});
+
 /** Uzbek mobile numbers, E.164 without the plus. */
 export const PhoneSchema = z
   .string()
@@ -1174,6 +1226,15 @@ export type ListingSummary = z.infer<typeof ListingSummarySchema>;
 export type ListingDetail = z.infer<typeof ListingDetailSchema>;
 export type Views = z.infer<typeof ViewsSchema>;
 export type MortgageProgram = z.infer<typeof MortgageProgramSchema>;
+export type ArticleCategory = z.infer<typeof ArticleCategorySchema>;
+export type ArticleStatus = z.infer<typeof ArticleStatusSchema>;
+export type ArticleCover = z.infer<typeof ArticleCoverSchema>;
+export type ArticleSummary = z.infer<typeof ArticleSummarySchema>;
+export type ArticleDetail = z.infer<typeof ArticleDetailSchema>;
+export type ArticleCreate = z.infer<typeof ArticleCreateSchema>;
+export type ArticleUpdate = z.infer<typeof ArticleUpdateSchema>;
+export type ModeratorArticleRow = z.infer<typeof ModeratorArticleRowSchema>;
+export type ModeratorArticleDetail = z.infer<typeof ModeratorArticleDetailSchema>;
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 export type TelegramAuth = z.infer<typeof TelegramAuthSchema>;
