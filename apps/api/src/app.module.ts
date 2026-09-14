@@ -15,6 +15,7 @@ import { JournalPublicModule } from './journal-public/journal-public.module';
 import { LeadsModule } from './leads/leads.module';
 import { ListingsModule } from './listings/listings.module';
 import { ModerationDevelopersModule } from './moderation-developers/moderation-developers.module';
+import { ModerationJournalModule } from './moderation-journal/moderation-journal.module';
 import { MortgageModule } from './mortgage/mortgage.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrgWalletModule } from './org-wallet/org-wallet.module';
@@ -49,6 +50,7 @@ import { WalletModule } from './wallet/wallet.module';
     LeadsModule,
     ListingsModule,
     ModerationDevelopersModule,
+    ModerationJournalModule,
     MortgageModule,
     NotificationsModule,
     OrgWalletModule,
