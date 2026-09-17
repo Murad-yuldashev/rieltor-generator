@@ -110,6 +110,10 @@ export function SiteHeader() {
               to={to}
               // Without `end` the home tab would read as active on every route.
               end={to === '/'}
+              // The label span is hidden from 768–1023px (icon-only), so without
+              // this the link has no accessible name in that range. It equals the
+              // visible text at lg+, satisfying WCAG "Label in Name".
+              aria-label={label}
               className={({ isActive }) =>
                 `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
                   isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
@@ -126,6 +130,7 @@ export function SiteHeader() {
                 valuation entry point is desktop-only — the phone header stays untouched. */}
           <NavLink
             to="/valuation"
+            aria-label="Baholash"
             className={({ isActive }) =>
               `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
                 isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
@@ -139,6 +144,7 @@ export function SiteHeader() {
           {/* Mortgage calculator — desktop-only too, same treatment as the valuation entry. */}
           <NavLink
             to="/ipoteka"
+            aria-label="Ipoteka"
             className={({ isActive }) =>
               `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
                 isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
@@ -152,6 +158,7 @@ export function SiteHeader() {
           {/* Journal — desktop-only entry, same treatment as the valuation/mortgage links. */}
           <NavLink
             to="/jurnal"
+            aria-label="Jurnal"
             className={({ isActive }) =>
               `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
                 isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-surface'
