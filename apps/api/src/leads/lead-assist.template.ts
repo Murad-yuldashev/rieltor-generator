@@ -39,7 +39,9 @@ export function templateMessage(lead: LeadFacts): string {
   const parts: string[] = [];
   if (lead.roomsMin != null) parts.push(`${lead.roomsMin} xonali`);
   if (lead.type) parts.push(TYPE_WORD[lead.type]);
-  if (lead.district) parts.push(`${lead.district} tumanida`);
+  // district already carries the " tumani" suffix (from TASHKENT_DISTRICTS), so only add the
+  // locative "-da" — "Chilonzor tumani" -> "Chilonzor tumanida", not "... tumani tumanida".
+  if (lead.district) parts.push(`${lead.district}da`);
   const what = parts.length ? parts.join(' ') : "ko'chmas mulk";
   const budget =
     lead.priceMaxSom != null ? ` (byudjet ${groupSom(lead.priceMaxSom)} so'mgacha)` : '';
