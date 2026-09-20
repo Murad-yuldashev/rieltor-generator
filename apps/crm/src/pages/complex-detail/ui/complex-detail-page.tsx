@@ -15,12 +15,11 @@ import {
 } from '@/features/developer';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
-import { CabinetNav } from '@/widgets/cabinet-nav';
 
 /** Per-complex gallery cap — mirrors the API's MAX_COMPLEX_IMAGES (upload 409s past it). */
 const MAX_COMPLEX_IMAGES = 20;
 
-const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
+const SHELL = 'flex flex-col gap-5';
 const FIELD =
   'mt-1.5 w-full rounded-[14px] border border-line bg-surface px-4 py-3 text-[15px] text-ink outline-none focus:border-accent';
 const LABEL = 'mt-4 block text-[13px] font-semibold text-ink-2';
@@ -36,7 +35,6 @@ export function ComplexDetailPage() {
 
   return (
     <main className={SHELL}>
-      <CabinetNav />
       <Link to="/complexes" className="text-[13px] font-semibold text-accent">
         &lsaquo; Majmualar
       </Link>
@@ -264,7 +262,7 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
         <button
           type="submit"
           disabled={update.isPending || name.trim().length === 0 || district.trim().length === 0}
-          className="mt-6 w-full rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
+          className="mt-6 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
         >
           {update.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
         </button>

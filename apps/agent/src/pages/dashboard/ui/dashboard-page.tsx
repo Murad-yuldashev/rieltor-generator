@@ -47,7 +47,7 @@ export function DashboardPage() {
   ];
 
   return (
-    <main className="mx-auto min-h-dvh max-w-content bg-surface px-4 py-8">
+    <main>
       <header className="mb-5">
         <p className="text-[13px] font-semibold text-ink-2">Rieltor kabineti</p>
         <h1 className="text-[22px] font-extrabold tracking-tight text-ink">

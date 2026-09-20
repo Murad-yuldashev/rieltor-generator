@@ -8,6 +8,7 @@ import { ContractsPage } from '@/pages/contracts';
 import { FinancePage } from '@/pages/finance';
 import { OrganizationPage } from '@/pages/organization';
 import { WalletPage } from '@/pages/wallet';
+import { CabinetShell } from './cabinet-shell';
 import { DeveloperGuard } from './developer-guard';
 import { RootLayout } from './root-layout';
 
@@ -25,15 +26,20 @@ export const router = createBrowserRouter(
         {
           element: <DeveloperGuard />,
           children: [
-            { index: true, element: <OrganizationPage /> },
-            { path: 'complexes', element: <ComplexesPage /> },
-            { path: 'complexes/:id', element: <ComplexDetailPage /> },
-            { path: 'buildings/:id', element: <BuildingDetailPage /> },
-            { path: 'bookings', element: <BookingsPage /> },
-            { path: 'contracts', element: <ContractsPage /> },
-            { path: 'contracts/:id', element: <ContractDetailPage /> },
-            { path: 'wallet', element: <WalletPage /> },
-            { path: 'finance', element: <FinancePage /> },
+            {
+              element: <CabinetShell />,
+              children: [
+                { index: true, element: <OrganizationPage /> },
+                { path: 'complexes', element: <ComplexesPage /> },
+                { path: 'complexes/:id', element: <ComplexDetailPage /> },
+                { path: 'buildings/:id', element: <BuildingDetailPage /> },
+                { path: 'bookings', element: <BookingsPage /> },
+                { path: 'contracts', element: <ContractsPage /> },
+                { path: 'contracts/:id', element: <ContractDetailPage /> },
+                { path: 'wallet', element: <WalletPage /> },
+                { path: 'finance', element: <FinancePage /> },
+              ],
+            },
           ],
         },
       ],

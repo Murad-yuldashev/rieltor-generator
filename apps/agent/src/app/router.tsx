@@ -11,6 +11,7 @@ import { ProfilePage } from '@/pages/profile';
 import { SubscribePage } from '@/pages/subscribe';
 import { WalletPage } from '@/pages/wallet';
 import { CabinetGuard } from './cabinet-guard';
+import { CabinetShell } from './cabinet-shell';
 import { RootLayout } from './root-layout';
 
 // Served under /agent in production, so the router shares that basename; in dev
@@ -28,16 +29,21 @@ export const router = createBrowserRouter(
         {
           element: <CabinetGuard />,
           children: [
-            { index: true, element: <DashboardPage /> },
-            { path: 'profile', element: <ProfilePage /> },
-            { path: 'wallet', element: <WalletPage /> },
-            { path: 'leads', element: <LeadsPage /> },
-            { path: 'browse', element: <BrowsePage /> },
-            { path: 'notes', element: <NotesPage /> },
-            { path: 'collections', element: <CollectionsPage /> },
-            { path: 'collections/:id', element: <CollectionDetailPage /> },
-            { path: 'presentations', element: <PresentationsPage /> },
-            { path: 'presentations/:id', element: <PresentationDetailPage /> },
+            {
+              element: <CabinetShell />,
+              children: [
+                { index: true, element: <DashboardPage /> },
+                { path: 'profile', element: <ProfilePage /> },
+                { path: 'wallet', element: <WalletPage /> },
+                { path: 'leads', element: <LeadsPage /> },
+                { path: 'browse', element: <BrowsePage /> },
+                { path: 'notes', element: <NotesPage /> },
+                { path: 'collections', element: <CollectionsPage /> },
+                { path: 'collections/:id', element: <CollectionDetailPage /> },
+                { path: 'presentations', element: <PresentationsPage /> },
+                { path: 'presentations/:id', element: <PresentationDetailPage /> },
+              ],
+            },
           ],
         },
         { path: 'subscribe', element: <SubscribePage /> },

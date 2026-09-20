@@ -28,7 +28,7 @@ export function PresentationsPage() {
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-content bg-surface px-4 py-6">
+    <main>
       <Link
         to="/"
         className="mb-4 inline-flex items-center gap-1 text-[13px] font-semibold text-ink-2"

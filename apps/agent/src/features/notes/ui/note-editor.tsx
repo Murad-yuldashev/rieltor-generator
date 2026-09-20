@@ -125,7 +125,7 @@ export function NoteEditor({ listingId, listingTitle, onClose }: Props) {
                 type="button"
                 onClick={handleSave}
                 disabled={trimmed.length === 0 || busy}
-                className="flex-1 rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-[14px] bg-linear-to-br from-accent to-accent-dark py-3 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {save.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
               </button>

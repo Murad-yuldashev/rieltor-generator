@@ -43,7 +43,7 @@ export function SubscribePage() {
           type="button"
           onClick={handleActivate}
           disabled={isActivating || isPending}
-          className="mt-6 w-full rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
+          className="mt-6 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
         >
           {isActivating ? 'Faollashtirilmoqda...' : 'Faollashtirish (test to‘lov)'}
         </button>
