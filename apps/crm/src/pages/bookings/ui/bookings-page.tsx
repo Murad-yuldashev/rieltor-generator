@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import type { BookingRow, BookingStatus } from '@rieltor/shared';
 import { useBookingActionGlobal, useBookings } from '@/features/booking';
-import { CabinetNav } from '@/widgets/cabinet-nav';
 import { cn } from '@/shared/lib/cn';
 
-const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
+const SHELL = 'flex flex-col gap-5';
 const CELL = 'whitespace-nowrap px-3 py-2.5 text-[13px] text-ink align-top';
 const HEAD = 'whitespace-nowrap px-3 py-2.5 text-left text-[12px] font-semibold text-ink-3';
 const ROW_INPUT =
@@ -37,8 +36,6 @@ export function BookingsPage() {
 
   return (
     <main className={SHELL}>
-      <CabinetNav />
-
       <h1 className="text-[22px] font-extrabold tracking-tight text-ink">Bandlar</h1>
 
       {isPending ? (

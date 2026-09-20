@@ -16,7 +16,6 @@ import {
   usePayInstallment,
   usePaymentSchedule,
 } from '@/features/payment-schedule';
-import { CabinetNav } from '@/widgets/cabinet-nav';
 import { cn } from '@/shared/lib/cn';
 
 /** Uzbek labels for an installment's status (UI copy only). */
@@ -31,7 +30,7 @@ const INSTALLMENT_STATUS_BADGE: Record<InstallmentStatus, string> = {
   PAID: 'bg-brand-green/10 text-brand-green',
 };
 
-const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
+const SHELL = 'flex flex-col gap-5';
 
 /** ISO timestamp → local date (uz-UZ). */
 function formatDate(iso: string): string {
@@ -48,7 +47,6 @@ export function ContractDetailPage() {
 
   return (
     <main className={SHELL}>
-      <CabinetNav />
       <Link to="/contracts" className="text-[13px] font-semibold text-accent">
         &lsaquo; Shartnomalar
       </Link>

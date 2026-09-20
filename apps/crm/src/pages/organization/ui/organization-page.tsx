@@ -2,7 +2,6 @@ import { Link } from 'react-router';
 import type { OrgRole } from '@rieltor/shared';
 import { useSession } from '@/entities/session';
 import { useOrg, useRequestVerification } from '@/features/developer';
-import { CabinetNav } from '@/widgets/cabinet-nav';
 
 /** Uzbek labels for a member's role within the organization (UI copy only). */
 const ORG_ROLE_LABELS: Record<OrgRole, string> = {
@@ -10,7 +9,7 @@ const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   MANAGER: 'Menejer',
 };
 
-const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
+const SHELL = 'flex flex-col gap-5';
 
 /**
  * Cabinet home (`/`). Shows the developer organization — its name, district and
@@ -26,7 +25,6 @@ export function OrganizationPage() {
   if (isPending) {
     return (
       <main className={SHELL}>
-        <CabinetNav />
         <p className="text-[15px] font-semibold text-ink-2">Yuklanmoqda...</p>
       </main>
     );
@@ -35,7 +33,6 @@ export function OrganizationPage() {
   if (isError || !org) {
     return (
       <main className={SHELL}>
-        <CabinetNav />
         <p className="text-[14px] font-semibold text-brand-rose">
           Tashkilot ma'lumotini yuklab bo'lmadi. Qayta urinib ko'ring.
         </p>
@@ -59,8 +56,6 @@ export function OrganizationPage() {
 
   return (
     <main className={SHELL}>
-      <CabinetNav />
-
       <header>
         <h1 className="text-[22px] font-extrabold tracking-tight text-ink">{org.name}</h1>
         <p className="mt-1 text-[14px] text-ink-2">{org.district ?? 'Tuman ko‘rsatilmagan'}</p>

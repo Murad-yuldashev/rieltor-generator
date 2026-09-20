@@ -1,9 +1,8 @@
 import type { OrgWalletTxRow } from '@rieltor/shared';
 import { TOPUP_PACKAGES, formatListedAt, formatPriceSom } from '@rieltor/shared';
 import { useOrgTopup, useOrgWallet } from '@/features/wallet';
-import { CabinetNav } from '@/widgets/cabinet-nav';
 
-const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
+const SHELL = 'flex flex-col gap-5';
 
 /** ISO timestamp → "30-avgust". Reuses the shared date formatter on the date part. */
 function formatTxDate(createdAt: string): string {
@@ -26,8 +25,6 @@ export function WalletPage() {
 
   return (
     <main className={SHELL}>
-      <CabinetNav />
-
       <h1 className="text-[22px] font-extrabold tracking-tight text-ink">Hisob</h1>
 
       {isPending ? (

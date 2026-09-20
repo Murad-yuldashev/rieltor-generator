@@ -2,10 +2,9 @@ import { Link } from 'react-router';
 import type { ContractRow } from '@rieltor/shared';
 import { formatPriceSom } from '@rieltor/shared';
 import { CONTRACT_STATUS_BADGE, CONTRACT_STATUS_LABELS, useContracts } from '@/features/contracts';
-import { CabinetNav } from '@/widgets/cabinet-nav';
 import { cn } from '@/shared/lib/cn';
 
-const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
+const SHELL = 'flex flex-col gap-5';
 const CELL = 'whitespace-nowrap px-3 py-2.5 text-[13px] text-ink align-top';
 const HEAD = 'whitespace-nowrap px-3 py-2.5 text-left text-[12px] font-semibold text-ink-3';
 
@@ -19,8 +18,6 @@ export function ContractsPage() {
 
   return (
     <main className={SHELL}>
-      <CabinetNav />
-
       <h1 className="text-[22px] font-extrabold tracking-tight text-ink">Shartnomalar</h1>
 
       {isPending ? (

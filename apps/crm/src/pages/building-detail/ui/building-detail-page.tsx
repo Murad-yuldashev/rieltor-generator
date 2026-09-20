@@ -13,10 +13,9 @@ import {
   useUpdateBuilding,
   useUpdateUnit,
 } from '@/features/developer';
-import { CabinetNav } from '@/widgets/cabinet-nav';
 import { cn } from '@/shared/lib/cn';
 
-const SHELL = 'mx-auto flex min-h-dvh max-w-content flex-col gap-5 bg-surface px-5 py-8';
+const SHELL = 'flex flex-col gap-5';
 const FIELD =
   'mt-1.5 w-full rounded-[14px] border border-line bg-surface px-4 py-3 text-[15px] text-ink outline-none focus:border-accent';
 const LABEL = 'block text-[13px] font-semibold text-ink-2';
@@ -100,7 +99,6 @@ export function BuildingDetailPage() {
 
   return (
     <main className={SHELL}>
-      <CabinetNav />
       <Link to={backTo} className="text-[13px] font-semibold text-accent">
         &lsaquo; Majmuaga qaytish
       </Link>
