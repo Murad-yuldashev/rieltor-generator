@@ -166,7 +166,7 @@ export function LoginModal({ open, onClose }: Props) {
               type="button"
               disabled={digits.length !== PHONE_DIGITS || isRequestingOtp}
               onClick={submitPhone}
-              className="mt-4 w-full rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-4 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isRequestingOtp ? 'Yuborilmoqda...' : 'Kodni olish'}
             </button>
@@ -226,7 +226,7 @@ export function LoginModal({ open, onClose }: Props) {
               type="button"
               disabled={code.length !== CODE_DIGITS || isVerifyingOtp}
               onClick={submitCode}
-              className="mt-4 w-full rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-4 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isVerifyingOtp ? 'Tekshirilmoqda...' : 'Tasdiqlash'}
             </button>

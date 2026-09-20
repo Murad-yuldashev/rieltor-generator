@@ -1200,7 +1200,7 @@ function BuildingSettings({
         <button
           type="submit"
           disabled={update.isPending || (name.trim().length === 0 && floors.trim().length === 0)}
-          className="mt-4 w-full rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-6 py-3 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
+          className="mt-4 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
         >
           {update.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
         </button>
