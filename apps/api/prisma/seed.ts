@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { processImage } from './images';
 import { makeAgentPlaceholder, makePlaceholder } from './placeholders';
+import { seedDeveloperCrm } from './seed-crm';
 import { mortgagePrograms, SEED_ARTICLES, SEED_LISTINGS } from './seed-data';
 
 const prisma = new PrismaClient();
@@ -206,6 +207,10 @@ async function main() {
 
     console.log(`  ${sources.length} rasm qayta ishlandi`);
   }
+
+  // Developer-CRM demo data (Phase 8.2). Additive + idempotent (guarded on
+  // Organization count), so it runs once and a re-run is a no-op.
+  await seedDeveloperCrm(prisma);
 }
 
 main()
