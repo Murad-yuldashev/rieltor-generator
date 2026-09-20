@@ -70,7 +70,7 @@ export function CabinetHeader() {
       {/* Inner container tiers MUST match CabinetShell's content column
           (md:max-w-tablet lg:max-w-laptop desk:max-w-desk) so the brand/nav
           left/right-align with the page content beneath at every tier. */}
-      <div className="mx-auto flex w-full items-center gap-3 px-4 py-3 md:max-w-tablet md:gap-6 md:px-6 lg:max-w-laptop lg:gap-8 desk:max-w-desk desk:gap-10 desk:px-8">
+      <div className="mx-auto flex w-full max-w-content items-center gap-3 px-4 py-3 md:max-w-tablet md:gap-6 md:px-6 lg:max-w-laptop lg:gap-8 desk:max-w-desk desk:gap-10 desk:px-8">
         <Brand />
         {/* Scrollable on phone (nav wider than 480), inline from md. */}
         <nav
