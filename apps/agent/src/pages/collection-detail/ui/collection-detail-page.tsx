@@ -167,7 +167,7 @@ export function CollectionDetailPage() {
               type="button"
               onClick={handlePresent}
               disabled={collection.items.length === 0 || createPresentation.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark py-3 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-linear-to-br from-accent to-accent-dark py-3 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Icon name="share" className="size-4" strokeWidth={2.2} />
               {createPresentation.isPending ? 'Yaratilmoqda...' : 'Taqdimot yaratish va ulashish'}

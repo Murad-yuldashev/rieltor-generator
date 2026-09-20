@@ -3,9 +3,9 @@
 
 @theme {
   /* ---- Accent colours. Components never spell out a hex value (spec §10). ---- */
-  --color-accent: #6d28d9;
-  --color-accent-dark: #5b21b6;
-  --color-accent-soft: #f3eefe;
+  --color-accent: #0d9488;
+  --color-accent-dark: #0f766e;
+  --color-accent-soft: #e6f5f3;
 
   /* Text hierarchy: primary → secondary → muted. */
   --color-ink: #111827;

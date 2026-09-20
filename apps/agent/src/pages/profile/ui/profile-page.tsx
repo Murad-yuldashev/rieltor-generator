@@ -553,7 +553,7 @@ export function ProfilePage() {
             <button
               type="submit"
               disabled={save.isPending}
-              className="w-full rounded-[14px] bg-linear-to-br from-violet-600 to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
+              className="w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
             >
               {save.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
             </button>
