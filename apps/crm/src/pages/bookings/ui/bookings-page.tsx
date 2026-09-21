@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { BookingRow, BookingStatus } from '@rieltor/shared';
 import { useBookingActionGlobal, useBookings } from '@/features/booking';
 import { cn } from '@/shared/lib/cn';
+import { StatTile, StatTileRow, type StatTileTone } from '@/shared/ui/stat-tile';
 
 const SHELL = 'flex flex-col gap-5';
 const CELL = 'whitespace-nowrap px-3 py-2.5 text-[13px] text-ink align-top';
@@ -25,6 +26,36 @@ const BOOKING_STATUS_BADGE: Record<BookingStatus, string> = {
   CONVERTED: 'bg-brand-green/10 text-brand-green',
 };
 
+/** Display + filter order for the stat row and chips (matches spec §5). */
+const BOOKING_STATUS_ORDER: BookingStatus[] = ['ACTIVE', 'EXPIRED', 'CONVERTED', 'CANCELLED'];
+
+/** Stat-tile value tone per booking status (mirrors the badge palette). */
+const BOOKING_STAT_TONE: Record<BookingStatus, StatTileTone> = {
+  ACTIVE: 'amber',
+  EXPIRED: 'rose',
+  CONVERTED: 'green',
+  CANCELLED: 'default',
+};
+
+/** A hold expiring within this window earns the "Muddati yaqin" nudge. */
+const NEAR_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** True when an ACTIVE hold's `holdUntil` is now..+3 days out (a soon-to-expire nudge). */
+function isNearExpiry(holdUntil: string): boolean {
+  const diff = new Date(holdUntil).getTime() - Date.now();
+  return diff >= 0 && diff <= NEAR_EXPIRY_MS;
+}
+
+/** Pill button for the status filter row (mirrors the web requests-page chip idiom). */
+function chipClass(active: boolean) {
+  return cn(
+    'shrink-0 rounded-full border px-[15px] py-2.5 text-[13.5px] font-semibold transition-colors',
+    active
+      ? 'border-accent bg-accent text-white shadow-lg shadow-accent/30'
+      : 'border-line bg-card text-ink-2',
+  );
+}
+
 /**
  * Bandlar (`/bookings`) — the org-wide bookings list. Each row shows its building
  * + unit, the client, the hold-until date, and a status badge. Active holds get
@@ -47,28 +78,87 @@ export function BookingsPage() {
       ) : bookings.length === 0 ? (
         <p className="text-[14px] text-ink-3">Hozircha band yo'q</p>
       ) : (
-        <section className="rounded-card bg-card p-5 shadow-card">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-line">
-                  <th className={HEAD}>Bino / Xonadon</th>
-                  <th className={HEAD}>Mijoz</th>
-                  <th className={HEAD}>Muddat</th>
-                  <th className={HEAD}>Holat</th>
-                  <th className={HEAD} aria-label="Amallar" />
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((booking) => (
-                  <BookingRowItem key={booking.id} booking={booking} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <BookingsBoard bookings={bookings} />
       )}
     </main>
+  );
+}
+
+/** Stat row + status filter chips + table over the loaded bookings (all client-side). */
+function BookingsBoard({ bookings }: { bookings: BookingRow[] }) {
+  const [statusFilter, setStatusFilter] = useState<BookingStatus | null>(null);
+
+  // Status counts in a single pass over the loaded feed.
+  const counts: Record<BookingStatus, number> = {
+    ACTIVE: 0,
+    CANCELLED: 0,
+    EXPIRED: 0,
+    CONVERTED: 0,
+  };
+  for (const booking of bookings) counts[booking.status] += 1;
+
+  const visible = statusFilter ? bookings.filter((b) => b.status === statusFilter) : bookings;
+
+  return (
+    <>
+      <StatTileRow className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {BOOKING_STATUS_ORDER.map((status) => (
+          <StatTile
+            key={status}
+            label={BOOKING_STATUS_LABELS[status]}
+            value={counts[status]}
+            tone={BOOKING_STAT_TONE[status]}
+          />
+        ))}
+      </StatTileRow>
+
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-0.5">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(null)}
+          className={chipClass(statusFilter === null)}
+        >
+          Barchasi
+        </button>
+        {BOOKING_STATUS_ORDER.map((status) => (
+          <button
+            key={status}
+            type="button"
+            onClick={() => setStatusFilter(status)}
+            className={chipClass(statusFilter === status)}
+          >
+            {BOOKING_STATUS_LABELS[status]}
+          </button>
+        ))}
+      </div>
+
+      <section className="rounded-card bg-card p-5 shadow-card">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-line">
+                <th className={HEAD}>Bino / Xonadon</th>
+                <th className={HEAD}>Mijoz</th>
+                <th className={HEAD}>Muddat</th>
+                <th className={HEAD}>Holat</th>
+                <th className={HEAD} aria-label="Amallar" />
+              </tr>
+            </thead>
+            <tbody>
+              {visible.length === 0 ? (
+                <tr>
+                  <td className={cn(CELL, 'text-ink-3')} colSpan={5}>
+                    Ushbu holatda band yo'q
+                  </td>
+                </tr>
+              ) : (
+                visible.map((booking) => <BookingRowItem key={booking.id} booking={booking} />)
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -84,7 +174,14 @@ function BookingRowItem({ booking }: { booking: BookingRow }) {
         <span className="block text-ink">{booking.clientName}</span>
         <span className="block text-[12px] text-ink-3">{booking.clientPhone}</span>
       </td>
-      <td className={CELL}>{new Date(booking.holdUntil).toLocaleDateString('uz-UZ')}</td>
+      <td className={CELL}>
+        {new Date(booking.holdUntil).toLocaleDateString('uz-UZ')}
+        {booking.status === 'ACTIVE' && isNearExpiry(booking.holdUntil) && (
+          <span className="mt-1 block w-fit rounded-full bg-brand-amber/10 px-2 py-0.5 text-[11px] font-bold text-brand-amber">
+            Muddati yaqin
+          </span>
+        )}
+      </td>
       <td className={CELL}>
         <span
           className={cn(
@@ -124,32 +221,35 @@ function BookingRowActions({ booking }: { booking: BookingRow }) {
   }
 
   return (
-    <div className="flex min-w-[220px] flex-col gap-1.5">
-      <input
-        aria-label="Bekor qilish sababi"
-        value={cancelReason}
-        onChange={(event) => setCancelReason(event.target.value)}
-        maxLength={500}
-        placeholder="Bekor sababi (ixtiyoriy)"
-        className={ROW_INPUT}
-      />
-      <div className="flex gap-1.5">
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={action.isPending}
-          className="flex-1 rounded-[10px] border border-brand-rose px-3 py-1.5 text-[12px] font-bold text-brand-rose disabled:opacity-60"
-        >
-          {action.isPending ? '...' : 'Bekor'}
-        </button>
-        <button
-          type="button"
-          onClick={handleConvert}
-          disabled={action.isPending}
-          className="flex-1 rounded-[10px] bg-brand-green px-3 py-1.5 text-[12px] font-extrabold text-white disabled:opacity-60"
-        >
-          {action.isPending ? '...' : 'Sotildi'}
-        </button>
+    <div className="flex flex-col gap-1.5">
+      {/* Stacked on phone; input + buttons sit inline-horizontal from md up. */}
+      <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:gap-2">
+        <input
+          aria-label="Bekor qilish sababi"
+          value={cancelReason}
+          onChange={(event) => setCancelReason(event.target.value)}
+          maxLength={500}
+          placeholder="Bekor sababi (ixtiyoriy)"
+          className={cn(ROW_INPUT, 'md:w-44')}
+        />
+        <div className="flex gap-1.5 md:shrink-0">
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={action.isPending}
+            className="flex-1 rounded-[10px] border border-brand-rose px-3 py-1.5 text-[12px] font-bold text-brand-rose disabled:opacity-60"
+          >
+            {action.isPending ? '...' : 'Bekor'}
+          </button>
+          <button
+            type="button"
+            onClick={handleConvert}
+            disabled={action.isPending}
+            className="flex-1 rounded-[10px] bg-brand-green px-3 py-1.5 text-[12px] font-extrabold text-white disabled:opacity-60"
+          >
+            {action.isPending ? '...' : 'Sotildi'}
+          </button>
+        </div>
       </div>
       {action.isError && (
         <p className="text-[12px] font-semibold text-brand-rose">
