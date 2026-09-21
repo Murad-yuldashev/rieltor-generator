@@ -112,10 +112,16 @@ function ScalarStrip({ summary }: { summary: FinanceSummary }) {
 }
 
 /**
- * Collection-composition bar — how the collected / still-outstanding / overdue amounts
- * split the total. Pure CSS (no chart library): one flex track of three segments coloured
- * blue / amber / rose. Each share is computed in BigInt (the money strings may exceed a JS
- * number) as basis points, casting only the bounded 0–100 percent to a number for the width.
+ * Collection-composition bar — how the contracted value splits into three MUTUALLY
+ * EXCLUSIVE parts: collected, not-yet-due (current) and overdue. The backend defines
+ * `outstandingSom = contractedSom − collectedSom` (all non-PAID installments) and
+ * `overdueSom` as the past-due SUBSET of that outstanding, so overdue ⊆ outstanding and
+ * `collected + outstanding == contracted`. The not-yet-due segment is therefore
+ * `outstanding − overdue`, and the three segments sum to the contracted total (the
+ * denominator) with no double-counting. Pure CSS (no chart library): one flex track of
+ * three segments coloured blue / amber / rose. Each share is computed in BigInt (the money
+ * strings may exceed a JS number) as basis points, casting only the bounded 0–100 percent
+ * to a number for the width.
  */
 function CollectionComposition({
   collectedSom,
@@ -129,13 +135,22 @@ function CollectionComposition({
   const collected = BigInt(collectedSom);
   const outstanding = BigInt(outstandingSom);
   const overdue = BigInt(overdueSom);
-  const total = collected + outstanding + overdue;
+  // Not-yet-due = outstanding minus its overdue subset; clamp at 0n as a safety net (overdue
+  // ⊆ outstanding, so this should never go negative). The denominator is the contracted total
+  // (collected + outstanding), which the three disjoint segments sum to exactly.
+  const notYetDue = outstanding - overdue > 0n ? outstanding - overdue : 0n;
+  const total = collected + outstanding;
   // Percent (0–100) of one segment via BigInt basis points, so raw money is never Number()-ed.
   const share = (part: bigint) => (total > 0n ? Number((part * 10_000n) / total) / 100 : 0);
 
   const segments = [
     { label: "Yig'ilgan", som: collectedSom, percent: share(collected), color: 'bg-accent' },
-    { label: 'Qoldiq', som: outstandingSom, percent: share(outstanding), color: 'bg-brand-amber' },
+    {
+      label: 'Muddati kelmagan',
+      som: String(notYetDue),
+      percent: share(notYetDue),
+      color: 'bg-brand-amber',
+    },
     { label: "Muddati o'tgan", som: overdueSom, percent: share(overdue), color: 'bg-brand-rose' },
   ];
 
