@@ -43,7 +43,7 @@ export function ComplexSummaryCard({
       <div className="relative aspect-[4/3] overflow-hidden rounded-[14px] bg-line">
         {complex.coverImage ? (
           <img
-            src={imageVariantSrc(complex.coverImage.base, 640)}
+            src={imageVariantSrc(complex.coverImage.base, 720)}
             width={complex.coverImage.width}
             height={complex.coverImage.height}
             alt={complex.name}
