@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { formatPriceSom, type Unit, type UnitStatus } from '@rieltor/shared';
+import { formatPriceSom, type ComplexDetail, type Unit, type UnitStatus } from '@rieltor/shared';
 import { useBookUnit, useBookingAction, useBulkUpdateUnits } from '@/features/booking';
 import {
   UNIT_STATUS_BADGE,
   UNIT_STATUS_LABELS,
   UNIT_STATUS_OPTIONS,
+  useComplex,
   useCreateUnit,
   useDeleteBuilding,
   useDeleteUnit,
@@ -14,6 +15,8 @@ import {
   useUpdateUnit,
 } from '@/features/developer';
 import { cn } from '@/shared/lib/cn';
+import { Icon } from '@/shared/ui/icon';
+import { StatTile, StatTileRow } from '@/shared/ui/stat-tile';
 
 const SHELL = 'flex flex-col gap-5';
 const FIELD =
@@ -65,6 +68,10 @@ export function BuildingDetailPage() {
   const backTo = complexId ? `/complexes/${complexId}` : '/complexes';
 
   const { data: units, isPending, isError } = useUnits(id);
+  // Building meta (name/floors + parent complex) rides on the `?complex=` param.
+  // On a direct visit `complexId` is `''`; the `enabled` gate keeps that from firing
+  // a doomed request and the summary degrades to a plain "Bino" heading.
+  const { data: complex } = useComplex(complexId, { enabled: !!complexId });
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   // Bulk-edit mode: the same cells become a multi-select. `selectMode` swaps the
   // click behaviour (toggle membership instead of opening the panel); `selectedIds`
@@ -103,73 +110,183 @@ export function BuildingDetailPage() {
         &lsaquo; Majmuaga qaytish
       </Link>
 
-      <section className="rounded-card bg-card p-5 shadow-card">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-[18px] font-extrabold tracking-tight text-ink">Shaxmatka</h1>
-          {hasUnits && (
-            <button
-              type="button"
-              onClick={toggleSelectMode}
-              className={cn(
-                'shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors',
-                selectMode
-                  ? 'border-accent bg-accent text-white'
-                  : 'border-line bg-surface text-ink-2',
+      {/* Full-width unit-status stat row above the split (spec §4) — the at-a-glance
+          composition of the building, derived client-side from the loaded units. */}
+      {units && units.length > 0 && <UnitStatsRow units={units} />}
+
+      {/* On phone this is a plain gap-5 stack; the `contents` wrappers below dissolve so
+          MAIN/ASIDE children flatten into one ordered column. From `lg` it becomes a
+          main column (shaxmatka + units table) beside a sticky aside (summary + panel +
+          forms). Layout only — every mutation/behaviour is unchanged. */}
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_20rem] lg:items-start lg:gap-6 desk:grid-cols-[1fr_23rem]">
+        {/* MAIN column */}
+        <div className="contents lg:flex lg:flex-col lg:gap-5">
+          <section className="order-2 rounded-card bg-card p-5 shadow-card lg:order-none">
+            <div className="flex items-center justify-between gap-3">
+              {/* Demoted to h2: the building name is now the page's single h1, in the
+                  summary card. */}
+              <h2 className="text-[18px] font-extrabold tracking-tight text-ink">Shaxmatka</h2>
+              {hasUnits && (
+                <button
+                  type="button"
+                  onClick={toggleSelectMode}
+                  className={cn(
+                    'shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors',
+                    selectMode
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-line bg-surface text-ink-2',
+                  )}
+                >
+                  {selectMode ? 'Tanlashni yakunlash' : 'Tanlash'}
+                </button>
               )}
-            >
-              {selectMode ? 'Tanlashni yakunlash' : 'Tanlash'}
-            </button>
+            </div>
+            <StatusLegend />
+
+            {isPending ? (
+              <p className="mt-4 text-[15px] font-semibold text-ink-2">Yuklanmoqda...</p>
+            ) : isError || !units ? (
+              <p className="mt-4 text-[14px] font-semibold text-brand-rose">
+                Xonadonlarni yuklab bo'lmadi. Qayta urinib ko'ring.
+              </p>
+            ) : units.length === 0 ? (
+              <p className="mt-4 text-[14px] text-ink-3">Hozircha xonadon yo'q</p>
+            ) : (
+              <>
+                {selectMode && (
+                  <BulkEditBar
+                    buildingId={id}
+                    unitIds={[...selectedIds]}
+                    onClear={() => setSelectedIds(new Set())}
+                  />
+                )}
+                <ShaxmatkaGrid
+                  units={units}
+                  selectMode={selectMode}
+                  selectedUnitId={selectedUnitId}
+                  selectedIds={selectedIds}
+                  onSelect={setSelectedUnitId}
+                  onToggleSelect={toggleUnitSelected}
+                />
+              </>
+            )}
+          </section>
+
+          {units && units.length > 0 && (
+            <section className="order-4 rounded-card bg-card p-5 shadow-card lg:order-none">
+              <h2 className="text-[15px] font-bold text-ink">Xonadonlar ro'yxati</h2>
+              <UnitsTable buildingId={id} units={units} />
+            </section>
           )}
         </div>
-        <StatusLegend />
 
-        {isPending ? (
-          <p className="mt-4 text-[15px] font-semibold text-ink-2">Yuklanmoqda...</p>
-        ) : isError || !units ? (
-          <p className="mt-4 text-[14px] font-semibold text-brand-rose">
-            Xonadonlarni yuklab bo'lmadi. Qayta urinib ko'ring.
-          </p>
-        ) : units.length === 0 ? (
-          <p className="mt-4 text-[14px] text-ink-3">Hozircha xonadon yo'q</p>
-        ) : (
-          <>
-            {selectMode && (
-              <BulkEditBar
-                buildingId={id}
-                unitIds={[...selectedIds]}
-                onClear={() => setSelectedIds(new Set())}
-              />
-            )}
-            <ShaxmatkaGrid
-              units={units}
-              selectMode={selectMode}
-              selectedUnitId={selectedUnitId}
-              selectedIds={selectedIds}
-              onSelect={setSelectedUnitId}
-              onToggleSelect={toggleUnitSelected}
+        {/* STICKY ASIDE — building identity + master-detail panel + forms + danger zone */}
+        <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-5">
+          <BuildingSummary buildingId={id} complex={complex} className="order-1 lg:order-none" />
+
+          {/* Master-detail: the selected cell's panel lives in the aside on desktop and
+              flattens inline below the shaxmatka on phone (order-3). */}
+          {!selectMode && selectedUnit && (
+            <CellPanel
+              key={selectedUnit.id}
+              buildingId={id}
+              unit={selectedUnit}
+              onClose={() => setSelectedUnitId(null)}
+              className="order-3 lg:order-none"
             />
-            {!selectMode && selectedUnit && (
-              <CellPanel
-                key={selectedUnit.id}
-                buildingId={id}
-                unit={selectedUnit}
-                onClose={() => setSelectedUnitId(null)}
-              />
-            )}
-          </>
-        )}
-      </section>
+          )}
 
-      {!isPending && !isError && units && units.length > 0 && (
-        <section className="rounded-card bg-card p-5 shadow-card">
-          <h2 className="text-[15px] font-bold text-ink">Xonadonlar ro'yxati</h2>
-          <UnitsTable buildingId={id} units={units} />
-        </section>
+          <AddUnitForm buildingId={id} className="order-5 lg:order-none" />
+          <BuildingSettings
+            buildingId={id}
+            complexId={complexId}
+            backTo={backTo}
+            className="order-6 lg:order-none"
+          />
+        </aside>
+      </div>
+    </main>
+  );
+}
+
+/** The building-composition stat row: total + per-status counts + Σ available value. */
+function UnitStatsRow({ units }: { units: Unit[] }) {
+  // A single reduce derives every tile — counts per status plus the summed sale value
+  // of AVAILABLE inventory (BigInt so a many-unit building never overflows a JS number).
+  const stats = units.reduce(
+    (acc, unit) => {
+      acc.total += 1;
+      if (unit.status === 'AVAILABLE') {
+        acc.available += 1;
+        if (unit.priceSom) acc.availableValue += BigInt(unit.priceSom);
+      } else if (unit.status === 'BOOKED') {
+        acc.booked += 1;
+      } else {
+        acc.sold += 1;
+      }
+      return acc;
+    },
+    { total: 0, available: 0, booked: 0, sold: 0, availableValue: 0n },
+  );
+
+  return (
+    <StatTileRow className="grid grid-cols-2 gap-3 md:grid-cols-4 desk:grid-cols-5">
+      <StatTile label="Jami xonadon" value={stats.total} />
+      <StatTile label="Bo'sh" value={stats.available} tone="green" />
+      <StatTile label="Band" value={stats.booked} tone="amber" />
+      <StatTile label="Sotilgan" value={stats.sold} tone="rose" />
+      <StatTile
+        label="Bo'sh qiymati"
+        value={
+          stats.availableValue > 0n ? formatPriceSom(stats.availableValue.toString(), 'SALE') : '—'
+        }
+        tone="green"
+      />
+    </StatTileRow>
+  );
+}
+
+/**
+ * Read-only identity card for the aside — the building's real name as the page's `<h1>`,
+ * its floor count, and the parent complex name/district (sourced from the optional
+ * `?complex=` fetch). Degrades to a plain "Bino" heading when the complex is absent
+ * (a direct `/buildings/:id` visit) or still loading.
+ */
+function BuildingSummary({
+  buildingId,
+  complex,
+  className,
+}: {
+  buildingId: string;
+  complex: ComplexDetail | undefined;
+  className?: string;
+}) {
+  const building = complex?.buildings.find((item) => item.id === buildingId);
+
+  return (
+    <section className={cn('rounded-card bg-card p-5 shadow-card', className)}>
+      <h1 className="text-[18px] font-extrabold tracking-tight text-ink">
+        {building?.name ?? 'Bino'}
+      </h1>
+
+      {building?.floors != null && (
+        <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-ink-2">
+          <Icon name="floor" className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2.2} />
+          {building.floors} qavat
+        </p>
       )}
 
-      <AddUnitForm buildingId={id} />
-      <BuildingSettings buildingId={id} complexId={complexId} backTo={backTo} />
-    </main>
+      {complex && (
+        <div className="mt-3 border-t border-line pt-3">
+          <p className="text-[12px] font-semibold text-ink-3">Majmua</p>
+          <p className="mt-0.5 text-[14px] font-bold text-ink">{complex.name}</p>
+          <p className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
+            <Icon name="pin" className="h-3.5 w-3.5 shrink-0 text-ink-3" strokeWidth={2.2} />
+            <span className="truncate">{complex.district}</span>
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -219,8 +336,10 @@ function ShaxmatkaGrid({
       <div className="flex w-max min-w-full flex-col gap-2">
         {floors.map(({ floor, rowUnits }) => (
           <div key={floor} className="flex items-stretch gap-2">
-            <div className="flex w-10 shrink-0 items-center justify-end pr-1 text-[12px] font-semibold text-ink-3">
-              {floor}
+            {/* Floor label + per-floor mini-count (how many units sit on this floor). */}
+            <div className="flex w-10 shrink-0 flex-col items-end justify-center pr-1 leading-tight">
+              <span className="text-[12px] font-semibold text-ink-3">{floor}</span>
+              <span className="text-[10px] font-medium text-ink-3/70">{rowUnits.length}</span>
             </div>
             <div className="flex gap-2">
               {rowUnits.map((unit) => (
@@ -270,7 +389,7 @@ function ShaxmatkaCell({
       aria-pressed={selectMode ? selected : undefined}
       onClick={() => (selectMode ? onToggleSelect(unit.id) : onSelect(unit.id))}
       className={cn(
-        'relative flex h-16 w-20 shrink-0 flex-col items-start justify-between rounded-[12px] border px-2 py-1.5 text-left transition',
+        'relative flex h-16 w-20 shrink-0 flex-col items-start justify-between rounded-[12px] border px-2 py-1.5 text-left transition desk:h-20 desk:w-24',
         CELL_TONE[unit.status],
         selected && 'ring-2 ring-accent ring-offset-1 ring-offset-card',
       )}
@@ -404,13 +523,15 @@ function CellPanel({
   buildingId,
   unit,
   onClose,
+  className,
 }: {
   buildingId: string;
   unit: Unit;
   onClose: () => void;
+  className?: string;
 }) {
   return (
-    <div className="mt-5 rounded-card border border-line bg-surface p-4">
+    <div className={cn('rounded-card border border-line bg-surface p-4', className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-[16px] font-extrabold text-ink">Xonadon {unit.number}</h2>
@@ -739,6 +860,24 @@ function BookedActions({ buildingId, unit }: { buildingId: string; unit: Unit })
   );
 }
 
+/**
+ * The two desk-only read-only cells (commission %, fixation), shared by both the
+ * display and editing row modes so their column counts always match the header.
+ * `commissionBps` is basis points (250 → 2.5%); `hasActiveFixation` is a derived flag.
+ */
+function UnitDeskCells({ unit }: { unit: Unit }) {
+  return (
+    <>
+      <td className={cn(CELL, 'hidden desk:table-cell')}>
+        {unit.commissionBps != null ? `${unit.commissionBps / 100}%` : '—'}
+      </td>
+      <td className={cn(CELL, 'hidden desk:table-cell')}>
+        {unit.hasActiveFixation ? <span className="font-semibold text-accent">Bor</span> : '—'}
+      </td>
+    </>
+  );
+}
+
 /** The scrollable units table, or an empty-state line when there are none. */
 function UnitsTable({ buildingId, units }: { buildingId: string; units: Unit[] }) {
   if (units.length === 0) {
@@ -755,6 +894,9 @@ function UnitsTable({ buildingId, units }: { buildingId: string; units: Unit[] }
             <th className={HEAD}>Xonalar</th>
             <th className={HEAD}>Maydon, m²</th>
             <th className={HEAD}>Narx</th>
+            {/* Desk-only extras — existing Unit fields surfaced only where there is room. */}
+            <th className={cn(HEAD, 'hidden desk:table-cell')}>Komissiya</th>
+            <th className={cn(HEAD, 'hidden desk:table-cell')}>Fiksatsiya</th>
             <th className={HEAD}>Holat</th>
             <th className={HEAD} aria-label="Amallar" />
           </tr>
@@ -871,6 +1013,7 @@ function UnitRow({ buildingId, unit }: { buildingId: string; unit: Unit }) {
             className={TABLE_INPUT}
           />
         </td>
+        <UnitDeskCells unit={unit} />
         <td className={CELL}>
           <StatusSelect
             value={unit.status}
@@ -920,6 +1063,7 @@ function UnitRow({ buildingId, unit }: { buildingId: string; unit: Unit }) {
       <td className={CELL}>{unit.rooms != null ? unit.rooms : '—'}</td>
       <td className={CELL}>{unit.areaM2 != null ? unit.areaM2 : '—'}</td>
       <td className={CELL}>{unit.priceSom ? formatPriceSom(unit.priceSom, 'SALE') : '—'}</td>
+      <UnitDeskCells unit={unit} />
       <td className={CELL}>
         <StatusSelect
           value={unit.status}
@@ -981,7 +1125,7 @@ function StatusSelect({
 }
 
 /** The stacked "add a unit" form beneath the table. */
-function AddUnitForm({ buildingId }: { buildingId: string }) {
+function AddUnitForm({ buildingId, className }: { buildingId: string; className?: string }) {
   const create = useCreateUnit(buildingId);
 
   const [number, setNumber] = useState('');
@@ -1012,7 +1156,7 @@ function AddUnitForm({ buildingId }: { buildingId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-card bg-card p-5 shadow-card">
+    <form onSubmit={handleSubmit} className={cn('rounded-card bg-card p-5 shadow-card', className)}>
       <h2 className="text-[15px] font-bold text-ink">Yangi xonadon</h2>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
@@ -1129,10 +1273,12 @@ function BuildingSettings({
   buildingId,
   complexId,
   backTo,
+  className,
 }: {
   buildingId: string;
   complexId: string;
   backTo: string;
+  className?: string;
 }) {
   const navigate = useNavigate();
   const update = useUpdateBuilding(complexId);
@@ -1164,7 +1310,7 @@ function BuildingSettings({
   }
 
   return (
-    <section className="rounded-card bg-card p-5 shadow-card">
+    <section className={cn('rounded-card bg-card p-5 shadow-card', className)}>
       <h2 className="text-[15px] font-bold text-ink">Bino sozlamalari</h2>
 
       <form onSubmit={handleUpdate} className="mt-3">

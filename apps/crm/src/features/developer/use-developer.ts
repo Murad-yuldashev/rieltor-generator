@@ -87,11 +87,19 @@ export function useComplexes() {
   });
 }
 
-/** `GET /api/crm/complexes/:id` — one complex plus its buildings. */
-export function useComplex(id: string) {
+/**
+ * `GET /api/crm/complexes/:id` — one complex plus its buildings.
+ *
+ * `enabled` gates the fetch: complex-detail always has a route `:id` so it defaults
+ * to `true`, but building-detail passes `enabled: !!complexId` because `complexId`
+ * comes from an optional `?complex=` param and is `''` on a direct visit — calling
+ * with `''` would otherwise fire a doomed request for `/complexes/`.
+ */
+export function useComplex(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: complexQueryKey(id),
     queryFn: () => apiGet(`/api/crm/complexes/${id}`, ComplexDetailSchema),
+    enabled: options?.enabled ?? true,
   });
 }
 

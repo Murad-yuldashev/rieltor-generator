@@ -4,16 +4,20 @@ import { formatPriceSom } from '@rieltor/shared';
 import { useDebtors, useFinanceSummary } from '@/features/finance';
 import { FinanceInsight } from '@/features/finance-insight';
 import { cn } from '@/shared/lib/cn';
+import { StatTile, StatTileRow } from '@/shared/ui/stat-tile';
 
 const SHELL = 'flex flex-col gap-5';
 const CELL = 'whitespace-nowrap px-3 py-2.5 text-[13px] text-ink align-top';
 const HEAD = 'whitespace-nowrap px-3 py-2.5 text-left text-[12px] font-semibold text-ink-3';
 
 /**
- * Moliya (`/finance`) — the developer organization's finance dashboard. The summary
- * cards total the payment schedules (contracted / collected / outstanding / overdue)
- * plus the net commission and the org wallet balance; the table lists every debtor —
- * a contract with overdue installments — linking through to its detail.
+ * Moliya (`/finance`) — the developer organization's finance dashboard. A six-tile KPI
+ * row totals the payment schedules (contracted / collected / outstanding / overdue) plus
+ * the net commission and the org wallet balance, with a slim strip surfacing the schedule
+ * and debtor counts. Below, a main+sticky-aside band puts the debtor table and a
+ * collection-composition bar in the MAIN column and the AI-tahlil insight panel and a
+ * collection-health meter in the sticky ASIDE. On phone the `contents` wrappers dissolve
+ * so everything stacks in a single flex column.
  */
 export function FinancePage() {
   const { data: summary, isPending, isError } = useFinanceSummary();
@@ -31,15 +35,42 @@ export function FinancePage() {
       ) : (
         <>
           <FinanceCards summary={summary} />
-          <FinanceInsight />
-          <DebtorTable />
+          <ScalarStrip summary={summary} />
+
+          {/* Two-column band. On phone the `contents` wrappers dissolve so all children
+              share one flex column, ordered by `order-*` so the AI insight (aside) is not
+              buried below the debtor table: FinanceInsight → DebtorTable → composition →
+              health. The order numbers are monotonic within each column, so the lg+
+              main/aside layout is unchanged. */}
+          <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_340px] lg:items-start lg:gap-6 desk:grid-cols-[1fr_380px]">
+            {/* MAIN — the debtor table (first-class) + the collection-composition bar. */}
+            <div className="contents lg:flex lg:flex-col lg:gap-5">
+              <DebtorTable className="order-2" />
+              <CollectionComposition
+                collectedSom={summary.collectedSom}
+                outstandingSom={summary.outstandingSom}
+                overdueSom={summary.overdueSom}
+                className="order-3"
+              />
+            </div>
+
+            {/* ASIDE — the AI-tahlil insight panel + the collection-health meter. */}
+            <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-5">
+              <FinanceInsight className="order-1" />
+              <CollectionHealth
+                collectedSom={summary.collectedSom}
+                contractedSom={summary.contractedSom}
+                className="order-4"
+              />
+            </aside>
+          </div>
         </>
       )}
     </main>
   );
 }
 
-/** The six summary cards over the finance snapshot. */
+/** The six summary tiles over the finance snapshot — one desk row at `lg`. */
 function FinanceCards({ summary }: { summary: FinanceSummary }) {
   // A negative org balance is a DEBT. orgBalanceSom is a BigInt-as-string that may not
   // fit in a number, so the sign is read off the string ('-' prefix), never Number()-ed.
@@ -47,67 +78,163 @@ function FinanceCards({ summary }: { summary: FinanceSummary }) {
   const hasOverdue = summary.overdueSom !== '0';
 
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <FinanceCard label="Kontraktlangan" value={formatPriceSom(summary.contractedSom, 'SALE')} />
-      <FinanceCard label="Yig'ilgan" value={formatPriceSom(summary.collectedSom, 'SALE')} />
-      <FinanceCard label="Qoldiq" value={formatPriceSom(summary.outstandingSom, 'SALE')} />
-      <FinanceCard
+    <StatTileRow className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <StatTile label="Kontraktlangan" value={formatPriceSom(summary.contractedSom, 'SALE')} />
+      <StatTile
+        label="Yig'ilgan"
+        value={formatPriceSom(summary.collectedSom, 'SALE')}
+        tone="green"
+      />
+      <StatTile label="Qoldiq" value={formatPriceSom(summary.outstandingSom, 'SALE')} />
+      <StatTile
         label="Muddati o'tgan"
         value={formatPriceSom(summary.overdueSom, 'SALE')}
-        tone={hasOverdue ? 'rose' : 'ink'}
+        tone={hasOverdue ? 'rose' : 'default'}
       />
-      <FinanceCard
-        label="Net komissiya"
-        value={formatPriceSom(summary.commissionPaidSom, 'SALE')}
-      />
-      <FinanceCard
+      <StatTile label="Net komissiya" value={formatPriceSom(summary.commissionPaidSom, 'SALE')} />
+      <StatTile
         label="Balans"
         value={formatPriceSom(summary.orgBalanceSom, 'SALE')}
         badge={isDebt ? 'Qarz' : undefined}
-        tone={isDebt ? 'rose' : 'ink'}
+        tone={isDebt ? 'rose' : 'default'}
       />
-    </section>
+    </StatTileRow>
   );
 }
 
-/** One summary card. `tone='rose'` paints the value red; `badge` adds a pill under it. */
-function FinanceCard({
-  label,
-  value,
-  tone = 'ink',
-  badge,
-}: {
-  label: string;
-  value: string;
-  tone?: 'ink' | 'rose';
-  badge?: string;
-}) {
+/** A slim strip surfacing the two count scalars the KPI tiles don't show. */
+function ScalarStrip({ summary }: { summary: FinanceSummary }) {
   return (
-    <div className="rounded-card bg-card p-4 shadow-card">
-      <p className="text-[12px] font-semibold text-ink-2">{label}</p>
-      <p
-        className={cn(
-          'mt-1.5 text-[18px] font-extrabold leading-tight',
-          tone === 'rose' ? 'text-brand-rose' : 'text-ink',
-        )}
-      >
-        {value}
-      </p>
-      {badge && (
-        <span className="mt-2 inline-flex rounded-full bg-brand-rose/10 px-2.5 py-1 text-[12px] font-bold text-brand-rose">
-          {badge}
-        </span>
-      )}
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 rounded-card bg-card px-5 py-3 text-[13px] shadow-card">
+      <span className="text-ink-2">
+        Faol jadvallar:{' '}
+        <span className="font-bold text-ink">{summary.scheduleCount.toLocaleString('uz-UZ')}</span>
+      </span>
+      <span className="text-ink-2">
+        Qarzdorlar:{' '}
+        <span className="font-bold text-ink">{summary.debtorCount.toLocaleString('uz-UZ')}</span>
+      </span>
     </div>
   );
 }
 
+/**
+ * Collection-composition bar — how the contracted value splits into three MUTUALLY
+ * EXCLUSIVE parts: collected, not-yet-due (current) and overdue. The backend defines
+ * `outstandingSom = contractedSom − collectedSom` (all non-PAID installments) and
+ * `overdueSom` as the past-due SUBSET of that outstanding, so overdue ⊆ outstanding and
+ * `collected + outstanding == contracted`. The not-yet-due segment is therefore
+ * `outstanding − overdue`, and the three segments sum to the contracted total (the
+ * denominator) with no double-counting. Pure CSS (no chart library): one flex track of
+ * three segments coloured blue / amber / rose. Each share is computed in BigInt (the money
+ * strings may exceed a JS number) as basis points, casting only the bounded 0–100 percent
+ * to a number for the width.
+ */
+function CollectionComposition({
+  collectedSom,
+  outstandingSom,
+  overdueSom,
+  className,
+}: {
+  collectedSom: string;
+  outstandingSom: string;
+  overdueSom: string;
+  className?: string;
+}) {
+  const collected = BigInt(collectedSom);
+  const outstanding = BigInt(outstandingSom);
+  const overdue = BigInt(overdueSom);
+  // Not-yet-due = outstanding minus its overdue subset; clamp at 0n as a safety net (overdue
+  // ⊆ outstanding, so this should never go negative). The denominator is the contracted total
+  // (collected + outstanding), which the three disjoint segments sum to exactly.
+  const notYetDue = outstanding - overdue > 0n ? outstanding - overdue : 0n;
+  const total = collected + outstanding;
+  // Percent (0–100) of one segment via BigInt basis points, so raw money is never Number()-ed.
+  const share = (part: bigint) => (total > 0n ? Number((part * 10_000n) / total) / 100 : 0);
+
+  const segments = [
+    { label: "Yig'ilgan", som: collectedSom, percent: share(collected), color: 'bg-accent' },
+    {
+      label: 'Muddati kelmagan',
+      som: String(notYetDue),
+      percent: share(notYetDue),
+      color: 'bg-brand-amber',
+    },
+    { label: "Muddati o'tgan", som: overdueSom, percent: share(overdue), color: 'bg-brand-rose' },
+  ];
+
+  return (
+    <section className={cn('rounded-card bg-card p-5 shadow-card', className)}>
+      <h2 className="text-[15px] font-bold text-ink">Yig'ilganlik tarkibi</h2>
+
+      <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-line">
+        {segments.map((s) => (
+          <div key={s.label} className={cn('h-full', s.color)} style={{ width: `${s.percent}%` }} />
+        ))}
+      </div>
+
+      <ul className="mt-3 flex flex-col gap-1.5">
+        {segments.map((s) => (
+          <li key={s.label} className="flex items-center gap-2 text-[13px]">
+            <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', s.color)} />
+            <span className="text-ink-2">{s.label}</span>
+            <span className="ml-auto font-semibold text-ink">{formatPriceSom(s.som, 'SALE')}</span>
+            <span className="w-11 text-right tabular-nums text-ink-3">{s.percent.toFixed(0)}%</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * Collection-health meter — the share of the contracted value already collected. Pure CSS
+ * blue-accent fill. The ratio is computed in BigInt (contracted / collected may exceed a JS
+ * number), casting only the bounded 0–10000 basis-point result to a number for the width.
+ */
+function CollectionHealth({
+  collectedSom,
+  contractedSom,
+  className,
+}: {
+  collectedSom: string;
+  contractedSom: string;
+  className?: string;
+}) {
+  const contracted = BigInt(contractedSom);
+  const collected = BigInt(collectedSom);
+  const bps = contracted > 0n ? Number((collected * 10_000n) / contracted) : 0;
+  const percent = Math.min(100, Math.max(0, bps / 100));
+
+  return (
+    <section className={cn('rounded-card bg-card p-5 shadow-card', className)}>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-[15px] font-bold text-ink">Yig'ilganlik darajasi</h2>
+        <span className="text-[15px] font-extrabold text-accent">{percent.toFixed(0)}%</span>
+      </div>
+
+      <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-accent-soft">
+        <div
+          className="h-full rounded-full bg-accent transition-[width]"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+
+      <p className="mt-2.5 text-[13px] text-ink-2">
+        <span className="font-bold text-ink">{formatPriceSom(collectedSom, 'SALE')}</span>
+        {' / '}
+        {formatPriceSom(contractedSom, 'SALE')}
+      </p>
+    </section>
+  );
+}
+
 /** The debtor table — its own query so a debtor refetch never repaints the cards. */
-function DebtorTable() {
+function DebtorTable({ className }: { className?: string }) {
   const { data: debtors, isPending, isError } = useDebtors();
 
   return (
-    <section>
+    <section className={className}>
       <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-ink-3">Qarzdorlar</h2>
 
       {isPending ? (

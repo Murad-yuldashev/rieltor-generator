@@ -1,41 +1,68 @@
-import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
+import { useMemo, useState, type FormEvent } from 'react';
 import { TASHKENT_DISTRICTS, type ComplexStatus } from '@rieltor/shared';
 import {
-  COMPLEX_STATUS_BADGE,
   COMPLEX_STATUS_LABELS,
   COMPLEX_STATUS_OPTIONS,
-  PUBLISH_STATE_BADGE,
-  PUBLISH_STATE_LABELS,
   useComplexes,
   useCreateComplex,
 } from '@/features/developer';
+import { StatTile, StatTileRow } from '@/shared/ui/stat-tile';
+import { ComplexCard } from './complex-card';
 
 const SHELL = 'flex flex-col gap-5';
 const FIELD =
   'mt-1.5 w-full rounded-[14px] border border-line bg-surface px-4 py-3 text-[15px] text-ink outline-none focus:border-accent';
 const LABEL = 'mt-4 block text-[13px] font-semibold text-ink-2';
+// Vertical card grid: one column on phone, filling out to four across on the desktop
+// tier (mirrors the web marketplace complexes grid).
+const GRID =
+  'flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3 desk:grid-cols-4 desk:gap-5';
 
 /**
- * Complexes list (`/complexes`). Renders each complex as a card that links into
- * its detail page, and a create form (name + district + status) below. A new
- * complex invalidates the list, so the card appears without a manual refetch.
+ * Complexes list (`/complexes`). A stat-tile row and district facet chips sit above
+ * a responsive cover-image card grid; each card links into its detail page. The
+ * create form (name + district + status) stays a single full-width card below the
+ * grid on every tier. A new complex invalidates the list, so the card appears
+ * without a manual refetch. Phone stays a single column — the source order is already
+ * the reading order, so no `contents` reflow trick is needed here.
  */
 export function ComplexesPage() {
   const { data: complexes, isPending, isError } = useComplexes();
   const create = useCreateComplex();
 
+  // Client-side district facet filter over the loaded list.
+  const [district, setDistrict] = useState<string | null>(null);
+
+  // Create-form fields (kept separate from the facet `district` above).
   const [name, setName] = useState('');
-  const [district, setDistrict] = useState('');
+  const [formDistrict, setFormDistrict] = useState('');
   const [status, setStatus] = useState<ComplexStatus>('PLANNED');
+
+  const list = complexes ?? [];
+
+  // Facet chips keep the canonical district order/spelling but list only the
+  // districts actually present in the portfolio, so no dead chip is ever offered.
+  const facets = useMemo(() => {
+    const present = new Set(list.map((c) => c.district));
+    return TASHKENT_DISTRICTS.filter((d) => present.has(d));
+  }, [list]);
+
+  const matches = useMemo(
+    () => (district === null ? list : list.filter((c) => c.district === district)),
+    [list, district],
+  );
+
+  const publishedCount = list.filter((c) => c.publishStatus === 'PUBLISHED').length;
+  const draftCount = list.length - publishedCount;
+  const withoutImageCount = list.filter((c) => c.imageCount === 0).length;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedName = name.trim();
-    if (!trimmedName || !district) return;
-    await create.mutateAsync({ name: trimmedName, district, status });
+    if (!trimmedName || !formDistrict) return;
+    await create.mutateAsync({ name: trimmedName, district: formDistrict, status });
     setName('');
-    setDistrict('');
+    setFormDistrict('');
     setStatus('PLANNED');
   }
 
@@ -49,36 +76,57 @@ export function ComplexesPage() {
         <p className="text-[14px] font-semibold text-brand-rose">
           Majmualarni yuklab bo'lmadi. Qayta urinib ko'ring.
         </p>
-      ) : complexes && complexes.length > 0 ? (
-        <ul className="flex flex-col gap-3">
-          {complexes.map((complex) => (
-            <li key={complex.id}>
-              <Link
-                to={`/complexes/${complex.id}`}
-                className="flex items-center justify-between gap-3 rounded-card bg-card p-4 shadow-card"
+      ) : list.length > 0 ? (
+        <>
+          <StatTileRow className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <StatTile label="Jami majmualar" value={list.length} />
+            <StatTile label="E'lon qilingan" value={publishedCount} tone="green" />
+            <StatTile label="Qoralama" value={draftCount} />
+            <StatTile
+              label="Rasmsiz majmualar"
+              value={withoutImageCount}
+              tone={withoutImageCount > 0 ? 'rose' : 'default'}
+            />
+          </StatTileRow>
+
+          {facets.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <button
+                type="button"
+                onClick={() => setDistrict(null)}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-bold transition-colors ${
+                  district === null ? 'bg-accent text-white' : 'bg-surface text-ink-2'
+                }`}
               >
-                <span className="min-w-0">
-                  <span className="block truncate text-[15px] font-bold text-ink">
-                    {complex.name}
-                  </span>
-                  <span className="mt-0.5 block text-[13px] text-ink-2">{complex.district}</span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span
-                    className={`rounded-full px-3 py-1 text-[12px] font-bold ${PUBLISH_STATE_BADGE[complex.publishStatus]}`}
-                  >
-                    {PUBLISH_STATE_LABELS[complex.publishStatus]}
-                  </span>
-                  <span
-                    className={`rounded-full px-3 py-1 text-[12px] font-bold ${COMPLEX_STATUS_BADGE[complex.status]}`}
-                  >
-                    {COMPLEX_STATUS_LABELS[complex.status]}
-                  </span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                Barchasi
+              </button>
+              {facets.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDistrict(d)}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-bold transition-colors ${
+                    district === d ? 'bg-accent text-white' : 'bg-surface text-ink-2'
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {matches.length > 0 ? (
+            <div className={GRID}>
+              {matches.map((complex) => (
+                <ComplexCard key={complex.id} complex={complex} />
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-card bg-card p-5 text-center text-[14px] text-ink-3 shadow-card">
+              Bu tumanda majmua yo'q
+            </p>
+          )}
+        </>
       ) : (
         <p className="rounded-card bg-card p-5 text-center text-[14px] text-ink-3 shadow-card">
           Hozircha ЖК yo'q
@@ -107,8 +155,8 @@ export function ComplexesPage() {
         </label>
         <select
           id="complex-district"
-          value={district}
-          onChange={(event) => setDistrict(event.target.value)}
+          value={formDistrict}
+          onChange={(event) => setFormDistrict(event.target.value)}
           required
           className={FIELD}
         >
@@ -138,7 +186,7 @@ export function ComplexesPage() {
 
         <button
           type="submit"
-          disabled={create.isPending || name.trim().length === 0 || !district}
+          disabled={create.isPending || name.trim().length === 0 || !formDistrict}
           className="mt-6 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
         >
           {create.isPending ? 'Qo‘shilmoqda...' : 'Majmua qo‘shish'}

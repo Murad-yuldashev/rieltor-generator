@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { cn } from '@/shared/lib/cn';
 import { useFinanceInsight } from '../model/use-finance-insight';
 
 /** "AI tahlil" — an on-demand narrative over the finance snapshot, shown under the Moliya cards. */
-export function FinanceInsight() {
+export function FinanceInsight({ className }: { className?: string }) {
   const { mutate, data, isPending } = useFinanceInsight();
   const [copied, setCopied] = useState(false);
 
@@ -17,7 +18,7 @@ export function FinanceInsight() {
   }
 
   return (
-    <section className="rounded-card bg-card p-4 shadow-card">
+    <section className={cn('rounded-card bg-card p-4 shadow-card', className)}>
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-[13px] font-bold uppercase tracking-wide text-ink-3">AI tahlil</h2>
         <button
