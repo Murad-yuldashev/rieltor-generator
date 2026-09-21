@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import type { CollectionSummary } from '@rieltor/shared';
+import { formatListedAt, type CollectionSummary } from '@rieltor/shared';
 import { Icon } from '@/shared/ui/icon';
 
 /**
@@ -9,7 +9,7 @@ import { Icon } from '@/shared/ui/icon';
  * stay on the detail page.
  */
 export function CollectionCard({ collection }: { collection: CollectionSummary }) {
-  const updated = new Date(collection.updatedAt).toLocaleDateString('uz-UZ');
+  const updated = formatListedAt(collection.updatedAt.slice(0, 10));
   return (
     <Link
       to={`/collections/${collection.id}`}

@@ -13,7 +13,7 @@ export function WalletCard({ balanceSom, className }: { balanceSom: string; clas
   return (
     <section className={cn('rounded-card bg-card p-5 shadow-card', className)}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[15px] font-bold text-ink">Hisob balansi</h2>
+        <h2 className="text-[15px] font-bold text-ink">Hamyon</h2>
         {isDebt && (
           <span className="shrink-0 rounded-full bg-brand-rose/10 px-3 py-1 text-[12px] font-bold text-brand-rose">
             Qarz

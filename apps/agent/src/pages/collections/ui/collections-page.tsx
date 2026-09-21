@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { formatListedAt } from '@rieltor/shared';
 import { useCollections, useCreateCollection } from '@/features/collections';
 import { Icon } from '@/shared/ui/icon';
 import { StatTile, StatTileRow } from '@/shared/ui/stat-tile';
@@ -35,8 +36,12 @@ export function CollectionsPage() {
   const totalItems = list.reduce((s, c) => s + c.itemCount, 0);
   const emptyCount = list.filter((c) => c.itemCount === 0).length;
   const lastUpdated = list.length
-    ? new Date(Math.max(...list.map((c) => new Date(c.updatedAt).getTime()))).toLocaleDateString(
-        'uz-UZ',
+    ? formatListedAt(
+        list
+          .reduce((a, b) =>
+            new Date(a.updatedAt).getTime() >= new Date(b.updatedAt).getTime() ? a : b,
+          )
+          .updatedAt.slice(0, 10),
       )
     : '—';
 

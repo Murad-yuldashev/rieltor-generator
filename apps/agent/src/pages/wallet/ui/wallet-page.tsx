@@ -109,7 +109,7 @@ function WalletKpis({ transactions }: { transactions: WalletTxRow[] }) {
       <StatTile
         label="Komissiya"
         value={formatPriceSom(commission.toString(), 'SALE')}
-        tone="green"
+        tone={commission < 0n ? 'rose' : 'green'}
       />
       <StatTile label="Amaliyotlar soni" value={String(transactions.length)} />
     </StatTileRow>
