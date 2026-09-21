@@ -1,15 +1,11 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Link } from 'react-router';
-import {
-  formatListedAt,
-  RealtorSlugSchema,
-  type PublicReview,
-  type RealtorProfileUpdate,
-} from '@rieltor/shared';
-import { useMyRating, useProfile, useSaveLogo, useSaveProfile } from '@/features/profile';
+import { RealtorSlugSchema, type RealtorProfileUpdate } from '@rieltor/shared';
+import { useSession } from '@/entities/session';
+import { useProfile, useSaveLogo, useSaveProfile } from '@/features/profile';
 import { ApiError } from '@/shared/api/client';
 import { Icon } from '@/shared/ui/icon';
-import { RatingStars } from '@/shared/ui/rating-stars';
+import { ProfilePreview } from './profile-preview';
+import { RatingsPanel } from './ratings-panel';
 
 /**
  * The regions a realtor can select as their coverage area. Defined locally because
@@ -53,93 +49,19 @@ function sameRegions(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((region, i) => region === b[i]);
 }
 
-/** One APPROVED review as it appears in the realtor's own "Baholarim" list. Read-only:
- * a realtor sees the same public reviews buyers do but cannot moderate or reply here. */
-function ReviewRow({ review }: { review: PublicReview }) {
-  return (
-    <li className="rounded-[12px] border border-line bg-surface p-3">
-      <div className="flex items-center gap-3">
-        {review.authorPhotoUrl ? (
-          <img
-            src={review.authorPhotoUrl}
-            alt={review.authorName}
-            loading="lazy"
-            decoding="async"
-            className="size-9 shrink-0 rounded-full bg-accent-soft object-cover"
-          />
-        ) : (
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[14px] font-extrabold text-accent">
-            {review.authorName.charAt(0).toUpperCase()}
-          </span>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] font-bold text-ink">{review.authorName}</p>
-          <div className="mt-0.5 flex items-center gap-2">
-            <RatingStars value={review.rating} />
-            <span className="text-[12px] font-medium text-ink-3">
-              {formatListedAt(review.createdAt.slice(0, 10))}
-            </span>
-          </div>
-        </div>
-      </div>
-      {review.comment && (
-        <p className="mt-2 text-[13px] leading-[1.55] font-medium text-ink-2">{review.comment}</p>
-      )}
-    </li>
-  );
-}
-
-/** "Baholarim" — a read-only mirror of the realtor's public rating + APPROVED reviews,
- * fetched from their own `GET /api/r/:slug`. Only mounted once a slug is set (see the
- * caller), so `slug` is always a real, published page here. */
-function MyRatingSection({ slug }: { slug: string }) {
-  const { data, isPending, isError } = useMyRating(slug);
-
-  return (
-    <section className="rounded-card bg-card p-4 shadow-card">
-      <p className="text-[13px] font-bold text-ink">Baholarim</p>
-
-      {isPending ? (
-        <p className="mt-2 text-[13px] font-semibold text-ink-2">Yuklanmoqda...</p>
-      ) : isError || !data ? (
-        <p className="mt-2 text-[13px] font-semibold text-brand-rose">
-          Baholarni yuklab bo'lmadi. Sahifani yangilang.
-        </p>
-      ) : (
-        <>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <RatingStars value={data.ratingAvg ?? 0} />
-            <span className="text-[13px] font-semibold text-ink-2">
-              {data.ratingCount > 0 && data.ratingAvg !== null
-                ? `${data.ratingAvg.toFixed(1)} · ${data.ratingCount} ta sharh`
-                : "Hali baholar yo'q"}
-            </span>
-          </div>
-
-          {data.reviews.length > 0 && (
-            <ul className="mt-3 flex flex-col gap-2">
-              {data.reviews.map((review) => (
-                <ReviewRow key={review.id} review={review} />
-              ))}
-            </ul>
-          )}
-        </>
-      )}
-    </section>
-  );
-}
-
 /**
  * The realtor's editable profile. Loads the current values from
  * `GET /api/agent/profile` (which returns all-defaults for a realtor who has never
  * saved — handled the same as any other value), lets the realtor edit their
  * profile plus branding (slug, brand colour, logo), and PATCHes only the fields
  * that actually changed so the all-optional update never carries a field the
- * schema would reject. The logo is a separate multipart upload endpoint. Below the
- * editor, a read-only "Baholarim" section mirrors the public rating + reviews.
+ * schema would reject. The logo is a separate multipart upload endpoint. On desktop
+ * the editor is the MAIN column of a two-column band; a sticky ASIDE mirrors the
+ * public preview and a read-only "Baholarim" (rating + reviews) panel.
  */
 export function ProfilePage() {
   const { data: profile, isPending, isError } = useProfile();
+  const { user } = useSession();
   const save = useSaveProfile();
   const saveLogo = useSaveLogo();
 
@@ -281,16 +203,7 @@ export function ProfilePage() {
 
   return (
     <main>
-      <Link
-        to="/"
-        className="mb-4 inline-flex items-center gap-1 text-[13px] font-semibold text-ink-2"
-      >
-        <Icon name="chevronLeft" className="size-4" />
-        Kabinetga qaytish
-      </Link>
-
       <header className="mb-5">
-        <p className="text-[13px] font-semibold text-ink-2">Rieltor kabineti</p>
         <h1 className="text-[22px] font-extrabold tracking-tight text-ink">Profil</h1>
       </header>
 
@@ -301,10 +214,16 @@ export function ProfilePage() {
           Profilni yuklab bo'lmadi. Sahifani yangilang.
         </p>
       ) : (
-        <div className="flex flex-col gap-4">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_340px] lg:items-start lg:gap-6 desk:grid-cols-[1fr_380px]">
+          {/* MAIN — the editor form; narrow fields pair into two md columns, wide
+              cards span both. */}
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-4"
+            noValidate
+          >
             {/* public page — uses the SERVER-persisted slug so the link only shows once published */}
-            <section className="rounded-card bg-card p-4 shadow-card">
+            <section className="rounded-card bg-card p-4 shadow-card md:col-span-2">
               <div className="flex items-center gap-2">
                 <p className="text-[13px] font-bold text-ink">Ommaviy sahifangiz</p>
                 {profile.verified && (
@@ -361,8 +280,29 @@ export function ProfilePage() {
               />
             </div>
 
-            {/* bio */}
+            {/* experienceYears */}
             <div className="rounded-card bg-card p-4 shadow-card">
+              <label htmlFor="experienceYears" className="text-[13px] font-bold text-ink">
+                Tajriba (yil)
+              </label>
+              <input
+                id="experienceYears"
+                type="number"
+                inputMode="numeric"
+                value={experienceYears}
+                onChange={(e) => {
+                  markDirty();
+                  setExperienceYears(e.target.value);
+                }}
+                min={EXPERIENCE_MIN}
+                max={EXPERIENCE_MAX}
+                placeholder="Masalan: 5"
+                className="mt-2 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+              />
+            </div>
+
+            {/* bio */}
+            <div className="rounded-card bg-card p-4 shadow-card md:col-span-2">
               <label htmlFor="bio" className="text-[13px] font-bold text-ink">
                 O'zingiz haqingizda
               </label>
@@ -384,7 +324,7 @@ export function ProfilePage() {
             </div>
 
             {/* regions */}
-            <div className="rounded-card bg-card p-4 shadow-card">
+            <div className="rounded-card bg-card p-4 shadow-card md:col-span-2">
               <p className="text-[13px] font-bold text-ink">Faoliyat hududlari</p>
               <p className="mt-1 text-[12px] text-ink-3">Bir nechtasini tanlashingiz mumkin.</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -407,27 +347,6 @@ export function ProfilePage() {
                   );
                 })}
               </div>
-            </div>
-
-            {/* experienceYears */}
-            <div className="rounded-card bg-card p-4 shadow-card">
-              <label htmlFor="experienceYears" className="text-[13px] font-bold text-ink">
-                Tajriba (yil)
-              </label>
-              <input
-                id="experienceYears"
-                type="number"
-                inputMode="numeric"
-                value={experienceYears}
-                onChange={(e) => {
-                  markDirty();
-                  setExperienceYears(e.target.value);
-                }}
-                min={EXPERIENCE_MIN}
-                max={EXPERIENCE_MAX}
-                placeholder="Masalan: 5"
-                className="mt-2 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
-              />
             </div>
 
             {/* slug */}
@@ -493,7 +412,7 @@ export function ProfilePage() {
             </div>
 
             {/* logo */}
-            <div className="rounded-card bg-card p-4 shadow-card">
+            <div className="rounded-card bg-card p-4 shadow-card md:col-span-2">
               <p className="text-[13px] font-bold text-ink">Logotip</p>
               <p className="mt-1 text-[12px] text-ink-3">JPEG, PNG yoki WebP; 10 MB gacha.</p>
               <div className="mt-3 flex items-center gap-3">
@@ -536,15 +455,19 @@ export function ProfilePage() {
             </div>
 
             {validationError && (
-              <p className="text-[13px] font-semibold text-brand-rose">{validationError}</p>
+              <p className="text-[13px] font-semibold text-brand-rose md:col-span-2">
+                {validationError}
+              </p>
             )}
 
             {save.isError && (
-              <p className="text-[13px] font-semibold text-brand-rose">{saveErrorMessage}</p>
+              <p className="text-[13px] font-semibold text-brand-rose md:col-span-2">
+                {saveErrorMessage}
+              </p>
             )}
 
             {saved && !save.isPending && (
-              <p className="flex items-center gap-1.5 rounded-[12px] bg-accent-soft px-3 py-2 text-[13px] font-semibold text-accent-dark">
+              <p className="flex items-center gap-1.5 rounded-[12px] bg-accent-soft px-3 py-2 text-[13px] font-semibold text-accent-dark md:col-span-2">
                 <Icon name="check" className="size-4" />
                 Profil saqlandi.
               </p>
@@ -553,24 +476,36 @@ export function ProfilePage() {
             <button
               type="submit"
               disabled={save.isPending}
-              className="w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
+              className="w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60 md:col-span-2"
             >
               {save.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
             </button>
           </form>
 
-          {/* ratings — read-only mirror of the public rating; only shown once a slug is
+          {/* ASIDE — a desktop-only live preview above the ratings panel. The ratings
+              are a read-only mirror of the public rating; only shown once a slug is
               published (an unpublished realtor has no `/api/r/:slug` to read). */}
-          {profile.slug ? (
-            <MyRatingSection slug={profile.slug} />
-          ) : (
-            <section className="rounded-card bg-card p-4 shadow-card">
-              <p className="text-[13px] font-bold text-ink">Baholarim</p>
-              <p className="mt-2 text-[13px] text-ink-3">
-                Ommaviy sahifangizni (slug) belgilang — shundan so'ng baholar ko'rinadi.
-              </p>
-            </section>
-          )}
+          <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-4">
+            <ProfilePreview
+              agency={agency}
+              name={user?.name}
+              brandColor={brandColor}
+              logoUrl={profile.logoUrl}
+              verified={profile.verified}
+              slug={profile.slug}
+              className="hidden lg:block"
+            />
+            {profile.slug ? (
+              <RatingsPanel slug={profile.slug} />
+            ) : (
+              <section className="rounded-card bg-card p-4 shadow-card">
+                <p className="text-[13px] font-bold text-ink">Baholarim</p>
+                <p className="mt-2 text-[13px] text-ink-3">
+                  Ommaviy sahifangizni (slug) belgilang — shundan so'ng baholar ko'rinadi.
+                </p>
+              </section>
+            )}
+          </aside>
         </div>
       )}
     </main>
