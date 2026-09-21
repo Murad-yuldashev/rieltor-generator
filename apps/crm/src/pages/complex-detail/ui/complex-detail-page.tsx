@@ -15,6 +15,7 @@ import {
 } from '@/features/developer';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
+import { ComplexSummaryCard } from './complex-summary';
 
 /** Per-complex gallery cap — mirrors the API's MAX_COMPLEX_IMAGES (upload 409s past it). */
 const MAX_COMPLEX_IMAGES = 20;
@@ -52,7 +53,13 @@ export function ComplexDetailPage() {
   );
 }
 
-/** The edit form, delete control, and buildings section for a loaded complex. */
+/**
+ * The edit form, media, publish/delete controls, and buildings section for a loaded
+ * complex. On phone it is a single stack (source order kept via the `contents`
+ * wrappers + `order-*`); from `lg` it becomes a main column (edit form + media +
+ * buildings) beside a sticky aside (summary + publish + delete). Layout only — every
+ * mutation/behaviour is unchanged from the pre-desktop version.
+ */
 function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
   const navigate = useNavigate();
   const update = useUpdateComplex(complex.id);
@@ -140,286 +147,324 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
   }
 
   return (
-    <>
-      <form onSubmit={handleUpdate} className="rounded-card bg-card p-5 shadow-card">
-        <h1 className="text-[18px] font-extrabold tracking-tight text-ink">Majmua ma'lumotlari</h1>
-
-        <label className={LABEL} htmlFor="edit-name">
-          Nomi
-        </label>
-        <input
-          id="edit-name"
-          type="text"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          required
-          maxLength={160}
-          className={FIELD}
-        />
-
-        <label className={LABEL} htmlFor="edit-district">
-          Tuman
-        </label>
-        <input
-          id="edit-district"
-          type="text"
-          value={district}
-          onChange={(event) => setDistrict(event.target.value)}
-          required
-          className={FIELD}
-        />
-
-        <label className={LABEL} htmlFor="edit-address">
-          Manzil
-        </label>
-        <input
-          id="edit-address"
-          type="text"
-          value={address}
-          onChange={(event) => setAddress(event.target.value)}
-          maxLength={300}
-          placeholder="Ixtiyoriy"
-          className={FIELD}
-        />
-
-        <label className={LABEL} htmlFor="edit-description">
-          Tavsif
-        </label>
-        <textarea
-          id="edit-description"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          maxLength={2000}
-          rows={3}
-          placeholder="Ixtiyoriy"
-          className={FIELD}
-        />
-
-        <label className={LABEL} htmlFor="edit-status">
-          Holati
-        </label>
-        <select
-          id="edit-status"
-          value={status}
-          onChange={(event) => setStatus(event.target.value as ComplexStatus)}
-          className={FIELD}
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-6 desk:grid-cols-[1fr_24rem]">
+      {/* MAIN column — the editing surface. On phone the `contents` wrapper dissolves
+          so its children join the single stack, ordered by `order-*`. */}
+      <div className="contents lg:flex lg:flex-col lg:gap-5">
+        <form
+          onSubmit={handleUpdate}
+          className="order-2 rounded-card bg-card p-5 shadow-card lg:order-none"
         >
-          {COMPLEX_STATUS_OPTIONS.map((value) => (
-            <option key={value} value={value}>
-              {COMPLEX_STATUS_LABELS[value]}
-            </option>
-          ))}
-        </select>
+          <h1 className="text-[18px] font-extrabold tracking-tight text-ink">
+            Majmua ma'lumotlari
+          </h1>
 
-        <label className={LABEL} htmlFor="edit-latitude">
-          Kenglik (latitude)
-        </label>
-        <input
-          id="edit-latitude"
-          type="number"
-          step="any"
-          min={-90}
-          max={90}
-          value={latitude}
-          onChange={(event) => setLatitude(event.target.value)}
-          placeholder="Ixtiyoriy, masalan: 41.311"
-          className={FIELD}
-        />
+          {/* Long fields pair up two-across from md; free-text fields span the full width. */}
+          <div className="md:grid md:grid-cols-2 md:gap-x-4">
+            <div>
+              <label className={LABEL} htmlFor="edit-name">
+                Nomi
+              </label>
+              <input
+                id="edit-name"
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+                maxLength={160}
+                className={FIELD}
+              />
+            </div>
 
-        <label className={LABEL} htmlFor="edit-longitude">
-          Uzunlik (longitude)
-        </label>
-        <input
-          id="edit-longitude"
-          type="number"
-          step="any"
-          min={-180}
-          max={180}
-          value={longitude}
-          onChange={(event) => setLongitude(event.target.value)}
-          placeholder="Ixtiyoriy, masalan: 69.279"
-          className={FIELD}
-        />
+            <div>
+              <label className={LABEL} htmlFor="edit-district">
+                Tuman
+              </label>
+              <input
+                id="edit-district"
+                type="text"
+                value={district}
+                onChange={(event) => setDistrict(event.target.value)}
+                required
+                className={FIELD}
+              />
+            </div>
 
-        <label className={LABEL} htmlFor="edit-commission">
-          Komissiya, %
-        </label>
-        <input
-          id="edit-commission"
-          type="number"
-          step="0.01"
-          min={0}
-          max={100}
-          value={commissionPercent}
-          onChange={(event) => setCommissionPercent(event.target.value)}
-          placeholder="Ixtiyoriy, masalan: 1.5"
-          className={FIELD}
-        />
-        <p className="mt-1.5 text-[12px] text-ink-3">
-          Sotuvchilar uchun standart komissiya. Har bir xonadonda alohida belgilash mumkin.
-        </p>
+            <div className="md:col-span-2">
+              <label className={LABEL} htmlFor="edit-address">
+                Manzil
+              </label>
+              <input
+                id="edit-address"
+                type="text"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                maxLength={300}
+                placeholder="Ixtiyoriy"
+                className={FIELD}
+              />
+            </div>
 
-        <button
-          type="submit"
-          disabled={update.isPending || name.trim().length === 0 || district.trim().length === 0}
-          className="mt-6 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
-        >
-          {update.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
-        </button>
+            <div className="md:col-span-2">
+              <label className={LABEL} htmlFor="edit-description">
+                Tavsif
+              </label>
+              <textarea
+                id="edit-description"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                maxLength={2000}
+                rows={3}
+                placeholder="Ixtiyoriy"
+                className={FIELD}
+              />
+            </div>
 
-        {update.isError && (
-          <p className="mt-3 text-center text-[13px] font-semibold text-brand-rose">
-            Saqlashda xatolik. Qayta urinib ko'ring.
-          </p>
-        )}
-      </form>
+            <div>
+              <label className={LABEL} htmlFor="edit-status">
+                Holati
+              </label>
+              <select
+                id="edit-status"
+                value={status}
+                onChange={(event) => setStatus(event.target.value as ComplexStatus)}
+                className={FIELD}
+              >
+                {COMPLEX_STATUS_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {COMPLEX_STATUS_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      <ComplexMedia complex={complex} />
+            <div>
+              <label className={LABEL} htmlFor="edit-latitude">
+                Kenglik (latitude)
+              </label>
+              <input
+                id="edit-latitude"
+                type="number"
+                step="any"
+                min={-90}
+                max={90}
+                value={latitude}
+                onChange={(event) => setLatitude(event.target.value)}
+                placeholder="Ixtiyoriy, masalan: 41.311"
+                className={FIELD}
+              />
+            </div>
 
-      <section className="rounded-card bg-card p-5 shadow-card">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[15px] font-bold text-ink">Marketpleysda e'lon</h2>
-          <span
-            className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold ${PUBLISH_STATE_BADGE[complex.publishStatus]}`}
-          >
-            {PUBLISH_STATE_LABELS[complex.publishStatus]}
-          </span>
-        </div>
-        <p className="mt-1 text-[13px] text-ink-2">
-          {isPublished
-            ? "Majmua marketpleysda ko'rinmoqda. E'londan olsangiz, xaridorlar uni ko'ra olmaydi."
-            : "E'lon qilish uchun tashkilot tasdiqdan o'tgan, kamida bitta rasm va narxli bo'sh xonadon bo'lishi kerak."}
-        </p>
+            <div>
+              <label className={LABEL} htmlFor="edit-longitude">
+                Uzunlik (longitude)
+              </label>
+              <input
+                id="edit-longitude"
+                type="number"
+                step="any"
+                min={-180}
+                max={180}
+                value={longitude}
+                onChange={(event) => setLongitude(event.target.value)}
+                placeholder="Ixtiyoriy, masalan: 69.279"
+                className={FIELD}
+              />
+            </div>
 
-        <button
-          type="button"
-          onClick={() => publish.mutate(!isPublished)}
-          disabled={publish.isPending}
-          className={
-            isPublished
-              ? 'mt-4 w-full rounded-[14px] border border-line px-6 py-3 text-[15px] font-extrabold text-ink-2 disabled:opacity-60'
-              : 'mt-4 w-full rounded-[14px] bg-brand-green px-6 py-3.5 text-[15px] font-extrabold text-white disabled:opacity-60'
-          }
-        >
-          {publish.isPending ? 'Bajarilmoqda...' : isPublished ? "E'londan olish" : "E'lon qilish"}
-        </button>
-
-        {publishError && (
-          <p className="mt-3 text-[13px] font-semibold text-brand-rose">{publishError}</p>
-        )}
-      </section>
-
-      <section className="rounded-card bg-card p-5 shadow-card">
-        <h2 className="text-[15px] font-bold text-ink">Binolar</h2>
-
-        {complex.buildings.length === 0 ? (
-          <p className="mt-3 text-[14px] text-ink-3">Hozircha bino yo'q</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {complex.buildings.map((building) => (
-              <li key={building.id}>
-                <Link
-                  to={`/buildings/${building.id}?complex=${complex.id}`}
-                  className="flex items-center justify-between gap-3 rounded-[14px] border border-line px-4 py-3"
-                >
-                  <span className="truncate text-[14px] font-semibold text-ink">
-                    {building.name}
-                  </span>
-                  <span className="shrink-0 text-[13px] text-ink-3">
-                    {building.floors != null ? `${building.floors} qavat` : '—'}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <form onSubmit={handleCreateBuilding} className="mt-4 border-t border-line pt-4">
-          <label className="block text-[13px] font-semibold text-ink-2" htmlFor="building-name">
-            Yangi bino nomi
-          </label>
-          <input
-            id="building-name"
-            type="text"
-            value={buildingName}
-            onChange={(event) => setBuildingName(event.target.value)}
-            maxLength={120}
-            placeholder="Masalan: A blok"
-            className={FIELD}
-          />
-
-          <label className={LABEL} htmlFor="building-floors">
-            Qavatlar soni
-          </label>
-          <input
-            id="building-floors"
-            type="number"
-            min={1}
-            max={200}
-            value={buildingFloors}
-            onChange={(event) => setBuildingFloors(event.target.value)}
-            placeholder="Ixtiyoriy"
-            className={FIELD}
-          />
+            <div>
+              <label className={LABEL} htmlFor="edit-commission">
+                Komissiya, %
+              </label>
+              <input
+                id="edit-commission"
+                type="number"
+                step="0.01"
+                min={0}
+                max={100}
+                value={commissionPercent}
+                onChange={(event) => setCommissionPercent(event.target.value)}
+                placeholder="Ixtiyoriy, masalan: 1.5"
+                className={FIELD}
+              />
+              <p className="mt-1.5 text-[12px] text-ink-3">
+                Sotuvchilar uchun standart komissiya. Har bir xonadonda alohida belgilash mumkin.
+              </p>
+            </div>
+          </div>
 
           <button
             type="submit"
-            disabled={createBuilding.isPending || buildingName.trim().length === 0}
-            className="mt-4 w-full rounded-[14px] border border-accent bg-accent-soft px-6 py-3 text-[15px] font-extrabold text-accent disabled:opacity-60"
+            disabled={update.isPending || name.trim().length === 0 || district.trim().length === 0}
+            className="mt-6 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3.5 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
           >
-            {createBuilding.isPending ? 'Qo‘shilmoqda...' : 'Bino qo‘shish'}
+            {update.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
           </button>
 
-          {createBuilding.isError && (
+          {update.isError && (
             <p className="mt-3 text-center text-[13px] font-semibold text-brand-rose">
-              Bino qo'shishda xatolik. Qayta urinib ko'ring.
+              Saqlashda xatolik. Qayta urinib ko'ring.
             </p>
           )}
         </form>
-      </section>
 
-      <section className="rounded-card bg-card p-5 shadow-card">
-        <h2 className="text-[15px] font-bold text-ink">Majmuani o'chirish</h2>
-        <p className="mt-1 text-[13px] text-ink-2">
-          Majmua va uning barcha binolari o'chiriladi. Bu amalni ortga qaytarib bo'lmaydi.
-        </p>
+        <ComplexMedia complex={complex} className="order-3 lg:order-none" />
 
-        {confirmingDelete ? (
-          <div className="mt-4 flex gap-2">
+        <section className="order-5 rounded-card bg-card p-5 shadow-card lg:order-none">
+          <h2 className="text-[15px] font-bold text-ink">Binolar</h2>
+
+          {complex.buildings.length === 0 ? (
+            <p className="mt-3 text-[14px] text-ink-3">Hozircha bino yo'q</p>
+          ) : (
+            <ul className="mt-3 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
+              {complex.buildings.map((building) => (
+                <li key={building.id}>
+                  <Link
+                    to={`/buildings/${building.id}?complex=${complex.id}`}
+                    className="flex h-full items-center justify-between gap-3 rounded-[14px] border border-line px-4 py-3"
+                  >
+                    <span className="truncate text-[14px] font-semibold text-ink">
+                      {building.name}
+                    </span>
+                    <span className="shrink-0 text-[13px] text-ink-3">
+                      {building.floors != null ? `${building.floors} qavat` : '—'}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={handleCreateBuilding} className="mt-4 border-t border-line pt-4">
+            <label className="block text-[13px] font-semibold text-ink-2" htmlFor="building-name">
+              Yangi bino nomi
+            </label>
+            <input
+              id="building-name"
+              type="text"
+              value={buildingName}
+              onChange={(event) => setBuildingName(event.target.value)}
+              maxLength={120}
+              placeholder="Masalan: A blok"
+              className={FIELD}
+            />
+
+            <label className={LABEL} htmlFor="building-floors">
+              Qavatlar soni
+            </label>
+            <input
+              id="building-floors"
+              type="number"
+              min={1}
+              max={200}
+              value={buildingFloors}
+              onChange={(event) => setBuildingFloors(event.target.value)}
+              placeholder="Ixtiyoriy"
+              className={FIELD}
+            />
+
             <button
-              type="button"
-              onClick={handleDelete}
-              disabled={remove.isPending}
-              className="flex-1 rounded-[14px] bg-brand-rose px-4 py-3 text-[14px] font-extrabold text-white disabled:opacity-60"
+              type="submit"
+              disabled={createBuilding.isPending || buildingName.trim().length === 0}
+              className="mt-4 w-full rounded-[14px] border border-accent bg-accent-soft px-6 py-3 text-[15px] font-extrabold text-accent disabled:opacity-60"
             >
-              {remove.isPending ? 'O‘chirilmoqda...' : 'Ha, o‘chirish'}
+              {createBuilding.isPending ? 'Qo‘shilmoqda...' : 'Bino qo‘shish'}
             </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              disabled={remove.isPending}
-              className="flex-1 rounded-[14px] border border-line px-4 py-3 text-[14px] font-semibold text-ink-2"
+
+            {createBuilding.isError && (
+              <p className="mt-3 text-center text-[13px] font-semibold text-brand-rose">
+                Bino qo'shishda xatolik. Qayta urinib ko'ring.
+              </p>
+            )}
+          </form>
+        </section>
+      </div>
+
+      {/* STICKY ASIDE — read-only summary on top, the primary publish CTA, and the
+          destructive delete control last (out of the edit flow). */}
+      <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-5">
+        <ComplexSummaryCard complex={complex} className="order-1 lg:order-none" />
+
+        <section className="order-4 rounded-card bg-card p-5 shadow-card lg:order-none">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[15px] font-bold text-ink">Marketpleysda e'lon</h2>
+            <span
+              className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold ${PUBLISH_STATE_BADGE[complex.publishStatus]}`}
             >
-              Bekor qilish
-            </button>
+              {PUBLISH_STATE_LABELS[complex.publishStatus]}
+            </span>
           </div>
-        ) : (
+          <p className="mt-1 text-[13px] text-ink-2">
+            {isPublished
+              ? "Majmua marketpleysda ko'rinmoqda. E'londan olsangiz, xaridorlar uni ko'ra olmaydi."
+              : "E'lon qilish uchun tashkilot tasdiqdan o'tgan, kamida bitta rasm va narxli bo'sh xonadon bo'lishi kerak."}
+          </p>
+
           <button
             type="button"
-            onClick={() => setConfirmingDelete(true)}
-            className="mt-4 w-full rounded-[14px] border border-brand-rose px-6 py-3 text-[15px] font-extrabold text-brand-rose"
+            onClick={() => publish.mutate(!isPublished)}
+            disabled={publish.isPending}
+            className={
+              isPublished
+                ? 'mt-4 w-full rounded-[14px] border border-line px-6 py-3 text-[15px] font-extrabold text-ink-2 disabled:opacity-60'
+                : 'mt-4 w-full rounded-[14px] bg-brand-green px-6 py-3.5 text-[15px] font-extrabold text-white disabled:opacity-60'
+            }
           >
-            O'chirish
+            {publish.isPending
+              ? 'Bajarilmoqda...'
+              : isPublished
+                ? "E'londan olish"
+                : "E'lon qilish"}
           </button>
-        )}
 
-        {remove.isError && (
-          <p className="mt-3 text-center text-[13px] font-semibold text-brand-rose">
-            O'chirishda xatolik. Qayta urinib ko'ring.
+          {publishError && (
+            <p className="mt-3 text-[13px] font-semibold text-brand-rose">{publishError}</p>
+          )}
+        </section>
+
+        <section className="order-6 rounded-card bg-card p-5 shadow-card lg:order-none">
+          <h2 className="text-[15px] font-bold text-ink">Majmuani o'chirish</h2>
+          <p className="mt-1 text-[13px] text-ink-2">
+            Majmua va uning barcha binolari o'chiriladi. Bu amalni ortga qaytarib bo'lmaydi.
           </p>
-        )}
-      </section>
-    </>
+
+          {confirmingDelete ? (
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={remove.isPending}
+                className="flex-1 rounded-[14px] bg-brand-rose px-4 py-3 text-[14px] font-extrabold text-white disabled:opacity-60"
+              >
+                {remove.isPending ? 'O‘chirilmoqda...' : 'Ha, o‘chirish'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={remove.isPending}
+                className="flex-1 rounded-[14px] border border-line px-4 py-3 text-[14px] font-semibold text-ink-2"
+              >
+                Bekor qilish
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="mt-4 w-full rounded-[14px] border border-brand-rose px-6 py-3 text-[15px] font-extrabold text-brand-rose"
+            >
+              O'chirish
+            </button>
+          )}
+
+          {remove.isError && (
+            <p className="mt-3 text-center text-[13px] font-semibold text-brand-rose">
+              O'chirishda xatolik. Qayta urinib ko'ring.
+            </p>
+          )}
+        </section>
+      </aside>
+    </div>
   );
 }
 
@@ -434,7 +479,7 @@ function ComplexDetailView({ complex }: { complex: ComplexDetail }) {
  * `Image` DTO exposes no row id, and position is its only stable per-complex
  * identifier (it equals the `<nn>` segment of `base`).
  */
-function ComplexMedia({ complex }: { complex: ComplexDetail }) {
+function ComplexMedia({ complex, className }: { complex: ComplexDetail; className?: string }) {
   const { uploadImage, deleteImage } = useComplexImages(complex.id);
 
   const atCap = complex.imageCount >= MAX_COMPLEX_IMAGES;
@@ -456,7 +501,7 @@ function ComplexMedia({ complex }: { complex: ComplexDetail }) {
         : null;
 
   return (
-    <section className="rounded-card bg-card p-5 shadow-card">
+    <section className={cn('rounded-card bg-card p-5 shadow-card', className)}>
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-[15px] font-bold text-ink">Rasmlar</h2>
         <span className="shrink-0 text-[13px] font-semibold text-ink-3">
@@ -470,7 +515,7 @@ function ComplexMedia({ complex }: { complex: ComplexDetail }) {
       {complex.gallery.length === 0 ? (
         <p className="mt-3 text-[14px] text-ink-3">Hozircha rasm yo'q</p>
       ) : (
-        <ul className="mt-4 grid grid-cols-3 gap-3">
+        <ul className="mt-4 grid grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-3 desk:grid-cols-4">
           {complex.gallery.map((image, index) => (
             <li
               key={image.base}
