@@ -17,7 +17,7 @@
 - **Additive migration only** — new nullable/defaulted `RealtorProfile` columns + one additive `NotificationType` member. No drops/type-changes. Run `yarn migrate --name phase_9_realtor_site_generator` from `apps/api` (= `prisma migrate dev`), then `yarn workspace @rieltor/api generate`. Prod/CI apply via `migrate:deploy`.
 - **BigInt money stays a string** end-to-end; never `Number()` a `priceSom`.
 - **Reuse the marketplace filter stack** (`@/features/listing-filters`, `@/entities/listing` `ListingCard`) — do NOT rebuild search; catalogue filtering runs client-side over the realtor's listing array.
-- **`brandColor`/theme is data → CSS custom property only** (never raw DOM/CSS); server hex-validates `^#[0-9a-fA-F]{6}$`. URLs validated (`z.string().url()`), phones `canonicalizePhone`d to `998XXXXXXXXX`, Telegram stored without `@`.
+- **`brandColor`/theme is data → CSS custom property only** (never raw DOM/CSS); server hex-validates `^#[0-9a-fA-F]{6}$`. URLs validated (`z.url()` — the repo's zod-v4 idiom), phones `canonicalizePhone`d to `998XXXXXXXXX` by the schema `.transform`, Telegram stored without `@`.
 - **Privacy:** the public `/api/r/:slug` JSON never leaks internal fields; `seoTitle`/`seoDescription` are server-only (meta), never in `PublicRealtorSchema`. Contact fields are opt-in columns. The inquiry endpoint is rate-limited + phone-validated.
 - **Routing trap:** `r` is BOTH `@Controller('r')` (`/api/r/:slug`) and the public SPA/SSR path. The inquiry route is `/api/r/:slug/inquiry` (a controller method, NOT added to `SPA_ROUTES`); realtor SSR stays in `not-found-shell.filter`.
 - `imageVariantSrc` widths ∈ {360,720,1200}. `apps/crm` untouched.
@@ -113,8 +113,8 @@ const TelegramHandleSchema = z.string().trim().transform((s) => s.replace(/^@/, 
   contactPhone: ContactPhoneSchema.nullable().optional(),
   contactWhatsapp: ContactPhoneSchema.nullable().optional(),
   contactTelegram: TelegramHandleSchema.nullable().optional(),
-  instagramUrl: z.string().url().max(200).nullable().optional(),
-  telegramChannelUrl: z.string().url().max(200).nullable().optional(),
+  instagramUrl: z.url().max(200).nullable().optional(),
+  telegramChannelUrl: z.url().max(200).nullable().optional(),
   seoTitle: z.string().trim().max(70).nullable().optional(),
   seoDescription: z.string().trim().max(200).nullable().optional(),
   sitePublished: z.boolean().optional(),
@@ -147,7 +147,7 @@ export const NotificationTypeSchema = z.enum(['PRICE_UPDATE', 'LEAD_INQUIRY']);
 export type RealtorInquiryCreate = z.infer<typeof RealtorInquiryCreateSchema>;
 ```
 
-- [ ] **Step 4: Rewrite `getBySlug` + wire the module.** In `realtor-public.module.ts` add `AgentModule` to `imports` (it exports `SubscriptionService`; no cycle — do NOT use `forwardRef`). In `realtor-public.service.ts` inject `SubscriptionService` and rewrite `getBySlug` — the reduced payload must include EVERY `PublicRealtorSchema` key:
+- [ ] **Step 4: Rewrite `getBySlug` + wire the module.** In `realtor-public.module.ts` add `AgentModule` to `imports` (it exports `SubscriptionService`; no cycle — do NOT use `forwardRef`). In `realtor-public.service.ts` inject `SubscriptionService` and rewrite `getBySlug` — the reduced payload must include EVERY `PublicRealtorSchema` key. **CRITICAL (do NOT zero ratings):** `PublicRealtorSchema` has a SECOND consumer — the agent cabinet's "Baholarim" panel reads `/api/r/:slug` via `apps/agent/src/features/profile/use-my-rating.ts`. Ratings + APPROVED reviews are PUBLIC (not subscription-gated), so compute them BEFORE the `siteActive` branch and return the real values even when inactive (only the catalogue/branding is gated; Task 3's placeholder just won't render reviews):
 
 ```ts
 import { SubscriptionService } from '../agent/subscription.service';
@@ -163,30 +163,34 @@ async getBySlug(slug: string): Promise<PublicRealtor> {
   const siteActive = profile.user.role === 'REALTOR'
     && this.subscriptions.isActive(profile.user.subscription) && profile.sitePublished;
   const name = profile.user.name ?? 'Rieltor';
+
+  // Ratings + APPROVED reviews are PUBLIC and ALSO power the cabinet "Baholarim" panel
+  // (use-my-rating.ts) — always compute/return them, even when the site is paused.
+  const ratingAvg = profile.ratingCount > 0 ? profile.ratingSum / profile.ratingCount : null;
+  const reviews = /* ...existing APPROVED-reviews query, unchanged (runs regardless of siteActive)... */;
+
   if (!siteActive) {
     return { name, agency: profile.agency, verified: profile.verified, siteActive: false,
       bio: null, regions: [], experienceYears: null, logoUrl: null, brandColor: null,
       coverImageUrl: null, tagline: null, contactPhone: null, contactTelegram: null,
       contactWhatsapp: null, instagramUrl: null, telegramChannelUrl: null,
-      ratingAvg: null, ratingCount: 0, listings: [], reviews: [] };
+      ratingAvg, ratingCount: profile.ratingCount, listings: [], reviews };
   }
   const rows = await this.prisma.listing.findMany({
     where: { ownerId: profile.userId, status: 'PUBLISHED' },
     include: FULL_INCLUDE, orderBy: { listedAt: 'desc' } });
   const listings = rows.map(toListingSummary);
-  // ...existing APPROVED reviews query unchanged...
   return { name, agency: profile.agency, bio: profile.bio, regions: profile.regions,
     experienceYears: profile.experienceYears, logoUrl: profile.logoUrl, brandColor: profile.brandColor,
     coverImageUrl: profile.coverImageUrl, tagline: profile.tagline, contactPhone: profile.contactPhone,
     contactTelegram: profile.contactTelegram, contactWhatsapp: profile.contactWhatsapp,
     instagramUrl: profile.instagramUrl, telegramChannelUrl: profile.telegramChannelUrl,
-    verified: profile.verified, ratingCount: profile.ratingCount,
-    ratingAvg: profile.ratingCount > 0 ? profile.ratingSum / profile.ratingCount : null,
+    verified: profile.verified, ratingCount: profile.ratingCount, ratingAvg,
     siteActive: true, reviews, listings };
 }
 ```
 
-- [ ] **Step 5: Update `profile.service.ts` get/update.** `get()` enumerates its return object — add every new read field with a default (`sitePublished: p?.sitePublished ?? true`, the rest `?? null`). `update()`'s upsert `create:` branch also enumerates — add every new field there (so a first-ever PATCH doesn't drop them); canonicalize phones before the upsert:
+- [ ] **Step 5: Update `profile.service.ts` get/update.** `get()` enumerates its return object — add every new read field with a default (`sitePublished: p?.sitePublished ?? true`, the rest `?? null`). `update()`'s upsert `create:` branch also enumerates — add every new field there (so a first-ever PATCH doesn't drop them). **Do NOT add manual `canonicalizePhone` in `update()`** — `ContactPhoneSchema.transform(canonicalizePhone)` in `RealtorProfileUpdateSchema` already canonicalizes at `.parse()` time (the controller parses before `update()`), so a manual line here is dead code referencing an unimported symbol:
 
 ```ts
 // get() return — append:
@@ -195,9 +199,6 @@ async getBySlug(slug: string): Promise<PublicRealtor> {
     contactWhatsapp: p?.contactWhatsapp ?? null, instagramUrl: p?.instagramUrl ?? null,
     telegramChannelUrl: p?.telegramChannelUrl ?? null, seoTitle: p?.seoTitle ?? null,
     seoDescription: p?.seoDescription ?? null, sitePublished: p?.sitePublished ?? true,
-// update() — before the upsert, canonicalize:
-  if (typeof data.contactPhone === 'string') data.contactPhone = canonicalizePhone(data.contactPhone);
-  if (typeof data.contactWhatsapp === 'string') data.contactWhatsapp = canonicalizePhone(data.contactWhatsapp);
 // upsert create: branch — append the new fields (tagline/contact*/social/seo*/sitePublished ?? null/true).
 ```
 
@@ -321,7 +322,250 @@ export function brandThemeVars(hex: string | null): CSSProperties | undefined {
 }
 ```
 
-- [ ] **Step 2: Rewrite `RealtorPage`** — all catalogue hooks BEFORE the early returns (Rules of Hooks); district facet layered locally; theme root; hero header; `siteActive` placeholder; reused filter stack. Use the full component from the spec sketch (the `apps/web/src/pages/realtor/ui/realtor-page.tsx` block in the Phase 9 brief): imports (`useMemo`/`useState`, `ListingCard`, the `@/features/listing-filters` set, `useInfiniteScroll`, `cn`, `Icon`, `ApiError`, `NotFoundView`, `realtorQuery`, `brandThemeVars`); `PAGE_SIZE = 8`; `criteria`/`district`/`limit` state; `districts` memo; `scoped`→`filterListings`→`shown`/`hasMore`/`sentinelRef`; `applyCriteria`/`patch`/`pickDistrict` (each resets `limit`); the `<main style={themeStyle} className="… md:max-w-none desk:max-w-none">`; the cover/`--brand` hero; the catalogue `<section>` (SortSelect, ListingFacets, district chip rail, search input, `<details>`+FilterPanel, `ListingCard` grid `md:grid-cols-2 lg:grid-cols-3 desk:grid-cols-4`, sentinel); `<ReviewsSection>`. **Keep `PageSkeleton` + `ReviewsSection` in the file unchanged.** No `favoriteSlot` (public page). Placeholder branch when `!data.siteActive`. (Full code is in the spec's Section 3 sketch — transcribe it verbatim.)
+- [ ] **Step 2: Rewrite `RealtorPage`.** All catalogue hooks run BEFORE the early returns (Rules of Hooks). **KEEP every existing import** that `PageSkeleton`/`ReviewRow`/`ReviewForm`/`ReviewsSection` still use (`useEffect`, `useState`, `useQuery`, `useParams`, `useSession`, `LoginModal`, `formatListedAt`, `RatingStars`/star UI, etc.) and ADD the catalogue imports; keep `PageSkeleton` + `ReviewsSection` (and their helpers) unchanged. `Deal` is imported from `@rieltor/shared`. The deal handler ALSO resets `district` (a district present only in the realtor's RENT listings must not strand the default-SALE view on an empty result). No `favoriteSlot` (public page). Write it as:
+
+```tsx
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router';
+import type { Deal } from '@rieltor/shared';
+import { ListingCard } from '@/entities/listing';
+import {
+  EMPTY_CRITERIA,
+  FilterPanel,
+  SortSelect,
+  ListingFacets,
+  filterListings,
+  type Criteria,
+} from '@/features/listing-filters';
+import { useInfiniteScroll } from '@/shared/lib/use-infinite-scroll';
+import { cn } from '@/shared/lib/cn';
+import { Icon } from '@/shared/ui/icon';
+import { ApiError } from '@/shared/api/client';
+import { NotFoundView } from '@/widgets/not-found';
+import { realtorQuery } from '../api';
+import { brandThemeVars } from '../lib/brand-theme';
+// (PageSkeleton + ReviewsSection + their existing imports stay in this file, unchanged.)
+
+const PAGE_SIZE = 8;
+
+export function RealtorPage() {
+  const { slug = '' } = useParams();
+  const { data, isPending, error } = useQuery(realtorQuery(slug));
+
+  // ALL hooks run unconditionally, BEFORE any early return (Rules of Hooks).
+  const [criteria, setCriteria] = useState<Criteria>(EMPTY_CRITERIA);
+  const [district, setDistrict] = useState<string | null>(null);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+
+  const listings = data?.listings ?? [];
+  const districts = useMemo(
+    () => [...new Set(listings.map((l) => l.district))].sort((a, b) => a.localeCompare(b)),
+    [listings],
+  );
+  const scoped = district ? listings.filter((l) => l.district === district) : listings;
+  const matches = filterListings(scoped, criteria); // filterListings sorts by criteria.sort
+  const shown = matches.slice(0, limit);
+  const hasMore = matches.length > shown.length;
+  const sentinelRef = useInfiniteScroll(hasMore, shown.length, () =>
+    setLimit((n) => n + PAGE_SIZE),
+  );
+
+  const applyCriteria = (next: Criteria) => {
+    setCriteria(next);
+    setLimit(PAGE_SIZE);
+  };
+  const patch = (p: Partial<Criteria>) => applyCriteria({ ...criteria, ...p });
+  // deal change resets the district facet so a stale RENT-only chip can't strand a SALE view.
+  const pickDeal = (deal: Deal) => {
+    setDistrict(null);
+    applyCriteria({ ...criteria, deal });
+  };
+  const pickDistrict = (d: string | null) => {
+    setDistrict(d);
+    setLimit(PAGE_SIZE);
+  };
+
+  if (isPending) return <PageSkeleton />;
+  if (error) {
+    if (error instanceof ApiError && error.status === 404) return <NotFoundView />;
+    return <p className="p-6 text-center text-ink-2">Rieltor sahifasini yuklab bo'lmadi.</p>;
+  }
+
+  const themeStyle = brandThemeVars(data.brandColor);
+
+  if (!data.siteActive) {
+    return (
+      <main
+        className="mx-auto flex min-h-dvh max-w-content items-center justify-center bg-surface p-6"
+        style={themeStyle}
+      >
+        <div className="rounded-card border border-line/60 bg-card p-8 text-center">
+          <h1 className="text-lg font-extrabold text-ink">{data.name}</h1>
+          <p className="mt-2 text-[14px] font-medium text-ink-2">Bu sayt hozircha mavjud emas</p>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main
+      className="mx-auto min-h-dvh max-w-content bg-surface pb-10 md:max-w-none desk:max-w-none"
+      style={themeStyle}
+    >
+      <header className="relative text-white">
+        {data.coverImageUrl && (
+          <img
+            src={data.coverImageUrl}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        <div
+          className="relative px-5 pt-8 pb-7"
+          style={{
+            background: data.coverImageUrl
+              ? 'color-mix(in srgb, var(--brand, var(--color-accent)) 78%, transparent)'
+              : 'var(--brand, var(--color-accent))',
+          }}
+        >
+          <div className="mx-auto w-full max-w-content desk:max-w-desk desk:px-8">
+            <div className="flex items-center gap-4">
+              {data.logoUrl && (
+                <img
+                  src={data.logoUrl}
+                  alt={data.name}
+                  className="h-16 w-16 shrink-0 rounded-2xl border-2 border-white/40 bg-white object-cover"
+                />
+              )}
+              <div className="min-w-0">
+                <h1 className="text-2xl leading-tight font-extrabold">{data.name}</h1>
+                {data.tagline && (
+                  <p className="mt-1 text-[14px] font-semibold text-white/85">{data.tagline}</p>
+                )}
+                {data.agency && (
+                  <p className="mt-0.5 text-[13px] font-medium text-white/75">{data.agency}</p>
+                )}
+                {data.verified && (
+                  <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11.5px] font-extrabold tracking-wide">
+                    <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} /> Tasdiqlangan
+                  </span>
+                )}
+              </div>
+            </div>
+            {data.bio && (
+              <p className="mt-4 text-[14px] leading-[1.55] font-medium text-white/90">
+                {data.bio}
+              </p>
+            )}
+            {(data.experienceYears !== null || data.regions.length > 0) && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {data.experienceYears !== null && (
+                  <span className="rounded-full bg-white/15 px-3 py-1 text-[12.5px] font-bold">
+                    {data.experienceYears} yil tajriba
+                  </span>
+                )}
+                {data.regions.map((r) => (
+                  <span
+                    key={r}
+                    className="rounded-full bg-white/15 px-3 py-1 text-[12.5px] font-bold"
+                  >
+                    {r}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Task 4 mounts <ContactSection slug={slug} … /> here. */}
+
+      <div className="desk:mx-auto desk:w-full desk:max-w-desk desk:px-8">
+        <section className="p-4 desk:px-0">
+          <div className="mb-3.5 flex items-center justify-between gap-3">
+            <h2 className="text-[15px] font-extrabold text-ink">E'lonlar · {matches.length} ta</h2>
+            <SortSelect value={criteria.sort} onChange={(sort) => patch({ sort })} />
+          </div>
+          <ListingFacets
+            deal={criteria.deal}
+            onDealChange={pickDeal}
+            type={criteria.type}
+            onTypeChange={(type) => patch({ type })}
+          />
+          {districts.length > 0 && (
+            <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+              <button
+                type="button"
+                onClick={() => pickDistrict(null)}
+                className={cn(
+                  'shrink-0 rounded-full border px-[15px] py-2 text-[13px] font-semibold transition-colors',
+                  district === null
+                    ? 'border-accent bg-accent text-white'
+                    : 'border-line bg-card text-ink-2',
+                )}
+              >
+                Barcha tumanlar
+              </button>
+              {districts.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => pickDistrict(d)}
+                  className={cn(
+                    'shrink-0 rounded-full border px-[15px] py-2 text-[13px] font-semibold transition-colors',
+                    district === d
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-line bg-card text-ink-2',
+                  )}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
+          <label className="mt-3 flex items-center gap-2.5 rounded-[14px] border border-line bg-card px-3.5 py-3">
+            <Icon name="search" className="h-[17px] w-[17px] text-ink-3" strokeWidth={2.2} />
+            <input
+              type="search"
+              value={criteria.search}
+              onChange={(e) => patch({ search: e.target.value })}
+              placeholder="Tuman, majmua yoki ko'cha qidiring..."
+              aria-label="Qidiruv"
+              className="w-full bg-transparent text-[14.5px] outline-none placeholder:text-ink-3"
+            />
+          </label>
+          <details className="mt-3 rounded-card border border-line/60 bg-card p-4">
+            <summary className="cursor-pointer text-[14px] font-bold text-ink">Filtrlar</summary>
+            <div className="mt-3">
+              <FilterPanel value={criteria} onChange={applyCriteria} />
+            </div>
+          </details>
+          {matches.length === 0 ? (
+            <p className="mt-4 rounded-card border border-line/60 bg-card px-4 py-10 text-center text-[14px] font-medium text-ink-2">
+              Bu shartlarga mos e'lon topilmadi
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-3 desk:grid-cols-4 desk:gap-5">
+              {shown.map((listing, i) => (
+                <ListingCard key={listing.id} listing={listing} isFirst={i === 0} />
+              ))}
+            </div>
+          )}
+          {hasMore && <div ref={sentinelRef} aria-hidden className="mt-4 h-px w-full" />}
+        </section>
+        <ReviewsSection
+          slug={slug}
+          ratingAvg={data.ratingAvg}
+          ratingCount={data.ratingCount}
+          reviews={data.reviews}
+        />
+      </div>
+    </main>
+  );
+}
+```
 
 - [ ] **Step 3: Verify + commit.** `yarn turbo run typecheck lint build --filter=@rieltor/web` green.
 
@@ -345,7 +589,9 @@ git commit -m "feat(web): branded realtor catalogue — reuse filter stack + bra
 
 - [ ] **Step 1: Add the inquiry mutation to `api.ts`** — `submitInquiry(slug, body)` posting to `/api/r/${slug}/inquiry` via `apiPost`, response validated with a tiny `z.object({ ok: z.literal(true) })` (or the shared type). Body: `{ name, phone, message, listingId? }`.
 
-- [ ] **Step 2: Create `contact-section.tsx`** — a `ContactSection` rendering only the opt-in fields present: call (`tel:+${contactPhone}`), Telegram (`https://t.me/${contactTelegram}`), WhatsApp (`https://wa.me/${contactWhatsapp}`), Instagram/Telegram-channel links; and a "Qo'ng'iroq so'rash" form (name, phone, message; optional hidden `listingId`) using `useMutation` over `submitInquiry`, showing a success state ("So'rovingiz yuborildi") and error/loading. All accent styling reads `bg-accent`/`text-accent`/`var(--brand)` so it auto-rebrands. Uzbek labels.
+**MVP scope (per-listing inquiry deferred):** the contact form is a single **page-level general inquiry** this phase — no per-card "So'rov yuborish" CTA. The reused `ListingCard` exposes only `favoriteSlot`, which renders INSIDE its `<Link to="/obj/:id">`, so a per-card inquiry button there would navigate away — and editing the shared entity is out of scope. So the form does NOT send `listingId` (the backend's `listingId` handling from Task 2 is forward-looking/defensive and correctly falls back to a general inquiry when absent). A per-listing entry point is a later-phase enhancement.
+
+- [ ] **Step 2: Create `contact-section.tsx`** — a `ContactSection` rendering only the opt-in fields present: call (`tel:+${contactPhone}`), Telegram (`https://t.me/${contactTelegram}`), WhatsApp (`https://wa.me/${contactWhatsapp}`), Instagram/Telegram-channel links; and a "Qo'ng'iroq so'rash" form (name, phone, message — NO `listingId`) using `useMutation` over `submitInquiry`, showing a success state ("So'rovingiz yuborildi") and error/loading. All accent styling reads `bg-accent`/`text-accent`/`var(--brand)` so it auto-rebrands. Uzbek labels.
 
 - [ ] **Step 3: Mount it in `RealtorPage`** at the comment marker (`{/* Section 4's Contact CTA + inquiry form mount here */}`), passing the contact fields + `slug`.
 
@@ -367,13 +613,33 @@ git commit -m "feat(web): realtor site contact CTA + lead-capture inquiry form"
 **Interfaces:**
 
 - Consumes: Task 1 schemas + `profile.service` mappers; the existing `setLogo`/`processImage`/`imageVariantSrc`/`IMAGE_MAX_WIDTH` pipeline; `useSubscription`.
-- Produces: `POST /api/agent/profile/cover` + `useSaveCover()`; `coverImageUrl` stored as `imageVariantSrc(base, 1200)` (a 1200-wide WebP that `makeOg: true` pairs with `og.jpg` for Task 6).
+- Produces: `POST /api/agent/profile/cover` + `useSaveCover()`; `coverImageUrl` stored as **`result.ogUrl`** — the true **1200×630** OG JPEG that `processImage({ makeOg: true })` returns (matches the codebase-wide `ogUrl` OG convention + the seed's `/images/bx-001/og.jpg`). ONE correctly-sized image serves both the hero band and `og:image` (Task 6), so Task 6's fixed `og:image:width/height=1200/630` is accurate.
 
-- [ ] **Step 1: `setCover` + controller route.** In `profile.service.ts` add `setCover(userId, file)` mirroring `setLogo` but `makeOg: true` and `listingId: \`cover-${userId}\``, storing `coverImageUrl = imageVariantSrc(result.base, IMAGE_MAX_WIDTH)` via an upsert (`create: { userId, agency: '', coverImageUrl }`), returning `this.get(userId)`. In `profile-logo.controller.ts`add`@Post('cover')`mirroring`uploadLogo`(same`FileInterceptor`/mime/size guards). (Full code in the spec's Section 5 sketch.)
+- [ ] **Step 1: `setCover` + controller route.** In `profile.service.ts` add `setCover` mirroring `setLogo` but `makeOg: true`, storing `result.ogUrl` (the 1200×630 crop). In `profile-logo.controller.ts` add `@Post('cover')` mirroring `uploadLogo` (same `FileInterceptor`/mime/size guards, `JwtGuard`+`RealtorGuard`, `ALLOWED_MIME_TYPES`/`MAX_FILE_SIZE_BYTES`):
+
+```ts
+// profile.service.ts
+async setCover(userId: string, file: Express.Multer.File): Promise<RealtorProfile> {
+  const result = await processImage({ source: file.buffer, outputRoot: PUBLIC_DIR,
+    listingId: `cover-${userId}`, position: 1, makeOg: true });
+  const coverImageUrl = result.ogUrl; // 1200×630 JPEG — hero + og:image (Task 6)
+  await this.prisma.realtorProfile.upsert({ where: { userId },
+    update: { coverImageUrl }, create: { userId, agency: '', coverImageUrl } });
+  return this.get(userId);
+}
+// profile-logo.controller.ts
+@Post('cover')
+@UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }))
+uploadCover(@CurrentUser() user: { id: string }, @UploadedFile() file?: Express.Multer.File) {
+  if (!file) throw new BadRequestException('Rasm fayli talab qilinadi');
+  if (!ALLOWED_MIME_TYPES.has(file.mimetype)) throw new BadRequestException('Faqat JPEG, PNG yoki WebP formatidagi rasm qabul qilinadi');
+  return this.profiles.setCover(user.id, file);
+}
+```
 
 - [ ] **Step 2: `useSaveCover` hook + barrel export.** In `use-profile.ts` add `useSaveCover()` mirroring `useSaveLogo` (`apiUpload('/api/agent/profile/cover', formData, RealtorProfileSchema)`, `setQueryData(PROFILE_QUERY_KEY)` + invalidate). Export it from `features/profile/index.ts`.
 
-- [ ] **Step 3: Editor form fields.** In `profile-page.tsx` add state for the 8 editable fields + `sitePublished` (seeded once in the existing `seeded` effect); add each to the changed-fields `patch` builder (canonicalize phones; strip a leading `@` from Telegram; empty string → `null`; client-side URL validation before `mutate`); a cover-upload input (`handleCoverChange` mirroring `handleLogoChange` → `saveCover.mutate(file)`); a `sitePublished` toggle button (`aria-pressed`, `markDirty()`); and a `siteLive = profile.sitePublished && !!subscription?.isActive` badge next to the `/r/:slug` link. (Full wiring in the spec's Section 5 sketch.)
+- [ ] **Step 3: Editor form fields.** In `profile-page.tsx` add state for the 8 editable fields + `sitePublished` (seeded once in the existing `seeded` effect); add each to the changed-fields `patch` builder (canonicalize phones; strip a leading `@` from Telegram; empty string → `null`; client-side URL validation before `mutate`); a cover-upload input (`handleCoverChange` mirroring `handleLogoChange` → `saveCover.mutate(file)`); a `sitePublished` toggle button (`aria-pressed`, `markDirty()`); and a `siteLive = profile.sitePublished && !!subscription?.isActive` badge next to the `/r/:slug` link (via `useSubscription()`), plus an upsell line linking to `/subscribe` when `!subscription?.isActive`. Each field mirrors the existing changed-fields idiom: empty string → `null`; strip a leading `@` from `contactTelegram`; validate `instagramUrl`/`telegramChannelUrl` are full URLs before `mutate` (set `validationError` otherwise). (Phones are canonicalized server-side by the schema `.transform` — no client canonicalize needed.)
 
 - [ ] **Step 4: `ProfilePreview` props.** Add the new props (`coverImageUrl?`, `tagline?`, `sitePublished?`, `contactPhone?`, `contactTelegram?`, `contactWhatsapp?`, `instagramUrl?`, `telegramChannelUrl?`) and render a cover thumb + tagline + contact chips + a live/paused indicator; keep the desktop-only `hidden lg:block`. Pass them from `profile-page.tsx`.
 
@@ -397,9 +663,125 @@ git commit -m "feat(agent): realtor site branding editor — cover upload + cont
 - Produces: `interface RealtorSiteMeta`; `buildRealtorMetaTags(site: RealtorSiteMeta, slug, baseUrl): string` (first param renamed `site`, NOT `meta` — avoids shadowing the module `meta()` helper); `RealtorPublicService.getSiteMeta(slug): Promise<RealtorSiteMeta>` (server-only, no HTTP route; throws `NotFoundException` only for an unknown slug).
 - Do NOT modify `SPA_ROUTES` / `ssr.controller.ts` — `/r` stays filter-only.
 
-- [ ] **Step 1: `getSiteMeta`** in `realtor-public.service.ts` — computes `siteActive`, and when active counts listings + fetches the first listing's position-1 `ogUrl`; returns `RealtorSiteMeta` (bio/logo/cover/seo/regions nulled/empty when inactive; `seoTitle`/`seoDescription` are here — server-only). (Full code in the spec's Section 6 sketch.)
+- [ ] **Step 1: `getSiteMeta`** (server-only, no HTTP route; reuses the `SubscriptionService` from Task 1). Throws `NotFoundException` only for an unknown slug; a known-but-paused slug returns `siteActive: false`. `seoTitle`/`seoDescription` live HERE (server-only) — never in `PublicRealtorSchema`:
 
-- [ ] **Step 2: `meta.ts`** — add `interface RealtorSiteMeta`, a `jsonLdScript()` helper (unicode-escape `<`/`>`/`&` — NOT `escapeHtml`, which corrupts JSON), `buildRealtorJsonLd()` (`RealEstateAgent` type, `aggregateRating` when reviews exist), and rewrite `buildRealtorMetaTags(site, slug, baseUrl)`: minimal `noindex` head when `!site.siteActive`; else `seoTitle`/`seoDescription` overrides → derived fallbacks, `og:site_name` = agency, OG image = `coverImageUrl ?? logoUrl ?? firstListingImageOgUrl`, + the JSON-LD entry. (Full code in the spec's Section 7 sketch.)
+```ts
+async getSiteMeta(slug: string): Promise<RealtorSiteMeta> {
+  const profile = await this.prisma.realtorProfile.findUnique({ where: { slug },
+    include: { user: { select: { id: true, name: true, role: true,
+      subscription: { select: { status: true, currentPeriodEnd: true } } } } } });
+  if (!profile) throw new NotFoundException();
+  const siteActive = profile.user.role === 'REALTOR'
+    && this.subscriptions.isActive(profile.user.subscription) && profile.sitePublished;
+  let listingCount = 0; let firstListingImageOgUrl: string | null = null;
+  if (siteActive) {
+    listingCount = await this.prisma.listing.count({ where: { ownerId: profile.userId, status: 'PUBLISHED' } });
+    const first = await this.prisma.listing.findFirst({ where: { ownerId: profile.userId, status: 'PUBLISHED' },
+      orderBy: { listedAt: 'desc' }, select: { images: { where: { position: 1 }, select: { ogUrl: true }, take: 1 } } });
+    firstListingImageOgUrl = first?.images[0]?.ogUrl ?? null;
+  }
+  return { name: profile.user.name ?? 'Rieltor', agency: profile.agency,
+    bio: siteActive ? profile.bio : null, logoUrl: siteActive ? profile.logoUrl : null,
+    coverImageUrl: siteActive ? profile.coverImageUrl : null,
+    seoTitle: siteActive ? profile.seoTitle : null, seoDescription: siteActive ? profile.seoDescription : null,
+    listingCount, firstListingImageOgUrl, regions: siteActive ? profile.regions : [],
+    ratingAvg: profile.ratingCount > 0 ? profile.ratingSum / profile.ratingCount : null,
+    ratingCount: profile.ratingCount, siteActive };
+}
+```
+
+- [ ] **Step 2: `meta.ts`** — add `interface RealtorSiteMeta`, a `jsonLdScript()` helper, `buildRealtorJsonLd()`, and rewrite `buildRealtorMetaTags`. **The first param is `site`, NOT `meta`** (a param named `meta` shadows the module-level `meta()` helper — real bug). **JSON-LD is a `<script>` text node**, so unicode-escape `<`/`>`/`&` (NOT `escapeHtml`, which corrupts the JSON):
+
+```ts
+export interface RealtorSiteMeta {
+  name: string;
+  agency: string;
+  bio: string | null;
+  logoUrl: string | null;
+  coverImageUrl: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  listingCount: number;
+  firstListingImageOgUrl: string | null;
+  regions: string[];
+  ratingAvg: number | null;
+  ratingCount: number;
+  siteActive: boolean;
+}
+function jsonLdScript(data: unknown): string {
+  const json = JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+  return `<script type="application/ld+json">${json}</script>`;
+}
+function buildRealtorJsonLd(site: RealtorSiteMeta, pageUrl: string, baseUrl: string): string {
+  const image = site.coverImageUrl ?? site.logoUrl ?? site.firstListingImageOgUrl;
+  const data: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateAgent',
+    name: site.agency || site.name,
+    url: pageUrl,
+  };
+  const desc = site.seoDescription?.trim() || site.bio?.trim();
+  if (desc) data.description = truncate(desc);
+  if (site.logoUrl) data.logo = `${baseUrl}${site.logoUrl}`;
+  if (image) data.image = `${baseUrl}${image}`;
+  if (site.regions.length) data.areaServed = site.regions;
+  if (site.ratingCount > 0 && site.ratingAvg != null)
+    data.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: Number(site.ratingAvg.toFixed(1)),
+      reviewCount: site.ratingCount,
+    };
+  return jsonLdScript(data);
+}
+export function buildRealtorMetaTags(site: RealtorSiteMeta, slug: string, baseUrl: string): string {
+  const pageUrl = `${baseUrl}/r/${slug}`;
+  if (!site.siteActive) {
+    return [
+      `<title>${escapeHtml(site.name)}</title>`,
+      meta('name', 'robots', 'noindex'),
+      `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    ].join('\n    ');
+  }
+  const title = site.seoTitle?.trim()
+    ? site.seoTitle.trim()
+    : site.agency
+      ? `${site.name} \u00b7 ${site.agency}`
+      : site.name;
+  const description = site.seoDescription?.trim()
+    ? truncate(site.seoDescription)
+    : site.bio
+      ? truncate(site.bio)
+      : `${site.listingCount} e'lon`;
+  const relativeImage = site.coverImageUrl ?? site.logoUrl ?? site.firstListingImageOgUrl;
+  const tags = [
+    `<title>${escapeHtml(title)}</title>`,
+    meta('name', 'description', description),
+    `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    meta('property', 'og:type', 'website'),
+    meta('property', 'og:site_name', site.agency || site.name),
+    meta('property', 'og:url', pageUrl),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
+    meta('name', 'twitter:card', 'summary_large_image'),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
+  ];
+  if (relativeImage) {
+    const absolute = `${baseUrl}${relativeImage}`;
+    tags.push(
+      meta('property', 'og:image', absolute),
+      meta('property', 'og:image:width', String(OG_IMAGE_WIDTH)),
+      meta('property', 'og:image:height', String(OG_IMAGE_HEIGHT)),
+      meta('name', 'twitter:image', absolute),
+    );
+  }
+  tags.push(buildRealtorJsonLd(site, pageUrl, baseUrl));
+  return tags.join('\n    ');
+}
+```
 
 - [ ] **Step 3: `not-found-shell.filter.ts`** realtor branch — replace `getBySlug(slug)` with `getSiteMeta(slug)`, pass the meta object to `buildRealtorMetaTags(meta, slug, baseUrl)`; keep the `catch` that rethrows non-`NotFoundException` (unknown slug → plain 404 shell; known-but-paused returns `siteActive:false` → minimal head @200).
 
@@ -457,6 +839,8 @@ git commit -m "feat(api): seed realtor site — own 8 PUBLISHED listings + brand
 - **Sequencing (hard deps):** Task 1 is the contract — every later task consumes its schema fields; the api/web/agent packages won't typecheck until it lands. Task 4 needs Task 2 (endpoint) + Task 3 (page). Task 6's `getSiteMeta` reuses the `AgentModule` import Task 1 added. Task 7 needs the migration from Task 1.
 - **Type/name consistency:** `siteActive` (bool) on `PublicRealtorSchema` used in Tasks 1/3/6; `RealtorInquiryCreate` in Tasks 1/2/4; `brandThemeVars` in Task 3; `RealtorSiteMeta` + `buildRealtorMetaTags(site,…)` (param `site`, not `meta`) in Task 6; `useSaveCover` exported from the barrel (Task 5).
 - **Gotchas folded:** reduced payload includes every schema key; `NotificationTypeSchema` widened (else `/api/notifications` parse fails); `profile.service` create-branch enumerates new fields; `coverImageUrl`/`logoUrl` upload-only (not in update schema); JSON-LD unicode-escaped (not `escapeHtml`); seo fields never in the public payload; `/r` inquiry route not in `SPA_ROUTES`; `bx-002` excluded from seed ownership (e2e); phones canonical, Telegram without `@`; BigInt `priceSom` never `Number()`; district facet layered locally (not added to shared `Criteria`).
+- **Second `PublicRealtorSchema` consumer (critique):** `apps/agent/src/features/profile/use-my-rating.ts` (cabinet "Baholarim") also reads `/api/r/:slug` — so `getBySlug`'s reduced branch KEEPS `ratingAvg`/`ratingCount`/`reviews` (public data), not zeroing them; re-verify that panel with a paused/expired realtor, not only the anon public page.
+- **Multi-lens critique folded:** 13 findings (1 must, 6 should, 6 nit, 0 rejected) all addressed — the ratings-regression fix above; cover stored as the 1200×630 `result.ogUrl` (OG dims accurate); the real code for `RealtorPage`/`setCover`/`getSiteMeta`/`buildRealtorMetaTags` inlined here (no "spec sketch" citations — the spec has no code blocks); §4 scoped to a page-level general inquiry (per-listing deferred; `ListingCard`'s only slot is inside its `/obj/:id` link); redundant `update()` canonicalize removed; `z.url()` idiom; district reset on deal change; optional `/subscribe` upsell line.
 
 ## Decomposition note
 
