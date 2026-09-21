@@ -5,6 +5,7 @@ import { processImage } from './images';
 import { makeAgentPlaceholder, makePlaceholder } from './placeholders';
 import { seedDeveloperCrm } from './seed-crm';
 import { mortgagePrograms, SEED_ARTICLES, SEED_LISTINGS } from './seed-data';
+import { seedRealtorCabinet } from './seed-realtor';
 
 const prisma = new PrismaClient();
 
@@ -211,6 +212,11 @@ async function main() {
   // Developer-CRM demo data (Phase 8.2). Additive + idempotent (guarded on
   // Organization count), so it runs once and a re-run is a no-op.
   await seedDeveloperCrm(prisma);
+
+  // Realtor cabinet demo data (Phase 8.3). Additive + idempotent (guarded on
+  // Subscription count). MUST run after seedDeveloperCrm — its fixation/lead
+  // chain FKs into the CRM units minted above.
+  await seedRealtorCabinet(prisma);
 }
 
 main()
