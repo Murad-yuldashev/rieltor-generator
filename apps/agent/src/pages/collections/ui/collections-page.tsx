@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useCollections, useCreateCollection } from '@/features/collections';
 import { Icon } from '@/shared/ui/icon';
+import { StatTile, StatTileRow } from '@/shared/ui/stat-tile';
+import { CollectionCard } from './collection-card';
 
 const NAME_MAX = 80;
 
@@ -28,17 +30,24 @@ export function CollectionsPage() {
     });
   }
 
+  // Client-derived summary tiles over the loaded list.
+  const list = collections ?? [];
+  const totalItems = list.reduce((s, c) => s + c.itemCount, 0);
+  const emptyCount = list.filter((c) => c.itemCount === 0).length;
+  const lastUpdated = list.length
+    ? new Date(Math.max(...list.map((c) => new Date(c.updatedAt).getTime()))).toLocaleDateString(
+        'uz-UZ',
+      )
+    : '—';
+
   return (
-    <main>
-      <Link
-        to="/"
-        className="mb-4 inline-flex items-center gap-1 text-[13px] font-semibold text-ink-2"
-      >
+    <main className="flex flex-col gap-5">
+      <Link to="/" className="inline-flex items-center gap-1 text-[13px] font-semibold text-ink-2">
         <Icon name="chevronLeft" className="size-4" />
         Kabinetga qaytish
       </Link>
 
-      <header className="mb-5 flex items-end justify-between gap-3">
+      <header className="flex items-end justify-between gap-3">
         <div>
           <p className="text-[13px] font-semibold text-ink-2">Rieltor kabineti</p>
           <h1 className="text-[22px] font-extrabold tracking-tight text-ink">Kolleksiyalarim</h1>
@@ -56,7 +65,7 @@ export function CollectionsPage() {
       </header>
 
       {creating && (
-        <div className="mb-5 rounded-card bg-card p-4 shadow-card">
+        <div className="rounded-card bg-card p-4 shadow-card">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -100,7 +109,7 @@ export function CollectionsPage() {
         <p className="rounded-card bg-card p-4 text-[14px] font-semibold text-brand-rose shadow-card">
           Kolleksiyalarni yuklab bo'lmadi. Sahifani yangilang.
         </p>
-      ) : !collections || collections.length === 0 ? (
+      ) : list.length === 0 ? (
         <div className="rounded-card bg-card p-8 text-center shadow-card">
           <p className="text-[15px] font-bold text-ink">Hali kolleksiya yo'q</p>
           <p className="mt-1 text-[13px] font-medium text-ink-2">
@@ -108,28 +117,23 @@ export function CollectionsPage() {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {collections.map((collection) => (
-            <Link
-              key={collection.id}
-              to={`/collections/${collection.id}`}
-              className="flex items-center gap-3 rounded-card bg-card px-4 py-3.5 shadow-card"
-            >
-              <span className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent">
-                <Icon name="heart" className="size-5" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] font-semibold text-ink">
-                  {collection.name}
-                </span>
-                <span className="block text-[13px] font-medium text-ink-2">
-                  {collection.itemCount} ta e'lon
-                </span>
-              </span>
-              <Icon name="chevronRight" className="size-5 text-ink-3" />
-            </Link>
-          ))}
-        </div>
+        <>
+          <StatTileRow className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <StatTile label="Jami kolleksiyalar" value={list.length} />
+            <StatTile label="Jami e'lonlar" value={totalItems} />
+            <StatTile
+              label="Bo'sh kolleksiyalar"
+              value={emptyCount}
+              tone={emptyCount > 0 ? 'rose' : 'default'}
+            />
+            <StatTile label="So'nggi yangilangan" value={lastUpdated} />
+          </StatTileRow>
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-2 lg:grid-cols-3 desk:grid-cols-4">
+            {list.map((c) => (
+              <CollectionCard key={c.id} collection={c} />
+            ))}
+          </div>
+        </>
       )}
     </main>
   );
