@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { formatListedAt, type PresentationSummary } from '@rieltor/shared';
-import { telegramShareUrl, usePresentations } from '@/features/presentations';
+import { type PresentationSummary } from '@rieltor/shared';
+import { usePresentations } from '@/features/presentations';
 import { Icon } from '@/shared/ui/icon';
+import { PresentationsStats } from './presentations-stats';
+import { PresentationCard } from './presentation-card';
 
 /**
  * "Mening taqdimotlarim" — the realtor's shared presentations
@@ -63,59 +65,18 @@ export function PresentationsPage() {
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {presentations.map((presentation) => (
-            <article key={presentation.id} className="rounded-card bg-card p-4 shadow-card">
-              <Link to={`/presentations/${presentation.id}`} className="flex items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                  <Icon name="share" className="size-5" strokeWidth={2.2} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-semibold text-ink">
-                    {presentation.title}
-                  </span>
-                  {presentation.clientLabel && (
-                    <span className="mt-0.5 block truncate text-[13px] font-medium text-ink-2">
-                      {presentation.clientLabel}
-                    </span>
-                  )}
-                  <span className="mt-1 flex items-center gap-2 text-[13px] font-medium text-ink-2">
-                    <span className="inline-flex items-center gap-1">
-                      <Icon name="eye" className="size-3.5 text-ink-3" strokeWidth={2.2} />
-                      {presentation.opensCount} ochilish
-                    </span>
-                    <span className="text-ink-3">·</span>
-                    <span>{formatListedAt(presentation.createdAt.slice(0, 10))}</span>
-                  </span>
-                </span>
-                <Icon name="chevronRight" className="size-5 shrink-0 text-ink-3" />
-              </Link>
-
-              <div className="mt-3 flex gap-2 border-t border-line pt-3">
-                <button
-                  type="button"
-                  onClick={() => handleCopy(presentation)}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[13px] font-bold text-ink-2"
-                >
-                  <Icon
-                    name={copiedId === presentation.id ? 'check' : 'doc'}
-                    className="size-4"
-                    strokeWidth={2.2}
-                  />
-                  {copiedId === presentation.id ? 'Nusxa olindi' : 'Nusxa olish'}
-                </button>
-                <a
-                  href={telegramShareUrl(presentation.url, presentation.title)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-accent px-3 py-2.5 text-[13px] font-bold text-white"
-                >
-                  <Icon name="telegram" className="size-4" />
-                  Telegramda
-                </a>
-              </div>
-            </article>
-          ))}
+        <div className="flex flex-col gap-5">
+          <PresentationsStats list={presentations} />
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3 desk:grid-cols-4 desk:gap-5">
+            {presentations.map((presentation) => (
+              <PresentationCard
+                key={presentation.id}
+                presentation={presentation}
+                copied={copiedId === presentation.id}
+                onCopy={() => handleCopy(presentation)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </main>

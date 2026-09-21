@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { ListingCard } from '@/entities/listing';
 import { NoteEditor, useNotes } from '@/features/notes';
 import { Icon } from '@/shared/ui/icon';
+import { NotesStats } from './notes-stats';
 
 interface Editing {
   listingId: string;
@@ -55,17 +56,20 @@ export function NotesPage() {
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {notes.map((note, i) => (
-            <ListingCard
-              key={note.listingId}
-              listing={note.listing}
-              isFirst={i === 0}
-              hasNote
-              noteSnippet={note.body}
-              onNote={() => setEditing({ listingId: note.listingId, title: note.listing.title })}
-            />
-          ))}
+        <div className="flex flex-col gap-5">
+          <NotesStats notes={notes} />
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3 desk:grid-cols-4">
+            {notes.map((note, i) => (
+              <ListingCard
+                key={note.listingId}
+                listing={note.listing}
+                isFirst={i === 0}
+                hasNote
+                noteSnippet={note.body}
+                onNote={() => setEditing({ listingId: note.listingId, title: note.listing.title })}
+              />
+            ))}
+          </div>
         </div>
       )}
 

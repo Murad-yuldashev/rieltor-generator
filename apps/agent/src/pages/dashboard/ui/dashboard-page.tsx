@@ -1,93 +1,72 @@
-import { Link } from 'react-router';
 import { useSession } from '@/entities/session';
 import { useCollections } from '@/features/collections';
-import { useNotes } from '@/features/notes';
+import { useLeadStats, useMyLeads } from '@/features/leads';
 import { usePresentations } from '@/features/presentations';
 import { useSubscription } from '@/features/subscription';
-import { Icon, type IconName } from '@/shared/ui/icon';
+import { useWallet } from '@/features/wallet';
 import { TrialBanner } from '@/widgets/trial-banner';
+import { DashboardKpis } from './dashboard-kpis';
+import { LeadPipelinePanel } from './lead-pipeline-panel';
+import { PresentationsPanel } from './presentations-panel';
+import { QuickLinks } from './quick-links';
+import { SubscriptionCard } from './subscription-card';
+import { WalletCard } from './wallet-card';
 
 /**
- * Cabinet navigation. Every entry is now a live link — the last Phase 3.1 feature
- * (collections) shipped in Task 11.
+ * Cabinet home (`/`) — the realtor dashboard. On phone it is a single column
+ * (source order kept via the `contents` wrappers below); from `lg` it becomes a
+ * main + sticky-aside split under a full-width KPI row. Every KPI/widget is derived
+ * client-side from data the cabinet already fetches — no dedicated dashboard
+ * endpoint. The gate guarantees an active REALTOR, so a subscription is present;
+ * the other queries populate progressively.
  */
-const NAV: { key: string; label: string; icon: IconName; to: string }[] = [
-  { key: 'profile', label: 'Profil', icon: 'home', to: '/profile' },
-  { key: 'wallet', label: 'Hisobim', icon: 'money', to: '/wallet' },
-  { key: 'leads', label: 'Mening leadlarim', icon: 'chart', to: '/leads' },
-  { key: 'browse', label: 'E’lonlar', icon: 'search', to: '/browse' },
-  { key: 'notes', label: 'Eslatmalar', icon: 'doc', to: '/notes' },
-  { key: 'collections', label: 'To‘plamlar', icon: 'heart', to: '/collections' },
-  { key: 'presentations', label: 'Taqdimotlar', icon: 'share', to: '/presentations' },
-];
-
 export function DashboardPage() {
   const { user } = useSession();
-  // The gate only renders this page for an active REALTOR, so a subscription is
-  // guaranteed to be present in the cache by the time we get here.
   const { data: subscription } = useSubscription();
-  // All three counts are live (notes: Task 10, collections: Task 11, presentations: Task 8).
-  const { data: notes } = useNotes();
+  const { data: wallet } = useWallet();
+  const { data: myLeads } = useMyLeads();
+  const { data: leadStats } = useLeadStats();
   const { data: collections } = useCollections();
   const { data: presentations } = usePresentations();
 
-  // Quick counts — the number of collections, notes, and presentations.
-  const stats: { key: string; label: string; value: string }[] = [
-    {
-      key: 'collections',
-      label: 'To‘plamlar',
-      value: collections ? String(collections.length) : '—',
-    },
-    { key: 'notes', label: 'Eslatmalar', value: notes ? String(notes.length) : '—' },
-    {
-      key: 'presentations',
-      label: 'Taqdimotlar',
-      value: presentations ? String(presentations.length) : '—',
-    },
-  ];
-
   return (
-    <main>
-      <header className="mb-5">
+    <main className="flex flex-col gap-5">
+      <header>
         <p className="text-[13px] font-semibold text-ink-2">Rieltor kabineti</p>
         <h1 className="text-[22px] font-extrabold tracking-tight text-ink">
           {user?.name ? `Salom, ${user.name}` : 'Xush kelibsiz'}
         </h1>
       </header>
 
-      {subscription?.status === 'TRIAL' && (
-        <div className="mb-5">
-          <TrialBanner daysLeft={subscription.daysLeft} />
-        </div>
-      )}
+      {/* Trial nudge — kept standalone above the KPI row so it stays above the fold
+          on phone. The aside SubscriptionCard is a separate, fuller status card. */}
+      {subscription?.status === 'TRIAL' && <TrialBanner daysLeft={subscription.daysLeft} />}
 
-      <section className="mb-6 grid grid-cols-2 gap-3">
-        {stats.map((stat) => (
-          <div key={stat.key} className="rounded-card bg-card p-4 shadow-card">
-            <p className="text-[26px] font-extrabold leading-none text-ink">{stat.value}</p>
-            <p className="mt-1 text-[13px] font-medium text-ink-2">{stat.label}</p>
-          </div>
-        ))}
-      </section>
+      <DashboardKpis
+        wallet={wallet}
+        myLeads={myLeads}
+        leadStats={leadStats}
+        collections={collections}
+        presentations={presentations}
+      />
 
-      <section>
-        <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-ink-3">Bo‘limlar</h2>
-        <div className="flex flex-col gap-2">
-          {NAV.map((item) => (
-            <Link
-              key={item.key}
-              to={item.to}
-              className="flex items-center gap-3 rounded-card bg-card px-4 py-3.5 shadow-card"
-            >
-              <span className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent">
-                <Icon name={item.icon} className="size-5" />
-              </span>
-              <span className="flex-1 text-[15px] font-semibold text-ink">{item.label}</span>
-              <Icon name="chevronRight" className="size-5 text-ink-3" />
-            </Link>
-          ))}
+      {/* Two-column band. On phone the `contents` wrappers dissolve so all children
+          share one flex column, ordered by `order-*` to keep a sensible single-column
+          reading order; from `lg` each wrapper becomes its own grid column. */}
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-6">
+        <div className="contents lg:flex lg:flex-col lg:gap-5">
+          <LeadPipelinePanel stats={leadStats} className="order-2 lg:order-none" />
+          <PresentationsPanel presentations={presentations} className="order-4 lg:order-none" />
         </div>
-      </section>
+
+        <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-5">
+          <SubscriptionCard subscription={subscription} className="order-1 lg:order-none" />
+          {wallet && (
+            <WalletCard balanceSom={wallet.balanceSom} className="order-3 lg:order-none" />
+          )}
+          <QuickLinks className="order-5 lg:order-none" />
+        </aside>
+      </div>
     </main>
   );
 }
