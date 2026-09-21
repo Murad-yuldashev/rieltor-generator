@@ -4,6 +4,7 @@ import { formatPriceSom } from '@rieltor/shared';
 import { useDebtors, useFinanceSummary } from '@/features/finance';
 import { FinanceInsight } from '@/features/finance-insight';
 import { cn } from '@/shared/lib/cn';
+import { StatTile, StatTileRow } from '@/shared/ui/stat-tile';
 
 const SHELL = 'flex flex-col gap-5';
 const CELL = 'whitespace-nowrap px-3 py-2.5 text-[13px] text-ink align-top';
@@ -39,7 +40,7 @@ export function FinancePage() {
   );
 }
 
-/** The six summary cards over the finance snapshot. */
+/** The six summary tiles over the finance snapshot. */
 function FinanceCards({ summary }: { summary: FinanceSummary }) {
   // A negative org balance is a DEBT. orgBalanceSom is a BigInt-as-string that may not
   // fit in a number, so the sign is read off the string ('-' prefix), never Number()-ed.
@@ -47,58 +48,27 @@ function FinanceCards({ summary }: { summary: FinanceSummary }) {
   const hasOverdue = summary.overdueSom !== '0';
 
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <FinanceCard label="Kontraktlangan" value={formatPriceSom(summary.contractedSom, 'SALE')} />
-      <FinanceCard label="Yig'ilgan" value={formatPriceSom(summary.collectedSom, 'SALE')} />
-      <FinanceCard label="Qoldiq" value={formatPriceSom(summary.outstandingSom, 'SALE')} />
-      <FinanceCard
+    <StatTileRow className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <StatTile label="Kontraktlangan" value={formatPriceSom(summary.contractedSom, 'SALE')} />
+      <StatTile
+        label="Yig'ilgan"
+        value={formatPriceSom(summary.collectedSom, 'SALE')}
+        tone="green"
+      />
+      <StatTile label="Qoldiq" value={formatPriceSom(summary.outstandingSom, 'SALE')} />
+      <StatTile
         label="Muddati o'tgan"
         value={formatPriceSom(summary.overdueSom, 'SALE')}
-        tone={hasOverdue ? 'rose' : 'ink'}
+        tone={hasOverdue ? 'rose' : 'default'}
       />
-      <FinanceCard
-        label="Net komissiya"
-        value={formatPriceSom(summary.commissionPaidSom, 'SALE')}
-      />
-      <FinanceCard
+      <StatTile label="Net komissiya" value={formatPriceSom(summary.commissionPaidSom, 'SALE')} />
+      <StatTile
         label="Balans"
         value={formatPriceSom(summary.orgBalanceSom, 'SALE')}
         badge={isDebt ? 'Qarz' : undefined}
-        tone={isDebt ? 'rose' : 'ink'}
+        tone={isDebt ? 'rose' : 'default'}
       />
-    </section>
-  );
-}
-
-/** One summary card. `tone='rose'` paints the value red; `badge` adds a pill under it. */
-function FinanceCard({
-  label,
-  value,
-  tone = 'ink',
-  badge,
-}: {
-  label: string;
-  value: string;
-  tone?: 'ink' | 'rose';
-  badge?: string;
-}) {
-  return (
-    <div className="rounded-card bg-card p-4 shadow-card">
-      <p className="text-[12px] font-semibold text-ink-2">{label}</p>
-      <p
-        className={cn(
-          'mt-1.5 text-[18px] font-extrabold leading-tight',
-          tone === 'rose' ? 'text-brand-rose' : 'text-ink',
-        )}
-      >
-        {value}
-      </p>
-      {badge && (
-        <span className="mt-2 inline-flex rounded-full bg-brand-rose/10 px-2.5 py-1 text-[12px] font-bold text-brand-rose">
-          {badge}
-        </span>
-      )}
-    </div>
+    </StatTileRow>
   );
 }
 
