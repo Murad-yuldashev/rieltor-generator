@@ -1,26 +1,30 @@
-import { Link } from 'react-router';
-import type { OrgRole } from '@rieltor/shared';
 import { useSession } from '@/entities/session';
-import { useOrg, useRequestVerification } from '@/features/developer';
-
-/** Uzbek labels for a member's role within the organization (UI copy only). */
-const ORG_ROLE_LABELS: Record<OrgRole, string> = {
-  OWNER: 'Egasi',
-  MANAGER: 'Menejer',
-};
+import { useBookings } from '@/features/booking';
+import { useContracts } from '@/features/contracts';
+import { useComplexes, useOrg } from '@/features/developer';
+import { useFinanceSummary } from '@/features/finance';
+import { CollectionBar } from './collection-bar';
+import { DashboardKpis } from './dashboard-kpis';
+import { MembersCard, QuickLinks, VerificationCard } from './org-aside';
+import { PipelinePanel } from './pipeline-panel';
+import { PortfolioGrid } from './portfolio-grid';
 
 const SHELL = 'flex flex-col gap-5';
 
 /**
- * Cabinet home (`/`). Shows the developer organization — its name, district and
- * members (read-only) — and links through to the complexes. The org itself is
- * created by the become-developer onboarding, so under this guard it always
- * exists; the loading/error branches just cover the fetch.
+ * Cabinet home (`/`) — the organization dashboard. On phone it is a single column
+ * (source order kept via the `contents` wrappers below); from `lg` it becomes a
+ * main + sticky-aside split under a full-width KPI row. Every KPI/widget is derived
+ * client-side from data the cabinet already fetches — no dedicated dashboard
+ * endpoint. `useOrg` is the page's gate; the other queries populate progressively.
  */
 export function OrganizationPage() {
   const { data: org, isPending, isError } = useOrg();
   const { user } = useSession();
-  const requestVerification = useRequestVerification();
+  const { data: summary } = useFinanceSummary();
+  const { data: complexes } = useComplexes();
+  const { data: bookings } = useBookings();
+  const { data: contracts } = useContracts();
 
   if (isPending) {
     return (
@@ -40,20 +44,6 @@ export function OrganizationPage() {
     );
   }
 
-  // Verification state: pending once a request exists but no badge is granted yet.
-  const isVerificationPending = org.verificationRequestedAt != null && !org.verified;
-  const verificationLabel = org.verified
-    ? 'Tasdiqlangan'
-    : isVerificationPending
-      ? 'Kutilmoqda'
-      : 'Tasdiqlanmagan';
-  const verificationBadge = org.verified
-    ? 'bg-brand-green/10 text-brand-green'
-    : isVerificationPending
-      ? 'bg-brand-amber/10 text-brand-amber'
-      : 'bg-ink-3/10 text-ink-2';
-  const canRequestVerification = !org.verified && !isVerificationPending;
-
   return (
     <main className={SHELL}>
       <header>
@@ -61,78 +51,39 @@ export function OrganizationPage() {
         <p className="mt-1 text-[14px] text-ink-2">{org.district ?? 'Tuman ko‘rsatilmagan'}</p>
       </header>
 
-      <section className="rounded-card bg-card p-5 shadow-card">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[15px] font-bold text-ink">Tasdiqlanish holati</h2>
-          <span
-            className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold ${verificationBadge}`}
-          >
-            {verificationLabel}
-          </span>
+      <DashboardKpis
+        complexes={complexes}
+        bookings={bookings}
+        contracts={contracts}
+        summary={summary}
+      />
+
+      {/* Two-column band. On phone the `contents` wrappers dissolve so all children
+          share one flex column, ordered by `order-*` to keep a sensible single-column
+          reading order; from `lg` each wrapper becomes its own grid column. */}
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-6">
+        <div className="contents lg:flex lg:flex-col lg:gap-5">
+          <PortfolioGrid complexes={complexes ?? []} className="order-2" />
+          <PipelinePanel
+            bookings={bookings ?? []}
+            contracts={contracts ?? []}
+            className="order-4"
+          />
+          {summary && (
+            <CollectionBar
+              collectedSom={summary.collectedSom}
+              contractedSom={summary.contractedSom}
+              className="order-5"
+            />
+          )}
         </div>
-        <p className="mt-1 text-[13px] text-ink-2">
-          Tasdiqdan o'tgan tashkilotgina majmualarni marketpleysda e'lon qila oladi.
-        </p>
 
-        {canRequestVerification && (
-          <button
-            type="button"
-            onClick={() => requestVerification.mutate()}
-            disabled={requestVerification.isPending}
-            className="mt-4 w-full rounded-[14px] bg-linear-to-br from-accent to-accent-dark px-6 py-3 text-[15px] font-extrabold text-white shadow-lg shadow-accent/35 disabled:opacity-60"
-          >
-            {requestVerification.isPending ? 'Yuborilmoqda...' : "Tasdiqlanish so'rovi"}
-          </button>
-        )}
-
-        {requestVerification.isError && (
-          <p className="mt-3 text-center text-[13px] font-semibold text-brand-rose">
-            So'rovni yuborishda xatolik. Qayta urinib ko'ring.
-          </p>
-        )}
-      </section>
-
-      <section className="rounded-card bg-card p-5 shadow-card">
-        <h2 className="text-[15px] font-bold text-ink">A'zolar</h2>
-        {org.members.length === 0 ? (
-          <p className="mt-3 text-[14px] text-ink-3">Hozircha a'zolar yo'q</p>
-        ) : (
-          <ul className="mt-3 flex flex-col divide-y divide-line">
-            {org.members.map((member) => {
-              const isMe = member.userId === user?.id;
-              return (
-                <li key={member.userId} className="flex items-center justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-[14px] font-semibold text-ink">
-                      {member.name ?? member.phone}
-                      {isMe && <span className="ml-1.5 text-[12px] text-ink-3">(Siz)</span>}
-                    </p>
-                    <p className="text-[13px] text-ink-3">{member.phone}</p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-accent-soft px-3 py-1 text-[12px] font-bold text-accent">
-                    {ORG_ROLE_LABELS[member.role]}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <Link
-        to="/complexes"
-        className="flex items-center justify-between rounded-card bg-card p-5 shadow-card"
-      >
-        <span>
-          <span className="block text-[15px] font-bold text-ink">Turar-joy majmualari</span>
-          <span className="mt-0.5 block text-[13px] text-ink-2">
-            Majmualar, binolar va xonadonlarni boshqaring
-          </span>
-        </span>
-        <span className="text-[20px] text-ink-3" aria-hidden="true">
-          &rsaquo;
-        </span>
-      </Link>
+        <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-5">
+          <VerificationCard org={org} className="order-1" />
+          <MembersCard members={org.members} currentUserId={user?.id} className="order-3" />
+          <QuickLinks className="order-6" />
+        </aside>
+      </div>
     </main>
   );
 }
