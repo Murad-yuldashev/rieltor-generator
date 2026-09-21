@@ -87,7 +87,7 @@ function WalletKpis({ transactions }: { transactions: OrgWalletTxRow[] }) {
   }
 
   return (
-    <StatTileRow className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <StatTileRow className="grid grid-cols-2 gap-3 md:grid-cols-3">
       <StatTile
         label="Jami to'ldirilgan"
         value={formatPriceSom(toppedUp.toString(), 'SALE')}

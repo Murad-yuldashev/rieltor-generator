@@ -37,23 +37,30 @@ export function FinancePage() {
           <FinanceCards summary={summary} />
           <ScalarStrip summary={summary} />
 
+          {/* Two-column band. On phone the `contents` wrappers dissolve so all children
+              share one flex column, ordered by `order-*` so the AI insight (aside) is not
+              buried below the debtor table: FinanceInsight → DebtorTable → composition →
+              health. The order numbers are monotonic within each column, so the lg+
+              main/aside layout is unchanged. */}
           <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_340px] lg:items-start lg:gap-6 desk:grid-cols-[1fr_380px]">
             {/* MAIN — the debtor table (first-class) + the collection-composition bar. */}
             <div className="contents lg:flex lg:flex-col lg:gap-5">
-              <DebtorTable />
+              <DebtorTable className="order-2" />
               <CollectionComposition
                 collectedSom={summary.collectedSom}
                 outstandingSom={summary.outstandingSom}
                 overdueSom={summary.overdueSom}
+                className="order-3"
               />
             </div>
 
             {/* ASIDE — the AI-tahlil insight panel + the collection-health meter. */}
             <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-5">
-              <FinanceInsight />
+              <FinanceInsight className="order-1" />
               <CollectionHealth
                 collectedSom={summary.collectedSom}
                 contractedSom={summary.contractedSom}
+                className="order-4"
               />
             </aside>
           </div>
@@ -127,10 +134,12 @@ function CollectionComposition({
   collectedSom,
   outstandingSom,
   overdueSom,
+  className,
 }: {
   collectedSom: string;
   outstandingSom: string;
   overdueSom: string;
+  className?: string;
 }) {
   const collected = BigInt(collectedSom);
   const outstanding = BigInt(outstandingSom);
@@ -155,7 +164,7 @@ function CollectionComposition({
   ];
 
   return (
-    <section className="rounded-card bg-card p-5 shadow-card">
+    <section className={cn('rounded-card bg-card p-5 shadow-card', className)}>
       <h2 className="text-[15px] font-bold text-ink">Yig'ilganlik tarkibi</h2>
 
       <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-line">
@@ -186,9 +195,11 @@ function CollectionComposition({
 function CollectionHealth({
   collectedSom,
   contractedSom,
+  className,
 }: {
   collectedSom: string;
   contractedSom: string;
+  className?: string;
 }) {
   const contracted = BigInt(contractedSom);
   const collected = BigInt(collectedSom);
@@ -196,7 +207,7 @@ function CollectionHealth({
   const percent = Math.min(100, Math.max(0, bps / 100));
 
   return (
-    <section className="rounded-card bg-card p-5 shadow-card">
+    <section className={cn('rounded-card bg-card p-5 shadow-card', className)}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-[15px] font-bold text-ink">Yig'ilganlik darajasi</h2>
         <span className="text-[15px] font-extrabold text-accent">{percent.toFixed(0)}%</span>
@@ -219,11 +230,11 @@ function CollectionHealth({
 }
 
 /** The debtor table — its own query so a debtor refetch never repaints the cards. */
-function DebtorTable() {
+function DebtorTable({ className }: { className?: string }) {
   const { data: debtors, isPending, isError } = useDebtors();
 
   return (
-    <section>
+    <section className={className}>
       <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-ink-3">Qarzdorlar</h2>
 
       {isPending ? (

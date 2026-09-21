@@ -78,9 +78,10 @@ export function DashboardKpis({
 
 /** ACTIVE holds whose `holdUntil` falls within the next three days (a renewal nudge). */
 function countExpiringSoon(activeBookings: BookingRow[]): number {
-  const threshold = Date.now() + EXPIRING_WINDOW_MS;
+  const now = Date.now();
+  const threshold = now + EXPIRING_WINDOW_MS;
   return activeBookings.filter((b) => {
     const holdUntilMs = new Date(b.holdUntil).getTime();
-    return !Number.isNaN(holdUntilMs) && holdUntilMs <= threshold;
+    return !Number.isNaN(holdUntilMs) && holdUntilMs >= now && holdUntilMs <= threshold;
   }).length;
 }

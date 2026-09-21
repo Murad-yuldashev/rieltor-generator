@@ -400,16 +400,20 @@ export async function seedDeveloperCrm(prisma: PrismaClient): Promise<void> {
     createdAt: Date;
   }[] = [];
 
-  // 6 ACTIVE holds on BOOKED units (two expiring within 3 days).
-  const activeHoldDays = [2, 1, 10, 14, 21, 30];
-  activeHoldDays.forEach((d, i) => {
-    const unit = pick(bookedUnits, i, 'BOOKED');
+  // One ACTIVE hold PER BOOKED unit, so the set of BOOKED units EQUALS the set of units
+  // with an ACTIVE booking. This keeps every BOOKED cell's building-detail panel populated
+  // (activeBooking with clientName/clientPhone/holdUntil, per spec §10) and makes the
+  // building "Band" count match the dashboard "Faol bandlar". The first two holds expire
+  // within 3 days (the renewal-nudge case); the rest carry a comfortable future hold.
+  // Deterministic (fixed ids/values) so the seed stays idempotent.
+  bookedUnits.forEach((unit, i) => {
+    const holdDays = i === 0 ? 2 : i === 1 ? 1 : 10 + (i % 20);
     bookings.push({
       id: `seed-bk-active-${i + 1}`,
       unitId: unit.id,
       clientName: pick(clientNames, i % clientNames.length, 'client'),
       clientPhone: `99890${String(3000000 + i).padStart(7, '0')}`,
-      holdUntil: daysFromNow(d),
+      holdUntil: daysFromNow(holdDays),
       status: 'ACTIVE',
       note: i === 0 ? 'Mijoz avans to‘lashga tayyor.' : null,
       cancelReason: null,

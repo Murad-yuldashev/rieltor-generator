@@ -101,7 +101,7 @@ function ContractDetailView({ contract }: { contract: ContractRow }) {
 
         {/* STICKY ASIDE — the contract facts + status badge + sign/cancel action cards.
             `contents` on phone lets the cards flow into the single stack in source order. */}
-        <aside className="contents lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-5">
+        <aside className="contents lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-5">
           <section className="flex flex-col gap-4 rounded-card bg-card p-5 shadow-card">
             <Field label="Xaridor">
               <span className="block text-ink">{contract.buyerName}</span>
@@ -336,7 +336,7 @@ function ScheduleTable({
   return (
     <>
       {/* Summary read straight off the view — no client-side money math. */}
-      <StatTileRow className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <StatTileRow className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <StatTile label="Jami" value={formatPriceSom(schedule.totalSom, 'SALE')} />
         <StatTile label="To'langan" value={formatPriceSom(schedule.paidSom, 'SALE')} tone="green" />
         <StatTile
