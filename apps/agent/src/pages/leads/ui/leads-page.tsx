@@ -11,10 +11,15 @@ import { LISTING_TYPE_META } from '@/entities/listing';
 import { LeadAssistPanel } from '@/features/lead-assist';
 import { useMyLeads, useLeadStats, useSetOutcome, useFixate, useUnfixate } from '@/features/leads';
 import { ApiError } from '@/shared/api/client';
+import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
+import { StatTile, StatTileRow } from '@/shared/ui/stat-tile';
 
 /** Funnel stages in flow order — drives both the stats summary and the stepper. */
 const STAGES: LeadOutcomeStage[] = ['NEW', 'CONTACTED', 'MEETING', 'WON', 'LOST'];
+
+/** Progression stages for the conversion funnel bars; LOST is drawn as a separate rose tail. */
+const FUNNEL_STAGES: LeadOutcomeStage[] = ['NEW', 'CONTACTED', 'MEETING', 'WON'];
 
 /** The five loss reasons, in declaration order — the LOST reason picker options. */
 const REASONS: LeadLostReason[] = [
@@ -56,100 +61,189 @@ function leadMeta(lead: Lead): string {
   return parts.join(' · ');
 }
 
+/** Outcome-filter chip: active paints teal-filled; idle stays a bordered card. */
+function chipClass(active: boolean) {
+  return cn(
+    'shrink-0 rounded-full border px-[15px] py-2.5 text-[13.5px] font-semibold transition-colors',
+    active
+      ? 'border-accent bg-accent text-white shadow-lg shadow-accent/30'
+      : 'border-line bg-card text-ink-2',
+  );
+}
+
 /**
  * "Mening leadlarim" — the realtor's claimed leads plus their personal conversion
- * funnel. The stats summary heads the page; each lead below carries the revealed
- * phone and an outcome stepper for recording where the lead landed.
+ * funnel. A stat row heads the page; the funnel and a stage-filtered card grid follow.
+ * Each lead card carries the revealed phone and an outcome stepper for recording where
+ * the lead landed.
  */
 export function LeadsPage() {
   const { data: leads, isPending, isError } = useMyLeads();
   const { data: stats } = useLeadStats();
 
   return (
-    <main>
-      <Link
-        to="/"
-        className="mb-4 inline-flex items-center gap-1 text-[13px] font-semibold text-ink-2"
-      >
+    <main className="flex flex-col gap-5">
+      <Link to="/" className="inline-flex items-center gap-1 text-[13px] font-semibold text-ink-2">
         <Icon name="chevronLeft" className="size-4" />
         Kabinetga qaytish
       </Link>
 
-      <header className="mb-5">
+      <header>
         <p className="text-[13px] font-semibold text-ink-2">Rieltor kabineti</p>
         <h1 className="text-[22px] font-extrabold tracking-tight text-ink">Mening leadlarim</h1>
       </header>
 
-      {stats && <StatsSummary stats={stats} />}
-
-      <section>
-        <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-ink-3">
-          Olingan leadlar
-        </h2>
-
-        {isPending ? (
-          <p className="text-[15px] font-semibold text-ink-2">Yuklanmoqda...</p>
-        ) : isError || !leads ? (
-          <p className="rounded-card bg-card p-4 text-[14px] font-semibold text-brand-rose shadow-card">
-            Leadlarni yuklab bo'lmadi. Sahifani yangilang.
-          </p>
-        ) : leads.length === 0 ? (
-          <p className="rounded-card bg-card p-6 text-center text-[14px] font-semibold text-ink-2 shadow-card">
-            Hozircha olingan lead yo'q.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {leads.map((lead) => (
-              <LeadCard key={lead.id} lead={lead} />
-            ))}
-          </ul>
-        )}
-      </section>
+      {isPending ? (
+        <p className="text-[15px] font-semibold text-ink-2">Yuklanmoqda...</p>
+      ) : isError || !leads ? (
+        <p className="rounded-card bg-card p-4 text-[14px] font-semibold text-brand-rose shadow-card">
+          Leadlarni yuklab bo'lmadi. Sahifani yangilang.
+        </p>
+      ) : (
+        <LeadsBoard leads={leads} stats={stats} />
+      )}
     </main>
   );
 }
 
-/** Personal conversion funnel — stage counts, win rate, and the loss breakdown. */
-function StatsSummary({ stats }: { stats: LeadStats }) {
-  const winRate = stats.winRate == null ? '—' : `${Math.round(stats.winRate * 100)}%`;
-  const lostReasons = REASONS.filter((reason) => stats.lostReasons[reason] > 0);
+/**
+ * The loaded board: a stat row derived off `leads` (so it never blanks while `stats`
+ * is still pending), the conversion funnel (gated behind `stats`), outcome-filter chips
+ * and the filtered card grid. `outcomeStage` is nullable, so filters are null-safe:
+ * a stage filter excludes null, and the "active" count treats null as still in play.
+ */
+function LeadsBoard({ leads, stats }: { leads: Lead[]; stats: LeadStats | undefined }) {
+  const [filter, setFilter] = useState<LeadOutcomeStage | null>(null);
+  const activeCount = leads.filter(
+    (l) => l.outcomeStage !== 'WON' && l.outcomeStage !== 'LOST',
+  ).length;
+  const wonCount = stats?.funnel.WON ?? leads.filter((l) => l.outcomeStage === 'WON').length;
+  const winRate = stats?.winRate == null ? '—' : `${Math.round(stats.winRate * 100)}%`;
+  const visible = filter ? leads.filter((l) => l.outcomeStage === filter) : leads;
 
   return (
-    <section className="mb-6 rounded-card bg-card p-5 shadow-card">
+    <>
+      <StatTileRow className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatTile label="Jami leadlar" value={leads.length} />
+        <StatTile label="Faol" value={activeCount} />
+        <StatTile label="Bitim" value={wonCount} tone="green" />
+        <StatTile label="G'alaba %" value={winRate} />
+      </StatTileRow>
+
+      {stats && <LeadFunnel stats={stats} winRate={winRate} />}
+
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-0.5">
+        <button
+          type="button"
+          onClick={() => setFilter(null)}
+          className={chipClass(filter === null)}
+        >
+          Barchasi
+        </button>
+        {STAGES.map((stage) => (
+          <button
+            key={stage}
+            type="button"
+            onClick={() => setFilter(stage)}
+            className={chipClass(filter === stage)}
+          >
+            {STAGE_LABEL[stage]}
+          </button>
+        ))}
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="rounded-card bg-card p-6 text-center text-[14px] font-semibold text-ink-2 shadow-card">
+          {leads.length === 0 ? "Hozircha olingan lead yo'q." : "Ushbu bosqichda lead yo'q."}
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-3 md:grid md:grid-cols-2 md:items-start md:gap-4 desk:grid-cols-3">
+          {visible.map((lead) => (
+            <LeadCard key={lead.id} lead={lead} />
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+/** Personal conversion funnel — pure-CSS stage bars, win rate, and the loss breakdown. */
+function LeadFunnel({ stats, winRate }: { stats: LeadStats; winRate: string }) {
+  const max = Math.max(1, ...STAGES.map((s) => stats.funnel[s])); // widest of ALL five fills; 1 guards /0
+  const lostReasons = REASONS.filter((r) => stats.lostReasons[r] > 0);
+
+  return (
+    <section className="rounded-card bg-card p-5 shadow-card">
       <div className="mb-4 flex items-baseline justify-between">
-        <p className="text-[13px] font-semibold text-ink-2">Konversiya voronkasi</p>
+        <h2 className="text-[15px] font-bold text-ink">Konversiya voronkasi</h2>
         <p className="text-[13px] font-semibold text-ink-2">
           G'alaba: <span className="text-[15px] font-extrabold text-ink">{winRate}</span>
         </p>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
-        {STAGES.map((stage) => (
-          <div key={stage} className="rounded-[12px] bg-surface px-2 py-3 text-center">
-            <p className="text-[20px] font-extrabold leading-none text-ink">
-              {stats.funnel[stage]}
-            </p>
-            <p className="mt-1 text-[11px] font-semibold text-ink-2">{STAGE_LABEL[stage]}</p>
-          </div>
+      <ul className="flex flex-col gap-2.5">
+        {FUNNEL_STAGES.map((stage) => (
+          <FunnelBar
+            key={stage}
+            label={STAGE_LABEL[stage]}
+            count={stats.funnel[stage]}
+            max={max}
+            tone="accent"
+          />
         ))}
-      </div>
+        <FunnelBar label={STAGE_LABEL.LOST} count={stats.funnel.LOST} max={max} tone="rose" />
+      </ul>
 
       {lostReasons.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-4 border-t border-line pt-4">
           <p className="mb-2 text-[12px] font-bold uppercase tracking-wide text-ink-3">
             Yo'qotish sabablari
           </p>
           <ul className="flex flex-col gap-1.5">
-            {lostReasons.map((reason) => (
-              <li key={reason} className="flex items-center justify-between text-[13px]">
-                <span className="font-medium text-ink-2">{REASON_LABEL[reason]}</span>
-                <span className="font-bold text-ink">{stats.lostReasons[reason]}</span>
+            {lostReasons.map((r) => (
+              <li key={r} className="flex items-center justify-between text-[13px]">
+                <span className="font-medium text-ink-2">{REASON_LABEL[r]}</span>
+                <span className="font-bold text-ink">{stats.lostReasons[r]}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
     </section>
+  );
+}
+
+/** One funnel row: label, a proportional pure-CSS fill (visible floor for tiny counts), count. */
+function FunnelBar({
+  label,
+  count,
+  max,
+  tone,
+}: {
+  label: string;
+  count: number;
+  max: number;
+  tone: 'accent' | 'rose';
+}) {
+  const raw = Math.round((count / max) * 100);
+  const width = count > 0 ? Math.max(raw, 8) : 0; // visible floor for tiny non-zero counts
+
+  return (
+    <li className="flex items-center gap-3">
+      <span className="w-20 shrink-0 text-[12px] font-semibold text-ink-2">{label}</span>
+      <div className="h-6 flex-1 overflow-hidden rounded-full bg-surface">
+        <div
+          className={cn(
+            'h-full rounded-full transition-[width]',
+            tone === 'rose' ? 'bg-brand-rose' : 'bg-accent',
+          )}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+      <span className="w-8 shrink-0 text-right text-[13px] font-extrabold tabular-nums text-ink">
+        {count}
+      </span>
+    </li>
   );
 }
 
