@@ -1,8 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import type { PublicRealtor } from '@rieltor/shared';
+import {
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { canonicalizePhone, type PublicRealtor, type RealtorInquiryCreate } from '@rieltor/shared';
 import { SubscriptionService } from '../agent/subscription.service';
+import { computeLeadScore, priceForScore } from '../leads/lead-scoring';
 import { FULL_INCLUDE } from '../listings/listings.service';
 import { toListingSummary } from '../listings/mapper';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -10,7 +18,16 @@ export class RealtorPublicService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly subscriptions: SubscriptionService,
+    private readonly notifications: NotificationsService,
   ) {}
+
+  // In-process rate limit for the public inquiry endpoint — one submission per
+  // [ip, slug] per RL_WINDOW_MS. Same shape as views.service: JSON.stringify the key
+  // (a spoofed X-Forwarded-For ip may contain the separator) and prune lazily once the
+  // map grows past RL_MAX_KEYS, so memory stays bounded without a background timer.
+  private readonly inquiryHits = new Map<string, number>();
+  private static readonly RL_WINDOW_MS = 60_000;
+  private static readonly RL_MAX_KEYS = 10_000;
 
   // PUBLIC and slug-gated — NOT subscription-gated for identity/ratings. A lapsed
   // subscription (or an unpublished site) reduces the payload to identity + public
@@ -123,5 +140,105 @@ export class RealtorPublicService {
       reviews,
       listings,
     };
+  }
+
+  // PUBLIC: a site visitor's inquiry. Gated on the SAME siteActive computation as
+  // getBySlug (active REALTOR subscription + published site) — a lapsed/paused site
+  // rejects new leads with 403. Upserts the visitor by phone, then writes a
+  // realtor-attributed CLAIMED lead so it lands in the realtor's existing /leads
+  // cabinet, and notifies the realtor. Returns only { ok: true } — no internal ids leak.
+  async createInquiry(slug: string, ip: string, body: RealtorInquiryCreate): Promise<{ ok: true }> {
+    const key = JSON.stringify([ip, slug]);
+    const now = Date.now();
+    const last = this.inquiryHits.get(key);
+    if (last !== undefined && now - last < RealtorPublicService.RL_WINDOW_MS) {
+      throw new HttpException(
+        "Juda ko'p so'rov, birozdan keyin urinib ko'ring",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+    if (this.inquiryHits.size >= RealtorPublicService.RL_MAX_KEYS) {
+      for (const [k, t] of this.inquiryHits) {
+        if (now - t >= RealtorPublicService.RL_WINDOW_MS) this.inquiryHits.delete(k);
+      }
+    }
+    this.inquiryHits.set(key, now);
+
+    const profile = await this.prisma.realtorProfile.findUnique({
+      where: { slug },
+      include: {
+        user: {
+          select: {
+            id: true,
+            role: true,
+            subscription: { select: { status: true, currentPeriodEnd: true } },
+          },
+        },
+      },
+    });
+    if (!profile) {
+      throw new NotFoundException();
+    }
+    const siteActive =
+      profile.user.role === 'REALTOR' &&
+      this.subscriptions.isActive(profile.user.subscription) &&
+      profile.sitePublished;
+    if (!siteActive) {
+      throw new ForbiddenException('Sayt faol emas');
+    }
+
+    // Only honor a listingId that is THIS realtor's own PUBLISHED listing; otherwise
+    // it's a general inquiry and the deal falls back to the body's deal (default SALE).
+    let deal = body.deal ?? 'SALE';
+    let listingTag = '';
+    if (body.listingId) {
+      const listing = await this.prisma.listing.findFirst({
+        where: { id: body.listingId, ownerId: profile.userId, status: 'PUBLISHED' },
+        select: { deal: true, title: true },
+      });
+      if (listing) {
+        deal = listing.deal;
+        listingTag = ` — ${listing.title}`;
+      }
+    }
+
+    // Upsert the visitor by phone — a no-op update keeps an existing account intact.
+    const phone = canonicalizePhone(body.phone);
+    const visitor = await this.prisma.user.upsert({
+      where: { phone },
+      update: {},
+      create: { phone, name: body.name },
+    });
+    const createdAt = new Date();
+    const score = computeLeadScore({
+      district: null,
+      type: null,
+      roomsMin: null,
+      areaMinM2: null,
+      note: body.message,
+      priceMaxSom: null,
+      createdAt,
+    });
+    const lead = await this.prisma.propertyRequest.create({
+      data: {
+        authorId: visitor.id,
+        claimedById: profile.userId,
+        claimedAt: createdAt,
+        status: 'CLAIMED',
+        outcomeStage: 'NEW',
+        deal,
+        note: `[Sayt so'rovi]${listingTag}: ${body.message}`,
+        score,
+        priceSom: priceForScore(score),
+      },
+      select: { id: true },
+    });
+    await this.notifications.notify(profile.userId, {
+      type: 'LEAD_INQUIRY',
+      title: "Yangi so'rov",
+      body: `${body.name}${listingTag}`,
+      targetId: lead.id,
+    });
+    return { ok: true };
   }
 }

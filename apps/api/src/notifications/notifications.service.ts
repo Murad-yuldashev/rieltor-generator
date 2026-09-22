@@ -22,7 +22,12 @@ export class NotificationsService {
 
   async notify(
     userId: string,
-    input: { type: 'PRICE_UPDATE'; title: string; body: string; targetId?: string | null },
+    input: {
+      type: 'PRICE_UPDATE' | 'LEAD_INQUIRY';
+      title: string;
+      body: string;
+      targetId?: string | null;
+    },
   ) {
     await this.prisma.notification.create({
       data: {
