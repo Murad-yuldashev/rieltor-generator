@@ -12,6 +12,7 @@ import { FULL_INCLUDE } from '../listings/listings.service';
 import { toListingSummary } from '../listings/mapper';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import type { RealtorSiteMeta } from '../ssr/meta';
 
 @Injectable()
 export class RealtorPublicService {
@@ -139,6 +140,67 @@ export class RealtorPublicService {
       siteActive: true,
       reviews,
       listings,
+    };
+  }
+
+  // SERVER-ONLY (no HTTP route) — feeds the SSR <head> for /r/:slug via
+  // buildRealtorMetaTags. Same siteActive gate as getBySlug: ONLY an unknown slug
+  // 404s; a known-but-paused slug returns { siteActive: false, … } so the caller can
+  // emit a minimal noindex head @200 (never a 404 for a real realtor). seoTitle /
+  // seoDescription live HERE (server-only) — they are NOT part of PublicRealtor.
+  async getSiteMeta(slug: string): Promise<RealtorSiteMeta> {
+    const profile = await this.prisma.realtorProfile.findUnique({
+      where: { slug },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            subscription: { select: { status: true, currentPeriodEnd: true } },
+          },
+        },
+      },
+    });
+    if (!profile) {
+      throw new NotFoundException(); // ONLY an unknown slug 404s.
+    }
+
+    const siteActive =
+      profile.user.role === 'REALTOR' &&
+      this.subscriptions.isActive(profile.user.subscription) &&
+      profile.sitePublished;
+
+    // Only pay for the catalogue count + first cover (the OG image fallback) when the
+    // site is live; a paused site emits the minimal noindex head and needs neither.
+    let listingCount = 0;
+    let firstListingImageOgUrl: string | null = null;
+    if (siteActive) {
+      listingCount = await this.prisma.listing.count({
+        where: { ownerId: profile.userId, status: 'PUBLISHED' },
+      });
+      const first = await this.prisma.listing.findFirst({
+        where: { ownerId: profile.userId, status: 'PUBLISHED' },
+        orderBy: { listedAt: 'desc' },
+        select: { images: { where: { position: 1 }, select: { ogUrl: true }, take: 1 } },
+      });
+      firstListingImageOgUrl = first?.images[0]?.ogUrl ?? null;
+    }
+
+    return {
+      name: profile.user.name ?? 'Rieltor',
+      agency: profile.agency,
+      bio: siteActive ? profile.bio : null,
+      logoUrl: siteActive ? profile.logoUrl : null,
+      coverImageUrl: siteActive ? profile.coverImageUrl : null,
+      seoTitle: siteActive ? profile.seoTitle : null,
+      seoDescription: siteActive ? profile.seoDescription : null,
+      listingCount,
+      firstListingImageOgUrl,
+      regions: siteActive ? profile.regions : [],
+      ratingAvg: profile.ratingCount > 0 ? profile.ratingSum / profile.ratingCount : null,
+      ratingCount: profile.ratingCount,
+      siteActive,
     };
   }
 
