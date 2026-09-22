@@ -58,8 +58,10 @@ const JOURNAL_BROWSE_PATH = /^\/jurnal\/?$/;
  *
  * The public realtor microsite (GET /r/:slug) is the same special case: 'r' is
  * ALSO an API controller (@Controller('r') → /api/r/:slug), so it lives here for
- * the identical reason — og-meta injected for a live slug, the plain 404 shell
- * for an unknown one.
+ * the identical reason. It is subscription-gated via getSiteMeta: a live slug gets
+ * the full og-meta + JSON-LD (200); a known-but-paused/lapsed slug gets a minimal
+ * noindex head (200, never 404 for a real realtor); only an unknown slug throws
+ * NotFoundException → the plain 404 shell.
  *
  * The public ЖК pages are the same special case again: 'jk' is ALSO an API
  * controller (@Controller('jk') → /api/jk, /api/jk/:slug), so it cannot be a
@@ -123,12 +125,15 @@ export class NotFoundShellFilter implements ExceptionFilter {
     const slug = realtorMatch?.[1];
     if (slug) {
       try {
-        const realtor = await this.realtors.getBySlug(slug);
+        // getSiteMeta (not getBySlug): a known-but-paused slug returns siteActive:false
+        // → buildRealtorMetaTags emits the minimal noindex head @200; ONLY an unknown
+        // slug throws NotFoundException and falls through to the plain 404 shell.
+        const meta = await this.realtors.getSiteMeta(slug);
         const baseUrl = this.config.get('PUBLIC_BASE_URL', { infer: true });
         res
           .status(200)
           .type('html')
-          .send(this.html.injectMeta(shell, buildRealtorMetaTags(realtor, slug, baseUrl)));
+          .send(this.html.injectMeta(shell, buildRealtorMetaTags(meta, slug, baseUrl)));
         return;
       } catch (error) {
         // Unknown slug → fall through to the plain 404 shell, same as obj/:id.

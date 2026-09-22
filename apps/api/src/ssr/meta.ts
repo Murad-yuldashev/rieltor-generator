@@ -8,7 +8,6 @@ import {
   type ListingDetail,
   type PublicComplexDetail,
   type PublicPresentation,
-  type PublicRealtor,
 } from '@rieltor/shared';
 
 const DESCRIPTION_MAX = 200;
@@ -122,31 +121,107 @@ export function buildPresentationMetaTags(
 }
 
 /**
- * OG/head tags for a public realtor microsite (/r/:slug). Mirrors
- * buildPresentationMetaTags: the Telegram/link preview is the whole point of the
- * SSR shell for a share link. The title is "<name> · <agency>" (name alone when
- * the agency is blank); the description is the bio (truncated) or "<N> e'lon";
- * the preview image is the realtor's logo, or the first listing's cover as a
- * fallback.
+ * Server-only meta model for a realtor microsite (/r/:slug), produced by
+ * RealtorPublicService.getSiteMeta and consumed by buildRealtorMetaTags. It is a
+ * SUPERSET of the public payload: seoTitle/seoDescription are server-only SEO
+ * overrides that never ship in PublicRealtor. `siteActive` is the subscription +
+ * sitePublished gate — false means the SSR head is reduced to a noindex stub.
  */
-export function buildRealtorMetaTags(
-  realtor: PublicRealtor,
-  slug: string,
-  baseUrl: string,
-): string {
-  const title = realtor.agency ? `${realtor.name} · ${realtor.agency}` : realtor.name;
-  const description = realtor.bio ? truncate(realtor.bio) : `${realtor.listings.length} e'lon`;
-  const pageUrl = `${baseUrl}/r/${slug}`;
-  // The logo is a renderable relative URL ("/images/logo-<user>/01-1200.webp");
-  // the first listing's cover is the fallback when a realtor has uploaded none.
-  const relativeImage = realtor.logoUrl ?? realtor.listings[0]?.image?.ogUrl ?? null;
+export interface RealtorSiteMeta {
+  name: string;
+  agency: string;
+  bio: string | null;
+  logoUrl: string | null;
+  coverImageUrl: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  listingCount: number;
+  firstListingImageOgUrl: string | null;
+  regions: string[];
+  ratingAvg: number | null;
+  ratingCount: number;
+  siteActive: boolean;
+}
 
+/**
+ * A <script type="application/ld+json"> block. The JSON is a text node, so the
+ * three HTML-significant chars (< > &) are unicode-escaped to keep a stray
+ * "</script>" or "&" in the data from breaking out of the tag. escapeHtml() must
+ * NOT be used here — its entity encoding (&amp; etc.) would corrupt the JSON.
+ */
+function jsonLdScript(data: unknown): string {
+  const json = JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
+/** RealEstateAgent structured data for the microsite (rich-result eligibility). */
+function buildRealtorJsonLd(site: RealtorSiteMeta, pageUrl: string, baseUrl: string): string {
+  const image = site.coverImageUrl ?? site.logoUrl ?? site.firstListingImageOgUrl;
+  const data: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateAgent',
+    name: site.agency || site.name,
+    url: pageUrl,
+  };
+  const desc = site.seoDescription?.trim() || site.bio?.trim();
+  if (desc) data.description = truncate(desc);
+  if (site.logoUrl) data.logo = `${baseUrl}${site.logoUrl}`;
+  if (image) data.image = `${baseUrl}${image}`;
+  if (site.regions.length) data.areaServed = site.regions;
+  if (site.ratingCount > 0 && site.ratingAvg != null)
+    data.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: Number(site.ratingAvg.toFixed(1)),
+      reviewCount: site.ratingCount,
+    };
+  return jsonLdScript(data);
+}
+
+/**
+ * OG/head tags for a public realtor microsite (/r/:slug). Subscription-gated: a
+ * paused/lapsed site (siteActive === false) emits only a minimal noindex head
+ * (title + canonical) so search engines drop it, while a live site gets the full
+ * OG/Twitter set plus RealEstateAgent JSON-LD. og:site_name is the agency; the
+ * title/description honor the realtor's seoTitle/seoDescription overrides, then
+ * fall back to "<name> · <agency>" / the bio / "<N> e'lon"; the preview image is
+ * the cover OG jpg, then the logo, then the first listing's cover.
+ *
+ * The first param is `site`, NOT `meta` — a `meta` param would shadow the
+ * module-level meta() helper used to build every tag below.
+ */
+export function buildRealtorMetaTags(site: RealtorSiteMeta, slug: string, baseUrl: string): string {
+  const pageUrl = `${baseUrl}/r/${slug}`;
+  if (!site.siteActive) {
+    // Known-but-paused slug: served @200 (not 404) with a noindex head so search
+    // engines drop it while the SPA still renders its own "site paused" state.
+    return [
+      `<title>${escapeHtml(site.name)}</title>`,
+      meta('name', 'robots', 'noindex'),
+      `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    ].join('\n    ');
+  }
+  const title = site.seoTitle?.trim()
+    ? site.seoTitle.trim()
+    : site.agency
+      ? `${site.name} · ${site.agency}`
+      : site.name;
+  const description = site.seoDescription?.trim()
+    ? truncate(site.seoDescription)
+    : site.bio
+      ? truncate(site.bio)
+      : `${site.listingCount} e'lon`;
+  // The cover OG jpg (Task 5) is preferred; the logo, then the first listing's
+  // cover, are fallbacks when no cover has been uploaded.
+  const relativeImage = site.coverImageUrl ?? site.logoUrl ?? site.firstListingImageOgUrl;
   const tags = [
     `<title>${escapeHtml(title)}</title>`,
     meta('name', 'description', description),
     `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
     meta('property', 'og:type', 'website'),
-    meta('property', 'og:site_name', 'Rieltor'),
+    meta('property', 'og:site_name', site.agency || site.name),
     meta('property', 'og:url', pageUrl),
     meta('property', 'og:title', title),
     meta('property', 'og:description', description),
@@ -165,6 +240,8 @@ export function buildRealtorMetaTags(
       meta('name', 'twitter:image', absolute),
     );
   }
+
+  tags.push(buildRealtorJsonLd(site, pageUrl, baseUrl));
 
   return tags.join('\n    ');
 }

@@ -45,6 +45,16 @@ export class ProfileService {
       verified: p?.verified ?? false,
       logoUrl: p?.logoUrl ?? null,
       brandColor: p?.brandColor ?? null,
+      coverImageUrl: p?.coverImageUrl ?? null,
+      tagline: p?.tagline ?? null,
+      contactPhone: p?.contactPhone ?? null,
+      contactTelegram: p?.contactTelegram ?? null,
+      contactWhatsapp: p?.contactWhatsapp ?? null,
+      instagramUrl: p?.instagramUrl ?? null,
+      telegramChannelUrl: p?.telegramChannelUrl ?? null,
+      seoTitle: p?.seoTitle ?? null,
+      seoDescription: p?.seoDescription ?? null,
+      sitePublished: p?.sitePublished ?? true,
     };
   }
 
@@ -72,6 +82,17 @@ export class ProfileService {
           experienceYears: data.experienceYears ?? null,
           slug: data.slug ?? null,
           brandColor: data.brandColor ?? null,
+          // coverImageUrl/logoUrl are absent from RealtorProfileUpdate (upload-only),
+          // so they are not enumerated here — they default to null in the DB.
+          tagline: data.tagline ?? null,
+          contactPhone: data.contactPhone ?? null,
+          contactWhatsapp: data.contactWhatsapp ?? null,
+          contactTelegram: data.contactTelegram ?? null,
+          instagramUrl: data.instagramUrl ?? null,
+          telegramChannelUrl: data.telegramChannelUrl ?? null,
+          seoTitle: data.seoTitle ?? null,
+          seoDescription: data.seoDescription ?? null,
+          sitePublished: data.sitePublished ?? true,
         },
       });
     } catch (err) {
@@ -112,6 +133,35 @@ export class ProfileService {
       where: { userId },
       update: { logoUrl },
       create: { userId, agency: '', logoUrl },
+    });
+
+    return this.get(userId);
+  }
+
+  /**
+   * Store the public microsite cover image. Mirrors setLogo (same processImage +
+   * PUBLIC_DIR pipeline, user-keyed folder so a reupload overwrites in place), but
+   * with makeOg: true so the stored URL is the true 1200×630 OG JPEG — one
+   * correctly-sized image serves both the hero band and og:image (Task 6),
+   * matching the codebase-wide `ogUrl` OG convention (e.g. the seed's og.jpg).
+   */
+  async setCover(userId: string, file: Express.Multer.File): Promise<RealtorProfile> {
+    const result = await processImage({
+      source: file.buffer,
+      outputRoot: PUBLIC_DIR,
+      listingId: `cover-${userId}`,
+      position: 1,
+      makeOg: true,
+    });
+
+    // Store the 1200×630 OG crop (not a listing variant): it is the hero band's
+    // source and og:image at once, so Task 6's fixed og:image:width/height match.
+    const coverImageUrl = result.ogUrl;
+
+    await this.prisma.realtorProfile.upsert({
+      where: { userId },
+      update: { coverImageUrl },
+      create: { userId, agency: '', coverImageUrl },
     });
 
     return this.get(userId);

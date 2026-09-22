@@ -62,3 +62,25 @@ export function useSaveLogo() {
     },
   });
 }
+
+/**
+ * `POST /api/agent/profile/cover` — multipart microsite cover upload. Mirrors
+ * `useSaveLogo`: the endpoint stores the 1200×630 OG crop and returns the full,
+ * reconciled `RealtorProfile` (with the new `coverImageUrl`), so we seed the cache
+ * for an instant reflect and then invalidate to stay honest with server truth.
+ */
+export function useSaveCover() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiUpload('/api/agent/profile/cover', formData, RealtorProfileSchema);
+    },
+    onSuccess: (profile) => {
+      queryClient.setQueryData<RealtorProfile>(PROFILE_QUERY_KEY, profile);
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
+    },
+  });
+}

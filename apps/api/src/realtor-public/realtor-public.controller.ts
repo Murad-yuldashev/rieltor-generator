@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Ip, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { ReviewCreateSchema } from '@rieltor/shared';
+import { RealtorInquiryCreateSchema, ReviewCreateSchema } from '@rieltor/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
 import { ReviewsService } from '../reviews/reviews.service';
@@ -21,6 +21,14 @@ export class RealtorPublicController {
   @Get(':slug')
   get(@Param('slug') slug: string) {
     return this.realtors.getBySlug(slug);
+  }
+
+  // PUBLIC (no guard) — a site visitor's "Qo'ng'iroq so'rash" form. In-process
+  // rate-limited by [ip, slug] inside the service; @Ip() is the client IP (behind
+  // `trust proxy`, the first X-Forwarded-For hop).
+  @Post(':slug/inquiry')
+  createInquiry(@Param('slug') slug: string, @Ip() ip: string, @Body() body: unknown) {
+    return this.realtors.createInquiry(slug, ip, RealtorInquiryCreateSchema.parse(body));
   }
 
   // Method-level guard — the class stays guard-less so GET :slug remains anonymous.

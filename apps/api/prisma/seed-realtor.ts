@@ -15,6 +15,23 @@ function daysFromNow(days: number): Date {
 const CX1_UNIT = 'seed-unit-cx1-A-1-1'; // building seed-bld-cx1-A -> complex seed-cx-1
 const CX2_UNIT = 'seed-unit-cx2-A-1-1'; // building seed-bld-cx2-A -> complex seed-cx-2
 
+/**
+ * Existing bx-* listings (created by seed.ts BEFORE this runs) that the seed
+ * realtor OWNS, so /r/aziz-rieltor renders a populated, filterable catalogue.
+ * Spans both deals (SALE/RENT), all four ListingTypes and six districts.
+ * bx-002 is intentionally excluded — it is pinned by e2e/listing-page.spec.ts.
+ */
+const SEED_SITE_LISTING_IDS = [
+  'bx-001', // NEW_BUILD  SALE  Yunusobod
+  'bx-004', // SECONDARY  SALE  Chilonzor
+  'bx-003', // HOUSE      SALE  Yashnobod
+  'bx-008', // NEW_BUILD  SALE  Olmazor
+  'bx-011', // NEW_BUILD  RENT  Yakkasaroy
+  'bx-013', // SECONDARY  RENT  Chilonzor
+  'bx-015', // COMMERCIAL RENT  Mirzo Ulug‘bek
+  'bx-017', // COMMERCIAL SALE  Mirzo Ulug‘bek
+];
+
 /** Seed a complete realtor cabinet. Guarded on Subscription count (this seed
  *  mints the only Subscription rows). MUST run AFTER seedDeveloperCrm(prisma). */
 export async function seedRealtorCabinet(prisma: PrismaClient): Promise<void> {
@@ -49,7 +66,30 @@ export async function seedRealtorCabinet(prisma: PrismaClient): Promise<void> {
       bio: 'Yangi qurilish va ikkilamchi bozor bo‘yicha 6 yillik tajriba.',
       ratingSum: 14,
       ratingCount: 3, // == 5 + 4 + 5 (the APPROVED reviews)
+      // Realtor-site branding + contact/SEO (Phase 9). UI copy Uzbek; contact
+      // stored CANONICAL (998XXXXXXXXX), Telegram handle without '@'.
+      brandColor: '#7c3aed',
+      coverImageUrl: '/images/bx-001/og.jpg', // real 1200x630 OG asset (bx-001 pos-1)
+      tagline: 'Toshkent bo‘ylab yangi va ikkilamchi uy-joyni ishonchli tanlab beraman.',
+      contactPhone: '998901112233',
+      contactTelegram: 'aziz_rieltor',
+      contactWhatsapp: '998901112233',
+      instagramUrl: 'https://instagram.com/aziz_rieltor',
+      telegramChannelUrl: 'https://t.me/aziz_rieltor_uylar',
+      seoTitle: 'Aziz Rieltor — Toshkentda uy-joy xarid va ijara',
+      seoDescription:
+        'Toshkent bo‘ylab yangi qurilish va ikkilamchi bozordan kvartira, uy va tijorat ob‘ektlari. Sotib olish hamda ijara bo‘yicha bepul maslahat.',
+      sitePublished: true,
     },
+  });
+
+  // Claim a handful of existing PUBLISHED bx-* listings for the seed realtor so
+  // /r/aziz-rieltor shows a real, filterable catalogue. FK-safe: the realtor
+  // User (above) and the bx-* listings (seed.ts listing loop runs first) both
+  // already exist. Idempotent under the subscription.count() guard above.
+  await prisma.listing.updateMany({
+    where: { id: { in: SEED_SITE_LISTING_IDS } },
+    data: { ownerId: SEED_REALTOR_ID, status: 'PUBLISHED' },
   });
 
   await prisma.subscription.create({
@@ -515,6 +555,6 @@ export async function seedRealtorCabinet(prisma: PrismaClient): Promise<void> {
   });
 
   console.log(
-    'Realtor seed: 1 rieltor + 6 xaridor, 1 obuna, 10 lead, 2 fiksatsiya, hamyon + 10 tranzaksiya, 3 kolleksiya/9 element, 2 taqdimot/6 element, 5 eslatma, 3 sharh.',
+    'Realtor seed: 1 rieltor + 6 xaridor, 1 obuna, 10 lead, 2 fiksatsiya, hamyon + 10 tranzaksiya, 3 kolleksiya/9 element, 2 taqdimot/6 element, 5 eslatma, 3 sharh, sayt: 8 e‘lon + brendlash.',
   );
 }
