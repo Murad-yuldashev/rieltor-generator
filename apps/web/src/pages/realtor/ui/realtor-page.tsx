@@ -1,15 +1,26 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
-import { formatListedAt, type PublicReview } from '@rieltor/shared';
+import { formatListedAt, type Deal, type PublicReview } from '@rieltor/shared';
 import { ListingCard } from '@/entities/listing';
 import { useSession } from '@/entities/session';
 import { LoginModal } from '@/features/auth';
+import {
+  EMPTY_CRITERIA,
+  FilterPanel,
+  SortSelect,
+  ListingFacets,
+  filterListings,
+  type Criteria,
+} from '@/features/listing-filters';
+import { useInfiniteScroll } from '@/shared/lib/use-infinite-scroll';
+import { cn } from '@/shared/lib/cn';
 import { ApiError } from '@/shared/api/client';
 import { Icon } from '@/shared/ui/icon';
 import { RatingStars, StarPicker } from '@/shared/ui/rating-stars';
 import { NotFoundView } from '@/widgets/not-found';
 import { myReviewQuery, realtorQuery, useSubmitReview } from '../api';
+import { brandThemeVars } from '../lib/brand-theme';
 
 function PageSkeleton() {
   return (
@@ -189,99 +200,221 @@ function ReviewsSection({ slug, ratingAvg, ratingCount, reviews }: ReviewsSectio
   );
 }
 
+const PAGE_SIZE = 8;
+
 export function RealtorPage() {
   const { slug = '' } = useParams();
   const { data, isPending, error } = useQuery(realtorQuery(slug));
 
-  if (isPending) return <PageSkeleton />;
+  // ALL hooks run unconditionally, BEFORE any early return (Rules of Hooks).
+  const [criteria, setCriteria] = useState<Criteria>(EMPTY_CRITERIA);
+  const [district, setDistrict] = useState<string | null>(null);
+  const [limit, setLimit] = useState(PAGE_SIZE);
 
+  const listings = data?.listings ?? [];
+  const districts = useMemo(
+    () => [...new Set(listings.map((l) => l.district))].sort((a, b) => a.localeCompare(b)),
+    [listings],
+  );
+  const scoped = district ? listings.filter((l) => l.district === district) : listings;
+  const matches = filterListings(scoped, criteria); // filterListings sorts by criteria.sort
+  const shown = matches.slice(0, limit);
+  const hasMore = matches.length > shown.length;
+  const sentinelRef = useInfiniteScroll(hasMore, shown.length, () =>
+    setLimit((n) => n + PAGE_SIZE),
+  );
+
+  const applyCriteria = (next: Criteria) => {
+    setCriteria(next);
+    setLimit(PAGE_SIZE);
+  };
+  const patch = (p: Partial<Criteria>) => applyCriteria({ ...criteria, ...p });
+  // deal change resets the district facet so a stale RENT-only chip can't strand a SALE view.
+  const pickDeal = (deal: Deal) => {
+    setDistrict(null);
+    applyCriteria({ ...criteria, deal });
+  };
+  const pickDistrict = (d: string | null) => {
+    setDistrict(d);
+    setLimit(PAGE_SIZE);
+  };
+
+  if (isPending) return <PageSkeleton />;
   if (error) {
-    // An unknown slug gets the plain "not found" page (mirrors the listing page).
     if (error instanceof ApiError && error.status === 404) return <NotFoundView />;
     return <p className="p-6 text-center text-ink-2">Rieltor sahifasini yuklab bo'lmadi.</p>;
   }
 
-  // brandColor is hex-validated server-side, but is still treated as data here:
-  // it only feeds a CSS custom property that our own styles read via
-  // var(--brand, …). It can never break out into another CSS property or the DOM.
-  // When null, --brand is unset and the app's default accent takes over.
-  const brandStyle = data.brandColor
-    ? ({ '--brand': data.brandColor } as CSSProperties)
-    : undefined;
+  const themeStyle = brandThemeVars(data.brandColor);
+
+  if (!data.siteActive) {
+    return (
+      <main
+        className="mx-auto flex min-h-dvh max-w-content items-center justify-center bg-surface p-6"
+        style={themeStyle}
+      >
+        <div className="rounded-card border border-line/60 bg-card p-8 text-center">
+          <h1 className="text-lg font-extrabold text-ink">{data.name}</h1>
+          <p className="mt-2 text-[14px] font-medium text-ink-2">Bu sayt hozircha mavjud emas</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-content bg-surface pb-10" style={brandStyle}>
-      <header
-        className="px-5 pt-8 pb-7 text-white"
-        style={{ background: 'var(--brand, var(--color-accent))' }}
-      >
-        <div className="flex items-center gap-4">
-          {data.logoUrl && (
-            <img
-              src={data.logoUrl}
-              alt={data.name}
-              className="h-16 w-16 shrink-0 rounded-2xl border-2 border-white/40 bg-white object-cover"
-            />
-          )}
-          <div className="min-w-0">
-            <h1 className="text-2xl leading-tight font-extrabold">{data.name}</h1>
-            {data.agency && (
-              <p className="mt-1 text-[14px] font-semibold text-white/85">{data.agency}</p>
+    <main
+      className="mx-auto min-h-dvh max-w-content bg-surface pb-10 md:max-w-none desk:max-w-none"
+      style={themeStyle}
+    >
+      <header className="relative text-white">
+        {data.coverImageUrl && (
+          <img
+            src={data.coverImageUrl}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        <div
+          className="relative px-5 pt-8 pb-7"
+          style={{
+            background: data.coverImageUrl
+              ? 'color-mix(in srgb, var(--brand, var(--color-accent)) 78%, transparent)'
+              : 'var(--brand, var(--color-accent))',
+          }}
+        >
+          <div className="mx-auto w-full max-w-content desk:max-w-desk desk:px-8">
+            <div className="flex items-center gap-4">
+              {data.logoUrl && (
+                <img
+                  src={data.logoUrl}
+                  alt={data.name}
+                  className="h-16 w-16 shrink-0 rounded-2xl border-2 border-white/40 bg-white object-cover"
+                />
+              )}
+              <div className="min-w-0">
+                <h1 className="text-2xl leading-tight font-extrabold">{data.name}</h1>
+                {data.tagline && (
+                  <p className="mt-1 text-[14px] font-semibold text-white/85">{data.tagline}</p>
+                )}
+                {data.agency && (
+                  <p className="mt-0.5 text-[13px] font-medium text-white/75">{data.agency}</p>
+                )}
+                {data.verified && (
+                  <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11.5px] font-extrabold tracking-wide">
+                    <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} /> Tasdiqlangan
+                  </span>
+                )}
+              </div>
+            </div>
+            {data.bio && (
+              <p className="mt-4 text-[14px] leading-[1.55] font-medium text-white/90">
+                {data.bio}
+              </p>
             )}
-            {data.verified && (
-              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11.5px] font-extrabold tracking-wide">
-                <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} />
-                Tasdiqlangan
-              </span>
+            {(data.experienceYears !== null || data.regions.length > 0) && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {data.experienceYears !== null && (
+                  <span className="rounded-full bg-white/15 px-3 py-1 text-[12.5px] font-bold">
+                    {data.experienceYears} yil tajriba
+                  </span>
+                )}
+                {data.regions.map((r) => (
+                  <span
+                    key={r}
+                    className="rounded-full bg-white/15 px-3 py-1 text-[12.5px] font-bold"
+                  >
+                    {r}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
         </div>
-
-        {data.bio && (
-          <p className="mt-4 text-[14px] leading-[1.55] font-medium text-white/90">{data.bio}</p>
-        )}
-
-        {(data.experienceYears !== null || data.regions.length > 0) && (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {data.experienceYears !== null && (
-              <span className="rounded-full bg-white/15 px-3 py-1 text-[12.5px] font-bold">
-                {data.experienceYears} yil tajriba
-              </span>
-            )}
-            {data.regions.map((region) => (
-              <span
-                key={region}
-                className="rounded-full bg-white/15 px-3 py-1 text-[12.5px] font-bold"
-              >
-                {region}
-              </span>
-            ))}
-          </div>
-        )}
       </header>
 
-      <section className="p-4">
-        <h2 className="mb-3.5 text-[15px] font-extrabold text-ink">E'lonlar</h2>
-        {data.listings.length === 0 ? (
-          <p className="rounded-card border border-line/60 bg-card px-4 py-10 text-center text-[14px] font-medium text-ink-2">
-            Hozircha e'lonlar yo'q
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {data.listings.map((listing, index) => (
-              // The marketplace card already links to /obj/:id — reused, not cloned.
-              <ListingCard key={listing.id} listing={listing} isFirst={index === 0} />
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Task 4 mounts <ContactSection slug={slug} … /> here. */}
 
-      <ReviewsSection
-        slug={slug}
-        ratingAvg={data.ratingAvg}
-        ratingCount={data.ratingCount}
-        reviews={data.reviews}
-      />
+      <div className="desk:mx-auto desk:w-full desk:max-w-desk desk:px-8">
+        <section className="p-4 desk:px-0">
+          <div className="mb-3.5 flex items-center justify-between gap-3">
+            <h2 className="text-[15px] font-extrabold text-ink">E'lonlar · {matches.length} ta</h2>
+            <SortSelect value={criteria.sort} onChange={(sort) => patch({ sort })} />
+          </div>
+          <ListingFacets
+            deal={criteria.deal}
+            onDealChange={pickDeal}
+            type={criteria.type}
+            onTypeChange={(type) => patch({ type })}
+          />
+          {districts.length > 0 && (
+            <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+              <button
+                type="button"
+                onClick={() => pickDistrict(null)}
+                className={cn(
+                  'shrink-0 rounded-full border px-[15px] py-2 text-[13px] font-semibold transition-colors',
+                  district === null
+                    ? 'border-accent bg-accent text-white'
+                    : 'border-line bg-card text-ink-2',
+                )}
+              >
+                Barcha tumanlar
+              </button>
+              {districts.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => pickDistrict(d)}
+                  className={cn(
+                    'shrink-0 rounded-full border px-[15px] py-2 text-[13px] font-semibold transition-colors',
+                    district === d
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-line bg-card text-ink-2',
+                  )}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
+          <label className="mt-3 flex items-center gap-2.5 rounded-[14px] border border-line bg-card px-3.5 py-3">
+            <Icon name="search" className="h-[17px] w-[17px] text-ink-3" strokeWidth={2.2} />
+            <input
+              type="search"
+              value={criteria.search}
+              onChange={(e) => patch({ search: e.target.value })}
+              placeholder="Tuman, majmua yoki ko'cha qidiring..."
+              aria-label="Qidiruv"
+              className="w-full bg-transparent text-[14.5px] outline-none placeholder:text-ink-3"
+            />
+          </label>
+          <details className="mt-3 rounded-card border border-line/60 bg-card p-4">
+            <summary className="cursor-pointer text-[14px] font-bold text-ink">Filtrlar</summary>
+            <div className="mt-3">
+              <FilterPanel value={criteria} onChange={applyCriteria} />
+            </div>
+          </details>
+          {matches.length === 0 ? (
+            <p className="mt-4 rounded-card border border-line/60 bg-card px-4 py-10 text-center text-[14px] font-medium text-ink-2">
+              Bu shartlarga mos e'lon topilmadi
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-3 desk:grid-cols-4 desk:gap-5">
+              {shown.map((listing, i) => (
+                <ListingCard key={listing.id} listing={listing} isFirst={i === 0} />
+              ))}
+            </div>
+          )}
+          {hasMore && <div ref={sentinelRef} aria-hidden className="mt-4 h-px w-full" />}
+        </section>
+        <ReviewsSection
+          slug={slug}
+          ratingAvg={data.ratingAvg}
+          ratingCount={data.ratingCount}
+          reviews={data.reviews}
+        />
+      </div>
     </main>
   );
 }
