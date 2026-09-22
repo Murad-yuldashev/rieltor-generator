@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { canonicalizePhone } from './phone';
 
 export const AgentSchema = z.object({
   id: z.string(),
@@ -372,7 +373,7 @@ export const TrackedPropertyDetailSchema = TrackedPropertySchema.extend({
   snapshots: z.array(PriceSnapshotSchema),
 });
 
-export const NotificationTypeSchema = z.enum(['PRICE_UPDATE']);
+export const NotificationTypeSchema = z.enum(['PRICE_UPDATE', 'LEAD_INQUIRY']);
 
 export const NotificationSchema = z.object({
   id: z.string(),
@@ -578,6 +579,19 @@ export const SubscriptionViewSchema = z.object({
   daysLeft: z.number().int(), // clamped at 0
 });
 
+/** A contact phone, canonicalized to `998XXXXXXXXX` at parse time. */
+const ContactPhoneSchema = z
+  .string()
+  .trim()
+  .transform(canonicalizePhone)
+  .refine((p) => /^998\d{9}$/.test(p), 'Telefon raqami noto‘g‘ri');
+/** A Telegram username, `@` stripped, 5–32 of [A-Za-z0-9_]. */
+const TelegramHandleSchema = z
+  .string()
+  .trim()
+  .transform((s) => s.replace(/^@/, ''))
+  .refine((s) => /^[A-Za-z0-9_]{5,32}$/.test(s), 'Telegram username noto‘g‘ri');
+
 export const RealtorProfileSchema = z.object({
   agency: z.string(),
   bio: z.string().nullable(),
@@ -591,6 +605,16 @@ export const RealtorProfileSchema = z.object({
   logoUrl: z.string().nullable(),
   /** Optional brand accent colour ("#rrggbb") for the public profile. */
   brandColor: z.string().nullable(),
+  coverImageUrl: z.string().nullable(),
+  tagline: z.string().nullable(),
+  contactPhone: z.string().nullable(),
+  contactTelegram: z.string().nullable(),
+  contactWhatsapp: z.string().nullable(),
+  instagramUrl: z.string().nullable(),
+  telegramChannelUrl: z.string().nullable(),
+  seoTitle: z.string().nullable(),
+  seoDescription: z.string().nullable(),
+  sitePublished: z.boolean(),
 });
 
 /** Slug rule: lowercase kebab, 3–40 chars, [a-z0-9-], not starting/ending with '-'. */
@@ -607,6 +631,29 @@ export const RealtorProfileUpdateSchema = z.object({
     .regex(/^#[0-9a-fA-F]{6}$/)
     .nullable()
     .optional(),
+  // coverImageUrl/logoUrl are deliberately absent — set via upload-only endpoints.
+  tagline: z.string().trim().max(120).nullable().optional(),
+  contactPhone: ContactPhoneSchema.nullable().optional(),
+  contactWhatsapp: ContactPhoneSchema.nullable().optional(),
+  contactTelegram: TelegramHandleSchema.nullable().optional(),
+  instagramUrl: z.url().max(200).nullable().optional(),
+  telegramChannelUrl: z.url().max(200).nullable().optional(),
+  seoTitle: z.string().trim().max(70).nullable().optional(),
+  seoDescription: z.string().trim().max(200).nullable().optional(),
+  sitePublished: z.boolean().optional(),
+});
+
+/** Body of `POST /api/r/:slug/inquiry` — a site visitor's lead for the realtor. */
+export const RealtorInquiryCreateSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  phone: z
+    .string()
+    .trim()
+    .transform(canonicalizePhone)
+    .refine((p) => /^998\d{9}$/.test(p), 'Telefon raqami noto‘g‘ri'),
+  message: z.string().trim().min(1).max(1000),
+  listingId: z.string().optional(),
+  deal: DealSchema.optional(),
 });
 
 /** Moderation lifecycle of a realtor review. */
@@ -644,6 +691,16 @@ export const PublicRealtorSchema = z.object({
   experienceYears: z.number().int().nullable(),
   logoUrl: z.string().nullable(),
   brandColor: z.string().nullable(),
+  coverImageUrl: z.string().nullable(),
+  tagline: z.string().nullable(),
+  contactPhone: z.string().nullable(),
+  contactTelegram: z.string().nullable(),
+  contactWhatsapp: z.string().nullable(),
+  instagramUrl: z.string().nullable(),
+  telegramChannelUrl: z.string().nullable(),
+  /** False when the site is paused (lapsed subscription or unpublished): the
+   * payload is reduced to identity + public ratings; catalogue/branding is gated. */
+  siteActive: z.boolean(),
   verified: z.boolean(),
   /** Average of APPROVED review ratings; null until the realtor has any. */
   ratingAvg: z.number().nullable(),
@@ -1278,6 +1335,7 @@ export type SubscriptionView = z.infer<typeof SubscriptionViewSchema>;
 export type RealtorProfile = z.infer<typeof RealtorProfileSchema>;
 export type RealtorProfileUpdate = z.infer<typeof RealtorProfileUpdateSchema>;
 export type PublicRealtor = z.infer<typeof PublicRealtorSchema>;
+export type RealtorInquiryCreate = z.infer<typeof RealtorInquiryCreateSchema>;
 export type ModeratorRealtorRow = z.infer<typeof ModeratorRealtorRowSchema>;
 export type RealtorVerify = z.infer<typeof RealtorVerifySchema>;
 export type ReviewStatus = z.infer<typeof ReviewStatusSchema>;
