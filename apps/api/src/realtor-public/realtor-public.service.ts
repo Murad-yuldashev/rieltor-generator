@@ -39,7 +39,6 @@ export class RealtorPublicService {
       include: {
         user: {
           select: {
-            id: true,
             name: true,
             role: true,
             subscription: { select: { status: true, currentPeriodEnd: true } },
@@ -154,7 +153,6 @@ export class RealtorPublicService {
       include: {
         user: {
           select: {
-            id: true,
             name: true,
             role: true,
             subscription: { select: { status: true, currentPeriodEnd: true } },
@@ -231,7 +229,6 @@ export class RealtorPublicService {
       include: {
         user: {
           select: {
-            id: true,
             role: true,
             subscription: { select: { status: true, currentPeriodEnd: true } },
           },

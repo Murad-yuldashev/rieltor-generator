@@ -102,12 +102,14 @@ export function ContactSection({
     mutation.mutate({ name: name.trim(), phone: phone.trim(), message: message.trim() });
   };
 
-  // The server enforces the real phone/length rules and answers with Uzbek copy;
-  // surface that verbatim, falling back to a generic message for non-API failures.
+  // The server answers a 400 (validation) / 409 (conflict) with ready-to-show Uzbek
+  // copy — surface that verbatim; any other failure keeps a generic message so an
+  // unexpected internal string never reaches the visitor.
   const errorText = mutation.error
-    ? mutation.error instanceof ApiError
+    ? mutation.error instanceof ApiError &&
+      (mutation.error.status === 400 || mutation.error.status === 409)
       ? mutation.error.message
-      : "Xatolik yuz berdi. Qaytadan urinib ko'ring."
+      : "So'rovni yuborib bo'lmadi. Birozdan keyin qayta urinib ko'ring."
     : null;
 
   const hasChannel =
