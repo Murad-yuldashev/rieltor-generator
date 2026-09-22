@@ -21,6 +21,7 @@ import { RatingStars, StarPicker } from '@/shared/ui/rating-stars';
 import { NotFoundView } from '@/widgets/not-found';
 import { myReviewQuery, realtorQuery, useSubmitReview } from '../api';
 import { brandThemeVars } from '../lib/brand-theme';
+import { ContactSection } from './contact-section';
 
 function PageSkeleton() {
   return (
@@ -333,7 +334,14 @@ export function RealtorPage() {
         </div>
       </header>
 
-      {/* Task 4 mounts <ContactSection slug={slug} … /> here. */}
+      <ContactSection
+        slug={slug}
+        contactPhone={data.contactPhone}
+        contactTelegram={data.contactTelegram}
+        contactWhatsapp={data.contactWhatsapp}
+        instagramUrl={data.instagramUrl}
+        telegramChannelUrl={data.telegramChannelUrl}
+      />
 
       <div className="desk:mx-auto desk:w-full desk:max-w-desk desk:px-8">
         <section className="p-4 desk:px-0">

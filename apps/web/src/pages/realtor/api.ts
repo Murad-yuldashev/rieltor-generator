@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MyReviewSchema, PublicRealtorSchema } from '@rieltor/shared';
+import { z } from 'zod';
+import { MyReviewSchema, PublicRealtorSchema, type RealtorInquiryCreate } from '@rieltor/shared';
 import { apiGet, apiPost } from '@/shared/api/client';
 import { readTokens } from '@/shared/api/auth-storage';
 
@@ -48,4 +49,21 @@ export function useSubmitReview(slug: string) {
       void queryClient.invalidateQueries({ queryKey: ['realtor', slug, 'my-review'] });
     },
   });
+}
+
+/** The public inquiry endpoint returns only `{ ok: true }` — no ids leak (Task 2). */
+const InquiryResultSchema = z.object({ ok: z.literal(true) });
+
+/**
+ * Submits a site visitor's inquiry — POST /api/r/:slug/inquiry (public, no auth).
+ * MVP scope is a single page-level GENERAL lead: `{ name, phone, message }` only,
+ * with no `listingId` (there is no per-card CTA this phase — the reused ListingCard
+ * would navigate away). The server canonicalizes the phone, mints a realtor-attributed
+ * lead, and notifies the realtor; the client only asserts the `{ ok: true }` shape.
+ */
+export function submitInquiry(
+  slug: string,
+  body: Pick<RealtorInquiryCreate, 'name' | 'phone' | 'message'>,
+): Promise<{ ok: true }> {
+  return apiPost(`/api/r/${slug}/inquiry`, InquiryResultSchema, body);
 }
