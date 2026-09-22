@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { RealtorSlugSchema, type RealtorProfileUpdate } from '@rieltor/shared';
+import * as z from 'zod';
 import { useSession } from '@/entities/session';
-import { useProfile, useSaveLogo, useSaveProfile } from '@/features/profile';
+import { useProfile, useSaveCover, useSaveLogo, useSaveProfile } from '@/features/profile';
+import { useSubscription } from '@/features/subscription';
 import { ApiError } from '@/shared/api/client';
+import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
 import { ProfilePreview } from './profile-preview';
 import { RatingsPanel } from './ratings-panel';
@@ -36,13 +40,24 @@ const BIO_MAX = 1000;
 const EXPERIENCE_MIN = 0;
 const EXPERIENCE_MAX = 70;
 const SLUG_MAX = 40;
+// Phase 9 site-config field maxima — mirror RealtorProfileUpdateSchema.
+const TAGLINE_MAX = 120;
+const SEO_TITLE_MAX = 70;
+const SEO_DESCRIPTION_MAX = 200;
 
 /** Fallback swatch for `<input type="color">` when the realtor hasn't picked a brand colour. */
 const DEFAULT_BRAND_COLOR = '#7c3aed';
 
-/** Logo upload limits — mirror the server (ProfileLogoController): jpeg/png/webp, ≤ 10 MB. */
+/** Logo/cover upload limits — mirror the server (ProfileLogoController): jpeg/png/webp, ≤ 10 MB. */
 const ALLOWED_LOGO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_LOGO_SIZE_BYTES = 10 * 1024 * 1024;
+
+/**
+ * instagramUrl/telegramChannelUrl must be full URLs. Validated with the same
+ * `z.url().max(200)` rule the server enforces so the client message never drifts
+ * from the server contract.
+ */
+const SiteUrlSchema = z.url().max(200);
 
 /** Same-membership check for two region lists (order is stable, from the constant). */
 function sameRegions(a: string[], b: string[]): boolean {
@@ -61,9 +76,11 @@ function sameRegions(a: string[], b: string[]): boolean {
  */
 export function ProfilePage() {
   const { data: profile, isPending, isError } = useProfile();
+  const { data: subscription } = useSubscription();
   const { user } = useSession();
   const save = useSaveProfile();
   const saveLogo = useSaveLogo();
+  const saveCover = useSaveCover();
 
   const [agency, setAgency] = useState('');
   const [bio, setBio] = useState('');
@@ -75,8 +92,20 @@ export function ProfilePage() {
   // Editable brand colour; '' means "app default" (→ null on save). The colour
   // input always yields a "#rrggbb" value, so any non-empty value is a valid hex.
   const [brandColor, setBrandColor] = useState('');
+  // Phase 9 site-config fields — all kept as strings ('' → null on save).
+  const [tagline, setTagline] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactWhatsapp, setContactWhatsapp] = useState('');
+  const [contactTelegram, setContactTelegram] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [telegramChannelUrl, setTelegramChannelUrl] = useState('');
+  const [seoTitle, setSeoTitle] = useState('');
+  const [seoDescription, setSeoDescription] = useState('');
+  // Whether the public microsite is published; defaults to true server-side.
+  const [sitePublished, setSitePublished] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   // Seed the form from the server profile exactly once. A guard (rather than a
@@ -94,6 +123,15 @@ export function ProfilePage() {
     setExperienceYears(profile.experienceYears === null ? '' : String(profile.experienceYears));
     setSlug(profile.slug ?? '');
     setBrandColor(profile.brandColor ?? '');
+    setTagline(profile.tagline ?? '');
+    setContactPhone(profile.contactPhone ?? '');
+    setContactWhatsapp(profile.contactWhatsapp ?? '');
+    setContactTelegram(profile.contactTelegram ?? '');
+    setInstagramUrl(profile.instagramUrl ?? '');
+    setTelegramChannelUrl(profile.telegramChannelUrl ?? '');
+    setSeoTitle(profile.seoTitle ?? '');
+    setSeoDescription(profile.seoDescription ?? '');
+    setSitePublished(profile.sitePublished);
   }, [profile]);
 
   // Any edit invalidates the last "saved" confirmation.
@@ -151,6 +189,40 @@ export function ProfilePage() {
     // brandColor: '' means "app default" (→ null); a picked colour is always "#rrggbb".
     const nextBrandColor = brandColor === '' ? null : brandColor;
 
+    // Phase 9 site-config fields. Empty string → null. Phones are NOT canonicalized
+    // here — the schema's ContactPhoneSchema.transform does it server-side. The
+    // Telegram username loses a leading '@' (the schema strips it too, but doing it
+    // here keeps the changed-field diff honest against the stored, '@'-less value).
+    const nextTagline = tagline.trim() === '' ? null : tagline.trim();
+    const nextContactPhone = contactPhone.trim() === '' ? null : contactPhone.trim();
+    const nextContactWhatsapp = contactWhatsapp.trim() === '' ? null : contactWhatsapp.trim();
+    const strippedTelegram = contactTelegram.trim().replace(/^@/, '');
+    const nextContactTelegram = strippedTelegram === '' ? null : strippedTelegram;
+    const nextInstagramUrl = instagramUrl.trim() === '' ? null : instagramUrl.trim();
+    const nextTelegramChannelUrl =
+      telegramChannelUrl.trim() === '' ? null : telegramChannelUrl.trim();
+    const nextSeoTitle = seoTitle.trim() === '' ? null : seoTitle.trim();
+    const nextSeoDescription = seoDescription.trim() === '' ? null : seoDescription.trim();
+
+    // instagramUrl/telegramChannelUrl must be full URLs — validated with the same
+    // z.url() rule the server enforces, so the client never sends a value the
+    // schema would 400 on.
+    if (nextInstagramUrl !== null && !SiteUrlSchema.safeParse(nextInstagramUrl).success) {
+      setValidationError(
+        "Instagram havolasi to'liq URL bo'lishi kerak (masalan, https://instagram.com/...).",
+      );
+      return;
+    }
+    if (
+      nextTelegramChannelUrl !== null &&
+      !SiteUrlSchema.safeParse(nextTelegramChannelUrl).success
+    ) {
+      setValidationError(
+        "Telegram kanal havolasi to'liq URL bo'lishi kerak (masalan, https://t.me/...).",
+      );
+      return;
+    }
+
     // Build the patch from changed fields only: an all-optional PATCH must never
     // carry a field the schema could reject, and unchanged fields need no write.
     const patch: RealtorProfileUpdate = {};
@@ -160,6 +232,19 @@ export function ProfilePage() {
     if (nextExperience !== profile.experienceYears) patch.experienceYears = nextExperience;
     if (nextSlug !== profile.slug) patch.slug = nextSlug;
     if (nextBrandColor !== profile.brandColor) patch.brandColor = nextBrandColor;
+    if (nextTagline !== profile.tagline) patch.tagline = nextTagline;
+    if (nextContactPhone !== profile.contactPhone) patch.contactPhone = nextContactPhone;
+    if (nextContactWhatsapp !== profile.contactWhatsapp)
+      patch.contactWhatsapp = nextContactWhatsapp;
+    if (nextContactTelegram !== profile.contactTelegram)
+      patch.contactTelegram = nextContactTelegram;
+    if (nextInstagramUrl !== profile.instagramUrl) patch.instagramUrl = nextInstagramUrl;
+    if (nextTelegramChannelUrl !== profile.telegramChannelUrl) {
+      patch.telegramChannelUrl = nextTelegramChannelUrl;
+    }
+    if (nextSeoTitle !== profile.seoTitle) patch.seoTitle = nextSeoTitle;
+    if (nextSeoDescription !== profile.seoDescription) patch.seoDescription = nextSeoDescription;
+    if (sitePublished !== profile.sitePublished) patch.sitePublished = sitePublished;
 
     setValidationError(null);
 
@@ -193,6 +278,27 @@ export function ProfilePage() {
     saveLogo.mutate(file);
   }
 
+  // Cover upload — mirrors handleLogoChange (same client-side mime/size gate); the
+  // server stores the 1200×630 OG crop as coverImageUrl.
+  function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.target;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    setCoverError(null);
+    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+      setCoverError('Faqat JPEG, PNG yoki WebP formatidagi rasm qabul qilinadi.');
+      return;
+    }
+    if (file.size > MAX_LOGO_SIZE_BYTES) {
+      setCoverError('Rasm hajmi 10 MB dan oshmasligi kerak.');
+      return;
+    }
+
+    saveCover.mutate(file);
+  }
+
   // slug/brandColor server rejections (400 "band" / 409 "olingan") carry a
   // ready-to-show Uzbek message; surface it verbatim. Any other failure keeps the
   // generic copy so an unexpected 500 doesn't leak an internal string.
@@ -200,6 +306,12 @@ export function ProfilePage() {
     save.error instanceof ApiError && (save.error.status === 400 || save.error.status === 409)
       ? save.error.message
       : "Saqlashda xatolik. Qayta urinib ko'ring.";
+
+  // The public microsite is truly live only when it is published AND the
+  // subscription is active — the /api/r/:slug guard enforces the same, so this
+  // reflects what a visitor would actually see.
+  const subscriptionActive = Boolean(subscription?.isActive);
+  const siteLive = Boolean(profile?.sitePublished) && subscriptionActive;
 
   return (
     <main>
@@ -243,6 +355,18 @@ export function ProfilePage() {
                   >
                     {`${window.location.origin}/r/${profile.slug}`}
                   </a>
+                  <span
+                    className={cn(
+                      'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold',
+                      siteLive ? 'bg-accent-soft text-accent-dark' : 'bg-surface text-ink-2',
+                    )}
+                  >
+                    <span
+                      className={cn('size-2 rounded-full', siteLive ? 'bg-accent' : 'bg-ink-3')}
+                      aria-hidden
+                    />
+                    {siteLive ? 'Jonli' : 'Pauzada'}
+                  </span>
                   <a
                     href={`${window.location.origin}/r/${profile.slug}`}
                     target="_blank"
@@ -256,6 +380,14 @@ export function ProfilePage() {
               ) : (
                 <p className="mt-2 text-[13px] text-ink-3">
                   Ommaviy sahifangizni chop etish uchun manzil (slug) belgilang.
+                </p>
+              )}
+              {!subscriptionActive && (
+                <p className="mt-2 text-[12px] text-ink-3">
+                  Sayt faqat obuna faol bo'lganda ko'rinadi.{' '}
+                  <Link to="/subscribe" className="font-semibold text-accent underline">
+                    Obunani faollashtirish
+                  </Link>
                 </p>
               )}
             </section>
@@ -454,6 +586,260 @@ export function ProfilePage() {
               )}
             </div>
 
+            {/* cover — the 1200×630 hero the microsite shows above the header */}
+            <div className="rounded-card bg-card p-4 shadow-card md:col-span-2">
+              <p className="text-[13px] font-bold text-ink">Muqova rasmi</p>
+              <p className="mt-1 text-[12px] text-ink-3">
+                Sahifa yuqorisidagi asosiy rasm (1200×630). JPEG, PNG yoki WebP; 10 MB gacha.
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                {profile.coverImageUrl ? (
+                  <img
+                    src={profile.coverImageUrl}
+                    alt="Joriy muqova"
+                    className="h-14 w-28 shrink-0 rounded-[12px] border border-line object-cover"
+                  />
+                ) : (
+                  <div className="flex h-14 w-28 shrink-0 items-center justify-center rounded-[12px] border border-dashed border-line text-ink-3">
+                    <Icon name="camera" className="size-5" />
+                  </div>
+                )}
+                <label className="cursor-pointer rounded-full bg-surface px-3.5 py-2 text-[13px] font-semibold text-ink-2">
+                  {saveCover.isPending
+                    ? 'Yuklanmoqda...'
+                    : profile.coverImageUrl
+                      ? 'Almashtirish'
+                      : 'Yuklash'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleCoverChange}
+                    disabled={saveCover.isPending}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              {coverError && (
+                <p className="mt-2 text-[13px] font-semibold text-brand-rose">{coverError}</p>
+              )}
+              {saveCover.isError && !coverError && (
+                <p className="mt-2 text-[13px] font-semibold text-brand-rose">
+                  {saveCover.error instanceof ApiError
+                    ? saveCover.error.message
+                    : "Muqovani yuklab bo'lmadi. Qayta urinib ko'ring."}
+                </p>
+              )}
+            </div>
+
+            {/* tagline */}
+            <div className="rounded-card bg-card p-4 shadow-card md:col-span-2">
+              <label htmlFor="tagline" className="text-[13px] font-bold text-ink">
+                Shior (tagline)
+              </label>
+              <input
+                id="tagline"
+                type="text"
+                value={tagline}
+                onChange={(e) => {
+                  markDirty();
+                  setTagline(e.target.value);
+                }}
+                maxLength={TAGLINE_MAX}
+                placeholder="Masalan: Toshkentda ishonchli ko'chmas mulk sherigingiz"
+                className="mt-2 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+              />
+            </div>
+
+            {/* contact */}
+            <div className="rounded-card bg-card p-4 shadow-card md:col-span-2">
+              <p className="text-[13px] font-bold text-ink">Aloqa ma'lumotlari</p>
+              <p className="mt-1 text-[12px] text-ink-3">
+                Sahifa mehmonlari siz bilan shu orqali bog'lanadi.
+              </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div>
+                  <label htmlFor="contactPhone" className="text-[12px] font-semibold text-ink-2">
+                    Telefon
+                  </label>
+                  <input
+                    id="contactPhone"
+                    type="tel"
+                    inputMode="tel"
+                    value={contactPhone}
+                    onChange={(e) => {
+                      markDirty();
+                      setContactPhone(e.target.value);
+                    }}
+                    placeholder="+998 90 123 45 67"
+                    className="mt-1.5 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="contactWhatsapp" className="text-[12px] font-semibold text-ink-2">
+                    WhatsApp
+                  </label>
+                  <input
+                    id="contactWhatsapp"
+                    type="tel"
+                    inputMode="tel"
+                    value={contactWhatsapp}
+                    onChange={(e) => {
+                      markDirty();
+                      setContactWhatsapp(e.target.value);
+                    }}
+                    placeholder="+998 90 123 45 67"
+                    className="mt-1.5 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="contactTelegram" className="text-[12px] font-semibold text-ink-2">
+                    Telegram username
+                  </label>
+                  <input
+                    id="contactTelegram"
+                    type="text"
+                    value={contactTelegram}
+                    onChange={(e) => {
+                      markDirty();
+                      setContactTelegram(e.target.value);
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    placeholder="@username"
+                    className="mt-1.5 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="telegramChannelUrl"
+                    className="text-[12px] font-semibold text-ink-2"
+                  >
+                    Telegram kanal havolasi
+                  </label>
+                  <input
+                    id="telegramChannelUrl"
+                    type="url"
+                    inputMode="url"
+                    value={telegramChannelUrl}
+                    onChange={(e) => {
+                      markDirty();
+                      setTelegramChannelUrl(e.target.value);
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    placeholder="https://t.me/kanal"
+                    className="mt-1.5 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="instagramUrl" className="text-[12px] font-semibold text-ink-2">
+                    Instagram havolasi
+                  </label>
+                  <input
+                    id="instagramUrl"
+                    type="url"
+                    inputMode="url"
+                    value={instagramUrl}
+                    onChange={(e) => {
+                      markDirty();
+                      setInstagramUrl(e.target.value);
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    placeholder="https://instagram.com/username"
+                    className="mt-1.5 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SEO */}
+            <div className="rounded-card bg-card p-4 shadow-card md:col-span-2">
+              <p className="text-[13px] font-bold text-ink">SEO (qidiruv tizimlari uchun)</p>
+              <p className="mt-1 text-[12px] text-ink-3">
+                Bo'sh qoldirsangiz, sarlavha va tavsif avtomatik tuziladi.
+              </p>
+              <div className="mt-3 flex flex-col gap-3">
+                <div>
+                  <label htmlFor="seoTitle" className="text-[12px] font-semibold text-ink-2">
+                    Sarlavha
+                  </label>
+                  <input
+                    id="seoTitle"
+                    type="text"
+                    value={seoTitle}
+                    onChange={(e) => {
+                      markDirty();
+                      setSeoTitle(e.target.value);
+                    }}
+                    maxLength={SEO_TITLE_MAX}
+                    placeholder="Masalan: Uysot Realty — Toshkentda ko'chmas mulk"
+                    className="mt-1.5 w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+                  />
+                  <p className="mt-1 text-right text-[11px] font-medium text-ink-3">
+                    {seoTitle.length}/{SEO_TITLE_MAX}
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="seoDescription" className="text-[12px] font-semibold text-ink-2">
+                    Tavsif
+                  </label>
+                  <textarea
+                    id="seoDescription"
+                    value={seoDescription}
+                    onChange={(e) => {
+                      markDirty();
+                      setSeoDescription(e.target.value);
+                    }}
+                    maxLength={SEO_DESCRIPTION_MAX}
+                    rows={3}
+                    placeholder="Sahifangiz haqida qisqacha, qidiruv natijalarida ko'rinadigan matn."
+                    className="mt-1.5 w-full resize-y rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent"
+                  />
+                  <p className="mt-1 text-right text-[11px] font-medium text-ink-3">
+                    {seoDescription.length}/{SEO_DESCRIPTION_MAX}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* sitePublished toggle */}
+            <div className="rounded-card bg-card p-4 shadow-card md:col-span-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-bold text-ink">Sayt holati</p>
+                  <p className="mt-1 text-[12px] text-ink-3">
+                    {sitePublished
+                      ? "Sahifangiz hammaga ko'rinadi."
+                      : 'Sahifangiz vaqtincha yopilgan.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-pressed={sitePublished}
+                  aria-label="Saytni chop etish"
+                  onClick={() => {
+                    markDirty();
+                    setSitePublished((prev) => !prev);
+                  }}
+                  className={cn(
+                    'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full',
+                    sitePublished ? 'bg-accent' : 'bg-line',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'inline-block size-5 rounded-full bg-white shadow',
+                      sitePublished ? 'translate-x-5' : 'translate-x-0.5',
+                    )}
+                  />
+                </button>
+              </div>
+            </div>
+
             {validationError && (
               <p className="text-[13px] font-semibold text-brand-rose md:col-span-2">
                 {validationError}
@@ -493,6 +879,14 @@ export function ProfilePage() {
               logoUrl={profile.logoUrl}
               verified={profile.verified}
               slug={profile.slug}
+              coverImageUrl={profile.coverImageUrl}
+              tagline={tagline}
+              sitePublished={sitePublished}
+              contactPhone={contactPhone}
+              contactTelegram={contactTelegram}
+              contactWhatsapp={contactWhatsapp}
+              instagramUrl={instagramUrl}
+              telegramChannelUrl={telegramChannelUrl}
               className="hidden lg:block"
             />
             {profile.slug ? (

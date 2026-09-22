@@ -33,4 +33,17 @@ export class ProfileLogoController {
 
     return this.profiles.setLogo(user.id, file);
   }
+
+  // Real URL: POST /api/agent/profile/cover — same guards/interceptor/mime+size
+  // gate as uploadLogo; the cover is stored as the 1200×630 OG crop (setCover).
+  @Post('cover')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }))
+  uploadCover(@CurrentUser() user: { id: string }, @UploadedFile() file?: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Rasm fayli talab qilinadi');
+    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+      throw new BadRequestException('Faqat JPEG, PNG yoki WebP formatidagi rasm qabul qilinadi');
+    }
+
+    return this.profiles.setCover(user.id, file);
+  }
 }

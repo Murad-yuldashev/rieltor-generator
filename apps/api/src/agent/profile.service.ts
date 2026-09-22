@@ -137,4 +137,33 @@ export class ProfileService {
 
     return this.get(userId);
   }
+
+  /**
+   * Store the public microsite cover image. Mirrors setLogo (same processImage +
+   * PUBLIC_DIR pipeline, user-keyed folder so a reupload overwrites in place), but
+   * with makeOg: true so the stored URL is the true 1200×630 OG JPEG — one
+   * correctly-sized image serves both the hero band and og:image (Task 6),
+   * matching the codebase-wide `ogUrl` OG convention (e.g. the seed's og.jpg).
+   */
+  async setCover(userId: string, file: Express.Multer.File): Promise<RealtorProfile> {
+    const result = await processImage({
+      source: file.buffer,
+      outputRoot: PUBLIC_DIR,
+      listingId: `cover-${userId}`,
+      position: 1,
+      makeOg: true,
+    });
+
+    // Store the 1200×630 OG crop (not a listing variant): it is the hero band's
+    // source and og:image at once, so Task 6's fixed og:image:width/height match.
+    const coverImageUrl = result.ogUrl;
+
+    await this.prisma.realtorProfile.upsert({
+      where: { userId },
+      update: { coverImageUrl },
+      create: { userId, agency: '', coverImageUrl },
+    });
+
+    return this.get(userId);
+  }
 }
