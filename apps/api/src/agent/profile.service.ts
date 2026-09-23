@@ -55,6 +55,9 @@ export class ProfileService {
       seoTitle: p?.seoTitle ?? null,
       seoDescription: p?.seoDescription ?? null,
       sitePublished: p?.sitePublished ?? true,
+      customDomain: p?.customDomain ?? null,
+      customDomainVerified: p?.customDomainVerified ?? false,
+      customDomainToken: p?.customDomainToken ?? null,
     };
   }
 
