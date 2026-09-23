@@ -202,6 +202,33 @@ export class RealtorPublicService {
     };
   }
 
+  /**
+   * The <script>-tag payload for GET /api/r/:slug/widget.js. When an external site
+   * includes it, it injects a full-width, auto-height iframe pointing at the embed
+   * page on the platform origin (PUBLIC_BASE_URL — a SERVER-trusted value, never the
+   * request Host, so a spoofed/poisoned Host can't repoint the iframe at an attacker
+   * origin), and resizes on the embed's `rieltor-embed-height` postMessage. slug +
+   * origin are JSON-encoded so neither can break out of the JS string. No deps.
+   */
+  buildWidgetScript(slug: string, origin: string): string {
+    const src = JSON.stringify(`${origin}/r/${slug}/embed`);
+    return `(function(){
+  var d=document,s=d.currentScript;
+  if(!s)return;
+  var f=d.createElement('iframe');
+  f.src=${src};
+  f.title='Rieltor katalog';
+  f.loading='lazy';
+  f.style.width='100%';f.style.border='0';f.style.height='640px';
+  s.parentNode.insertBefore(f,s);
+  window.addEventListener('message',function(e){
+    if(e.source===f.contentWindow&&e.data&&e.data.type==='rieltor-embed-height'&&typeof e.data.height==='number'){
+      f.style.height=e.data.height+'px';
+    }
+  });
+})();`;
+  }
+
   // PUBLIC: a site visitor's inquiry. Gated on the SAME siteActive computation as
   // getBySlug (active REALTOR subscription + published site) — a lapsed/paused site
   // rejects new leads with 403. Upserts the visitor by phone, then writes a

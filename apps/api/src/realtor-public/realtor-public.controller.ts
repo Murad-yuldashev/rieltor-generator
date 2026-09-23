@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Ip, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Header, Ip, Param, Post, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { RealtorInquiryCreateSchema, ReviewCreateSchema } from '@rieltor/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
+import type { Env } from '../config/env';
 import { ReviewsService } from '../reviews/reviews.service';
 import { RealtorPublicService } from './realtor-public.service';
 
@@ -16,11 +18,26 @@ export class RealtorPublicController {
   constructor(
     private readonly realtors: RealtorPublicService,
     private readonly reviews: ReviewsService,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   @Get(':slug')
   get(@Param('slug') slug: string) {
     return this.realtors.getBySlug(slug);
+  }
+
+  // Global prefix makes the real URL /api/r/:slug/widget.js. The iframe always
+  // points at the platform origin (PUBLIC_BASE_URL), which serves the /r/:slug/embed
+  // page — a server-trusted value, so a spoofed Host or a poisoned CDN cache can't
+  // repoint an embedding site's iframe at an attacker origin.
+  @Get(':slug/widget.js')
+  @Header('content-type', 'application/javascript; charset=utf-8')
+  @Header('cache-control', 'public, max-age=3600')
+  widget(@Param('slug') slug: string): string {
+    return this.realtors.buildWidgetScript(
+      slug,
+      this.config.get('PUBLIC_BASE_URL', { infer: true }),
+    );
   }
 
   // PUBLIC (no guard) — a site visitor's "Qo'ng'iroq so'rash" form. In-process

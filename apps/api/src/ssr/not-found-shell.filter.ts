@@ -22,6 +22,9 @@ const PRESENTATION_PATH = /^\/p\/([^/]+)\/?$/;
 /** Public realtor microsite path: /r/:slug (a single slug segment). */
 const REALTOR_PATH = /^\/r\/([^/]+)\/?$/;
 
+/** Public realtor embed catalogue path: /r/:slug/embed. */
+const REALTOR_EMBED_PATH = /^\/r\/([^/]+)\/embed\/?$/;
+
 /** Public ЖК (residential complex) detail page path: /jk/:slug (a single slug segment). */
 const COMPLEX_PATH = /^\/jk\/([^/]+)\/?$/;
 
@@ -123,6 +126,30 @@ export class NotFoundShellFilter implements ExceptionFilter {
           );
         return;
       } catch (error) {
+        if (!(error instanceof NotFoundException)) throw error;
+      }
+    }
+
+    const embedMatch = req.method === 'GET' ? REALTOR_EMBED_PATH.exec(req.path) : null;
+    const embedSlug = embedMatch?.[1];
+    if (embedSlug) {
+      try {
+        const meta = await this.realtors.getSiteMeta(embedSlug);
+        const baseUrl = this.config.get('PUBLIC_BASE_URL', { infer: true });
+        // This page (only) is meant to be framed by external sites: drop the global
+        // X-Frame-Options: SAMEORIGIN default (Step 2) and allow any frame-ancestor.
+        res.removeHeader('X-Frame-Options');
+        res.status(200).type('html').setHeader('Content-Security-Policy', 'frame-ancestors *');
+        res.send(
+          this.html.injectMeta(
+            shell,
+            realtorBootstrapScript(embedSlug, 'embed') +
+              buildRealtorMetaTags(meta, embedSlug, baseUrl),
+          ),
+        );
+        return;
+      } catch (error) {
+        // Unknown/paused slug → fall through to the plain 404 shell.
         if (!(error instanceof NotFoundException)) throw error;
       }
     }
