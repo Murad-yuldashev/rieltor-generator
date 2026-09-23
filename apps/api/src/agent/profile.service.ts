@@ -1,8 +1,12 @@
+import { randomBytes } from 'node:crypto';
+import { resolveTxt } from 'node:dns/promises';
 import { resolve } from 'node:path';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { IMAGE_MAX_WIDTH, imageVariantSrc } from '@rieltor/shared';
 import type { RealtorProfile, RealtorProfileUpdate } from '@rieltor/shared';
+import type { Env } from '../config/env';
 import { processImage } from '../listings/process-image';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -32,7 +36,16 @@ const PUBLIC_DIR = resolve(__dirname, '..', '..', 'public');
 
 @Injectable()
 export class ProfileService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly platformHost: string;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    config: ConfigService<Env, true>,
+  ) {
+    this.platformHost = new URL(
+      config.get('PUBLIC_BASE_URL', { infer: true }),
+    ).hostname.toLowerCase();
+  }
 
   async get(userId: string): Promise<RealtorProfile> {
     const p = await this.prisma.realtorProfile.findUnique({ where: { userId } });
@@ -167,6 +180,90 @@ export class ProfileService {
       create: { userId, agency: '', coverImageUrl },
     });
 
+    return this.get(userId);
+  }
+
+  /** DNS TXT record host a realtor must publish to prove domain ownership. */
+  static verifyTxtHost(domain: string): string {
+    return `_rieltor-verify.${domain}`;
+  }
+
+  /**
+   * Claim (or re-claim) a custom apex domain. Requires a published slug first (a
+   * verified domain with no slug would be unservable — the host resolver keys on
+   * slug). Refuses the platform's own host and localhost. Mints a fresh token and
+   * resets verified→false. Uses update (not upsert): a realtor with a slug always
+   * has a RealtorProfile row. NOT unique at the DB level — see verifyDomain.
+   */
+  async setDomain(userId: string, domain: string): Promise<RealtorProfile> {
+    const profile = await this.prisma.realtorProfile.findUnique({
+      where: { userId },
+      select: { slug: true },
+    });
+    if (!profile?.slug) {
+      throw new BadRequestException('Avval sahifa manzili (slug) belgilang');
+    }
+    if (domain === this.platformHost || domain === 'localhost' || domain.endsWith('.localhost')) {
+      throw new BadRequestException('Bu domen band');
+    }
+    const token = randomBytes(16).toString('hex');
+    await this.prisma.realtorProfile.update({
+      where: { userId },
+      data: { customDomain: domain, customDomainToken: token, customDomainVerified: false },
+    });
+    return this.get(userId);
+  }
+
+  /**
+   * Check the DNS TXT record and flip customDomainVerified when it matches the
+   * stored token. Idempotent: a still-missing record leaves verified=false with no
+   * error (the cabinet shows "pending"); a DNS lookup failure (NXDOMAIN, no TXT) is
+   * treated the same way — a not-yet-published record, not a 500. On success, any
+   * OTHER realtor's (now stale) claim on the same host is released in the same
+   * transaction — this is where "one VERIFIED holder per host" is enforced (there
+   * is no DB @unique), and it also handles a legitimate domain transfer. Only the
+   * true DNS owner can ever match (each realtor has a distinct token), so this can
+   * never let an attacker steal a live domain.
+   */
+  async verifyDomain(userId: string): Promise<RealtorProfile> {
+    const p = await this.prisma.realtorProfile.findUnique({
+      where: { userId },
+      select: { customDomain: true, customDomainToken: true },
+    });
+    if (!p?.customDomain || !p.customDomainToken) {
+      throw new BadRequestException('Avval domen manzilini saqlang');
+    }
+    let matched = false;
+    try {
+      const records = await resolveTxt(ProfileService.verifyTxtHost(p.customDomain));
+      // resolveTxt returns string[][] — each record may be split into chunks; join them.
+      matched = records.some((chunks) => chunks.join('') === p.customDomainToken);
+    } catch {
+      matched = false; // NXDOMAIN / no TXT yet → still pending, not an error.
+    }
+    if (matched) {
+      const domain = p.customDomain;
+      await this.prisma.$transaction([
+        this.prisma.realtorProfile.updateMany({
+          where: { customDomain: domain, userId: { not: userId } },
+          data: { customDomainVerified: false, customDomain: null, customDomainToken: null },
+        }),
+        this.prisma.realtorProfile.update({
+          where: { userId },
+          data: { customDomainVerified: true },
+        }),
+      ]);
+    }
+    return this.get(userId);
+  }
+
+  /** Remove the custom domain (host routing falls back to /r/:slug). updateMany so a
+   *  realtor with no profile row is a no-op, never a P2025. */
+  async clearDomain(userId: string): Promise<RealtorProfile> {
+    await this.prisma.realtorProfile.updateMany({
+      where: { userId },
+      data: { customDomain: null, customDomainToken: null, customDomainVerified: false },
+    });
     return this.get(userId);
   }
 }
