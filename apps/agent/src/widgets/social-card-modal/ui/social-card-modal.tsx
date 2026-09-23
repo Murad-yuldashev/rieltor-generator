@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RealtorOwnListing } from '@rieltor/shared';
 import {
   SocialCard,
@@ -25,6 +25,12 @@ export function SocialCardModal({
   const [format, setFormat] = useState<CardFormat>('story');
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   const captionBlock = content ? `${content.caption}\n\n${content.hashtags}` : '';
   const shareUrl = content?.shareUrl ?? '';
   const filename = `${profile?.slug ? `${profile.slug}-` : ''}${listing.id}-${format}.png`;
@@ -42,15 +48,20 @@ export function SocialCardModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="social-card-modal-title"
         className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-card bg-card p-4 shadow-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[15px] font-extrabold text-ink">Kontent yaratish</p>
+          <p id="social-card-modal-title" className="text-[15px] font-extrabold text-ink">
+            Kontent yaratish
+          </p>
           <button type="button" onClick={onClose} className="text-[13px] font-bold text-ink-3">
             Yopish
           </button>
