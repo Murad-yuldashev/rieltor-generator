@@ -127,7 +127,10 @@ export class RealtorContentService {
     const rows = await this.prisma.listing.findMany({
       where: { ownerId: userId, status: 'PUBLISHED' },
       orderBy: { listedAt: 'desc' },
-      include: { images: { where: { position: 1 }, take: 1, select: { base: true } } },
+      // Cover = the lowest-position image. Use orderBy asc + take 1 (the codebase idiom,
+      // listings.service.ts:263) — NOT where:{position:1}: removeImage does not renumber, so
+      // a listing whose position-1 photo was deleted would otherwise report "no cover".
+      include: { images: { orderBy: { position: 'asc' }, take: 1, select: { base: true } } },
     });
     return rows.map((r) => ({
       id: r.id,
@@ -179,13 +182,18 @@ export class RealtorContentController {
 import { Module } from '@nestjs/common';
 import { AgentModule } from '../agent/agent.module';
 import { AiModule } from '../ai/ai.module';
+import { AuthModule } from '../auth/auth.module';
 import { RealtorContentController } from './realtor-content.controller';
 import { RealtorContentService } from './realtor-content.service';
 
-// PrismaModule is @Global; ConfigModule is global. AgentModule exports RealtorGuard;
-// AiModule exports GeminiService (used in Task 3). No cycle: neither imports this module.
+// AuthModule is REQUIRED — @UseGuards(JwtGuard) makes Nest instantiate JwtGuard in THIS
+// module's context, and its JwtService dep is surfaced only by AuthModule (module imports
+// are not transitive, so AgentModule/AiModule importing AuthModule does not help here).
+// Omitting it is a runtime bootstrap crash ("can't resolve JwtGuard dependencies") that
+// typecheck/build do NOT catch. AgentModule exports RealtorGuard; AiModule exports
+// GeminiService (Task 3). PrismaModule/ConfigModule are @Global. No cycle: none import this.
 @Module({
-  imports: [AgentModule, AiModule],
+  imports: [AuthModule, AgentModule, AiModule],
   controllers: [RealtorContentController],
   providers: [RealtorContentService],
 })
@@ -260,7 +268,7 @@ Extend the constructor and add the method:
       where: { id: listingId, ownerId: userId, status: 'PUBLISHED' },
       select: { id: true, type: true, deal: true, district: true, rooms: true, areaM2: true, priceSom: true },
     });
-    if (!listing) throw new NotFoundException('E'lon topilmadi');
+    if (!listing) throw new NotFoundException("E'lon topilmadi"); // double quotes — apostrophe in Uzbek
 
     const req: AiContentRequest = {
       type: listing.type,
@@ -407,15 +415,19 @@ export const SocialCard = forwardRef<SocialCardHandle, Props>(function SocialCar
     download(filename) {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-      }, 'image/png');
+      try {
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      } catch {
+        /* toBlob throws only on a tainted canvas; covers are same-origin so this is defensive (spec §5) */
+      }
     },
   }));
 
@@ -430,81 +442,87 @@ export const SocialCard = forwardRef<SocialCardHandle, Props>(function SocialCar
     const brand = brandColor ?? TEAL;
     let cancelled = false;
 
-    void Promise.all([loadImage(listing.imageUrl), loadImage(logoUrl)]).then(([cover, logo]) => {
-      if (cancelled) return;
-      // Background: cover-fit photo, or a solid brand fill when there is no cover.
-      if (cover) {
-        const scale = Math.max(w / cover.width, h / cover.height);
-        const dw = cover.width * scale;
-        const dh = cover.height * scale;
-        ctx.drawImage(cover, (w - dw) / 2, (h - dh) / 2, dw, dh);
-      } else {
-        ctx.fillStyle = brand;
+    void Promise.all([loadImage(listing.imageUrl), loadImage(logoUrl)])
+      .then(([cover, logo]) => {
+        if (cancelled) return;
+        // Background: cover-fit photo, or a solid brand fill when there is no cover.
+        if (cover) {
+          const scale = Math.max(w / cover.width, h / cover.height);
+          const dw = cover.width * scale;
+          const dh = cover.height * scale;
+          ctx.drawImage(cover, (w - dw) / 2, (h - dh) / 2, dw, dh);
+        } else {
+          ctx.fillStyle = brand;
+          ctx.fillRect(0, 0, w, h);
+        }
+        // Legibility gradient (bottom) + brand accent bar (top).
+        const grad = ctx.createLinearGradient(0, h * 0.45, 0, h);
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(1, 'rgba(0,0,0,0.78)');
+        ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
-      }
-      // Legibility gradient (bottom) + brand accent bar (top).
-      const grad = ctx.createLinearGradient(0, h * 0.45, 0, h);
-      grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.78)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = brand;
-      ctx.fillRect(0, 0, w, 18);
+        ctx.fillStyle = brand;
+        ctx.fillRect(0, 0, w, 18);
 
-      // Header: logo (rounded) + agency/name, top-left.
-      let hx = 56;
-      if (logo) {
-        const s = 104;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(56 + s / 2, 56 + s / 2, s / 2, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(logo, 56, 56, s, s);
-        ctx.restore();
-        hx = 56 + s + 24;
-      }
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = '#fff';
-      ctx.font = `bold 44px ${FONT}`;
-      ctx.fillText(ellipsize(ctx, agency || 'Rieltor', w - hx - 56), hx, 64);
-      if (realtorName) {
-        ctx.font = `600 34px ${FONT}`;
-        ctx.fillStyle = 'rgba(255,255,255,0.88)';
-        ctx.fillText(ellipsize(ctx, realtorName, w - hx - 56), hx, 118);
-      }
+        // Header: logo (rounded) + agency/name, top-left.
+        let hx = 56;
+        if (logo) {
+          const s = 104;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(56 + s / 2, 56 + s / 2, s / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(logo, 56, 56, s, s);
+          ctx.restore();
+          hx = 56 + s + 24;
+        }
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold 44px ${FONT}`;
+        ctx.fillText(ellipsize(ctx, agency || 'Rieltor', w - hx - 56), hx, 64);
+        if (realtorName) {
+          ctx.font = `600 34px ${FONT}`;
+          ctx.fillStyle = 'rgba(255,255,255,0.88)';
+          ctx.fillText(ellipsize(ctx, realtorName, w - hx - 56), hx, 118);
+        }
 
-      // Footer block: price, params, site host pill.
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillStyle = '#fff';
-      ctx.font = `bold 92px ${FONT}`;
-      ctx.fillText(
-        ellipsize(ctx, formatPriceSom(listing.priceSom, listing.deal), w - 112),
-        56,
-        h - 232,
-      );
+        // Footer block: price, params, site host pill.
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold 92px ${FONT}`;
+        ctx.fillText(
+          ellipsize(ctx, formatPriceSom(listing.priceSom, listing.deal), w - 112),
+          56,
+          h - 232,
+        );
 
-      const params = [
-        listing.rooms != null ? `${listing.rooms} xona` : null,
-        `${listing.areaM2} m²`,
-        listing.district,
-      ]
-        .filter(Boolean)
-        .join(' · ');
-      ctx.font = `600 42px ${FONT}`;
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.fillText(ellipsize(ctx, params, w - 112), 56, h - 160);
+        const params = [
+          listing.rooms != null ? `${listing.rooms} xona` : null,
+          `${listing.areaM2} m²`,
+          listing.district,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+        ctx.font = `600 42px ${FONT}`;
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.fillText(ellipsize(ctx, params, w - 112), 56, h - 160);
 
-      const host = hostFrom(shareUrl);
-      ctx.font = `bold 36px ${FONT}`;
-      const pillW = Math.min(ctx.measureText(host).width + 56, w - 112);
-      ctx.fillStyle = brand;
-      ctx.beginPath();
-      ctx.roundRect(56, h - 118, pillW, 64, 32);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.fillText(ellipsize(ctx, host, pillW - 56), 84, h - 74);
-    });
+        const host = hostFrom(shareUrl);
+        if (host) {
+          // Only draw the pill once shareUrl has resolved — on the first (pending) render
+          // shareUrl is '' and hostFrom('') is '' → skip, so no empty lozenge flashes.
+          ctx.font = `bold 36px ${FONT}`;
+          const pillW = Math.min(ctx.measureText(host).width + 56, w - 112);
+          ctx.fillStyle = brand;
+          ctx.beginPath();
+          ctx.roundRect(56, h - 118, pillW, 64, 32);
+          ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.fillText(ellipsize(ctx, host, pillW - 56), 84, h - 74);
+        }
+      })
+      .catch(() => {}); // loadImage never rejects; defensive so a draw error is never unhandled
 
     return () => {
       cancelled = true;
@@ -532,7 +550,7 @@ Expected: PASS.
 
 - [ ] **Step 3: Live browser smoke (deferred with Task 5)**
 
-The card has no standalone page yet; its rendering (cover-fit photo, RENT `/oy` price, params, logo, brand accent, host pill, and the no-cover brand-fill variant) is smoked through the Task 5 modal. Note this in the report.
+The card has no standalone page yet; its rendering (cover-fit photo, RENT `/oy` price, params, logo _when the profile has one_, brand accent, host pill, and the no-cover brand-fill variant) is smoked through the Task 5 modal. Note this in the report.
 
 - [ ] **Step 4: Commit**
 
@@ -549,7 +567,8 @@ git commit -m "feat(agent): SocialCard canvas unit — Story/post branded card (
 
 - Create: `apps/agent/src/features/social-content/use-social-content.ts`
 - Create: `apps/agent/src/features/social-content/index.ts`
-- Create: `apps/agent/src/features/social-content/social-card-modal.tsx`
+- Create: `apps/agent/src/widgets/social-card-modal/ui/social-card-modal.tsx` (a **widget** — it imports the `profile`/`presentations`/`social-content` features; under the FSD `boundaries` rule a `features` element may import only `entities`/`shared`, so a feature cannot import another feature — a widget can)
+- Create: `apps/agent/src/widgets/social-card-modal/index.ts`
 - Create: `apps/agent/src/pages/my-listings/index.ts`
 - Create: `apps/agent/src/pages/my-listings/ui/my-listings-page.tsx`
 - Modify: `apps/agent/src/app/router.tsx` (add the route)
@@ -557,21 +576,17 @@ git commit -m "feat(agent): SocialCard canvas unit — Story/post branded card (
 
 **Interfaces:**
 
-- Consumes: `SocialCard` + `SocialCardHandle` + `CardFormat` (Task 4); `RealtorOwnListing` + `AiSocialContent` + `RealtorOwnListingSchema` + `AiSocialContentSchema` + `formatPriceSom` (@rieltor/shared); `apiGet`/`apiPost` (`@/shared/api/client`); `useProfile` (`@/features/profile`); `useSession` (`@/entities/session`); `telegramShareUrl` (`@/features/presentations`).
-- Produces: `useOwnListings()`, `useGenerateContent()`; `MyListingsPage`; route `/my-listings`; a nav entry.
+- Consumes: `SocialCard` + `SocialCardHandle` + `CardFormat` (Task 4); `RealtorOwnListing` + `RealtorOwnListingSchema` + `AiSocialContentSchema` + `formatPriceSom` (@rieltor/shared); `apiGet`/`apiPost` (`@/shared/api/client`); `useProfile` (`@/features/profile`); `useSession` (`@/entities/session`); `telegramShareUrl` (`@/features/presentations`).
+- Produces: `useOwnListings()`, `useListingContent(listingId, enabled)`; `SocialCardModal` (widget); `MyListingsPage`; route `/my-listings`; a nav entry.
 
 - [ ] **Step 1: Hooks**
 
 `apps/agent/src/features/social-content/use-social-content.ts`:
 
 ```ts
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
-import {
-  AiSocialContentSchema,
-  RealtorOwnListingSchema,
-  type AiSocialContent,
-} from '@rieltor/shared';
+import { AiSocialContentSchema, RealtorOwnListingSchema } from '@rieltor/shared';
 import { apiGet, apiPost } from '@/shared/api/client';
 
 const OwnListingsSchema = z.array(RealtorOwnListingSchema);
@@ -585,11 +600,20 @@ export function useOwnListings() {
   });
 }
 
-/** `POST /api/agent/content/listings/:id/social` → caption + hashtags + shareUrl. */
-export function useGenerateContent() {
-  return useMutation<AiSocialContent, Error, string>({
-    mutationFn: (listingId: string) =>
+/**
+ * `POST /api/agent/content/listings/:id/social` → caption + hashtags + shareUrl. A per-listing
+ * useQuery (NOT a mutation): keyed by listing id with `staleTime: Infinity`, so re-opening the same
+ * listing serves from cache (never re-bills Gemini) and React Query dedupes the StrictMode
+ * double-mount into ONE call. `enabled` is true only while the modal is open. (A POST queryFn is
+ * fine here — the call is idempotent "generate", cached for the session.)
+ */
+export function useListingContent(listingId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['social-content', listingId] as const,
+    queryFn: () =>
       apiPost(`/api/agent/content/listings/${listingId}/social`, AiSocialContentSchema),
+    enabled,
+    staleTime: Infinity,
   });
 }
 ```
@@ -597,23 +621,26 @@ export function useGenerateContent() {
 `apps/agent/src/features/social-content/index.ts`:
 
 ```ts
-export { useOwnListings, useGenerateContent } from './use-social-content';
+export { useOwnListings, useListingContent } from './use-social-content';
 export { SocialCard, type SocialCardHandle, type CardFormat } from './social-card';
-export { SocialCardModal } from './social-card-modal';
 ```
 
-- [ ] **Step 2: The modal**
+- [ ] **Step 2: The modal (a widget)**
 
-`apps/agent/src/features/social-content/social-card-modal.tsx`:
+`apps/agent/src/widgets/social-card-modal/ui/social-card-modal.tsx` (a WIDGET, so it may import the `social-content`/`profile`/`presentations` features and the `session` entity):
 
 ```tsx
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { RealtorOwnListing } from '@rieltor/shared';
+import {
+  SocialCard,
+  useListingContent,
+  type CardFormat,
+  type SocialCardHandle,
+} from '@/features/social-content';
 import { useProfile } from '@/features/profile';
 import { useSession } from '@/entities/session';
 import { telegramShareUrl } from '@/features/presentations';
-import { SocialCard, type CardFormat, type SocialCardHandle } from './social-card';
-import { useGenerateContent } from './use-social-content';
 
 export function SocialCardModal({
   listing,
@@ -624,20 +651,15 @@ export function SocialCardModal({
 }) {
   const { data: profile } = useProfile();
   const { user } = useSession();
-  const generate = useGenerateContent();
+  // Per-listing query (fires on mount, deduped + cached — no useEffect, no double-POST).
+  const { data: content, isPending, isError } = useListingContent(listing.id, true);
   const cardRef = useRef<SocialCardHandle>(null);
   const [format, setFormat] = useState<CardFormat>('story');
   const [copied, setCopied] = useState(false);
 
-  // Generate once when the modal opens (the card itself needs no AI and renders immediately).
-  useEffect(() => {
-    generate.mutate(listing.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listing.id]);
-
-  const content = generate.data;
   const captionBlock = content ? `${content.caption}\n\n${content.hashtags}` : '';
   const shareUrl = content?.shareUrl ?? '';
+  const filename = `${profile?.slug ? `${profile.slug}-` : ''}${listing.id}-${format}.png`;
 
   const copyCaption = () => {
     if (!captionBlock) return;
@@ -696,15 +718,15 @@ export function SocialCardModal({
 
         <button
           type="button"
-          onClick={() => cardRef.current?.download(`${listing.id}-${format}.png`)}
+          onClick={() => cardRef.current?.download(filename)}
           className="mt-3 w-full rounded-[14px] bg-accent px-5 py-3 text-[14.5px] font-extrabold text-white"
         >
           Rasmni yuklab olish
         </button>
 
         <div className="mt-4">
-          {generate.isPending && <p className="text-[13px] text-ink-3">Matn tayyorlanmoqda…</p>}
-          {generate.isError && (
+          {isPending && <p className="text-[13px] text-ink-3">Matn tayyorlanmoqda…</p>}
+          {isError && (
             <p className="text-[13px] font-semibold text-brand-rose">Matnni yuklab bo'lmadi.</p>
           )}
           {content && (
@@ -741,6 +763,12 @@ export function SocialCardModal({
 }
 ```
 
+`apps/agent/src/widgets/social-card-modal/index.ts`:
+
+```ts
+export { SocialCardModal } from './ui/social-card-modal';
+```
+
 - [ ] **Step 3: The page**
 
 `apps/agent/src/pages/my-listings/ui/my-listings-page.tsx`:
@@ -748,7 +776,8 @@ export function SocialCardModal({
 ```tsx
 import { useState } from 'react';
 import { formatPriceSom, type RealtorOwnListing } from '@rieltor/shared';
-import { SocialCardModal, useOwnListings } from '@/features/social-content';
+import { useOwnListings } from '@/features/social-content';
+import { SocialCardModal } from '@/widgets/social-card-modal';
 
 export function MyListingsPage() {
   const { data: listings, isPending, isError } = useOwnListings();
@@ -758,7 +787,13 @@ export function MyListingsPage() {
     <div className="mx-auto min-h-dvh max-w-content bg-surface p-4 md:max-w-none">
       <h1 className="mb-4 text-lg font-extrabold text-ink">Mening e'lonlarim</h1>
 
-      {isPending && <p className="text-ink-3">Yuklanmoqda…</p>}
+      {isPending && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 desk:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-64 animate-pulse rounded-card bg-card" />
+          ))}
+        </div>
+      )}
       {isError && <p className="font-semibold text-brand-rose">E'lonlarni yuklab bo'lmadi.</p>}
       {listings && listings.length === 0 && (
         <p className="rounded-card border border-line/60 bg-card px-4 py-10 text-center text-ink-2">
@@ -837,7 +872,7 @@ Expected: PASS (watch for unused imports / a wrong `icon` name — the Phase-8.1
 Serve the agent bundle behind the dev API (:3100, seeded DB), log in as `998900000003`, open **Mening e'lonlarim**:
 
 - The grid shows the realtor's 8 PUBLISHED listings (cover thumbs, price, district).
-- "Kontent yaratish" opens the modal: the **card renders** with the cover photo (cover-fit), price (a RENT listing shows `/oy`), `xona · m² · tuman`, the logo + agency, brand-color (`#7c3aed`) accent, and the site host pill (`aziz-rieltor.uz`).
+- "Kontent yaratish" opens the modal: the **card renders** with the cover photo (cover-fit), price (a RENT listing shows `/oy`), `xona · m² · tuman`, the agency (+ the logo only if the profile has a `logoUrl` — the seed realtor has none, so expect agency + brand accent and NO logo), brand-color (`#7c3aed`) accent, and the site host pill (`aziz-rieltor.uz`).
 - **Story ↔ Post** toggle re-renders at 9:16 / 1:1.
 - **Rasmni yuklab olish** saves a PNG.
 - Caption + hashtags (AI or template) appear; **Matnni nusxalash** copies; **Telegram'da ulash** opens `t.me/share/url` with the shareUrl + caption.
@@ -846,7 +881,7 @@ Serve the agent bundle behind the dev API (:3100, seeded DB), log in as `9989000
 - [ ] **Step 8: Commit**
 
 ```bash
-git add apps/agent/src/features/social-content apps/agent/src/pages/my-listings apps/agent/src/app/router.tsx apps/agent/src/widgets/cabinet-header/ui/cabinet-header.tsx
+git add apps/agent/src/features/social-content apps/agent/src/widgets/social-card-modal apps/agent/src/pages/my-listings apps/agent/src/app/router.tsx apps/agent/src/widgets/cabinet-header/ui/cabinet-header.tsx
 git commit -m "feat(agent): Mening e'lonlarim page + social-card modal + nav (phase 10)"
 ```
 
@@ -855,10 +890,25 @@ git commit -m "feat(agent): Mening e'lonlarim page + social-card modal + nav (ph
 ## Self-Review (completed while writing)
 
 - **Spec coverage:** §1 shared → Task 1; §2 server (both endpoints + module) → Tasks 2–3; §3 canvas card → Task 4; §4 page/modal/hooks/nav → Task 5; §5 graceful degradation → Tasks 3 (AI fallback), 4 (no-cover, no-brand), 5 (loading/error/empty); §6 seed reuse + smoke → Tasks 3 + 5 smokes. No migration, no seed change (spec §6). All covered.
-- **Type consistency:** `RealtorOwnListing` (Task 1) shape is produced by `ownListings` (Task 2), consumed by `SocialCard`/`MyListingsPage` (Tasks 4–5) and parsed by `OwnListingsSchema` (Task 5); `AiSocialContent` (Task 1) is returned by `generate` (Task 3) and parsed by `useGenerateContent` (Task 5); `SocialCardHandle`/`CardFormat` (Task 4) used by the modal (Task 5); `formatPriceSom(priceSom: string, deal)` used in Tasks 4–5; `imageVariantSrc(base, 1200)` (Task 2); `RealtorGuard`/`GeminiService`/`buildContentPrompt`/`parseContent`/`buildContentTemplate` reused with their real signatures.
+- **Type consistency:** `RealtorOwnListing` (Task 1) shape is produced by `ownListings` (Task 2), consumed by `SocialCard`/`MyListingsPage` (Tasks 4–5) and parsed by `OwnListingsSchema` (Task 5); `AiSocialContent` (Task 1) is returned by `generate` (Task 3) and parsed by `useListingContent` (Task 5); `SocialCardHandle`/`CardFormat` (Task 4) used by the modal (Task 5); `formatPriceSom(priceSom: string, deal)` used in Tasks 4–5; `imageVariantSrc(base, 1200)` (Task 2); `RealtorGuard`/`GeminiService`/`buildContentPrompt`/`parseContent`/`buildContentTemplate` reused with their real signatures.
 - **Placeholder scan:** every code step is concrete; no TBD/TODO.
 - **Review Focus:** the 5 items map to Task 3 (AI fallback, non-owned 404, RENT `/oy`, shareUrl branch) and Task 4/5 (no-cover variant, RENT price on card) live smokes — no unit tests possible under the no-new-test-files constraint.
 - **Escaping note:** the caption/hashtags render only inside a `<textarea value>` and via canvas `fillText` — never as HTML; `brandColor` only reaches Canvas 2D fill/stroke.
+
+## Critique fixes applied (multi-lens, before execution)
+
+Three Opus critics (security, React/runtime, coverage) reviewed this plan; fixes folded in:
+
+- **[MUST] `RealtorContentModule` missing `AuthModule`** — `@UseGuards(JwtGuard)` instantiates JwtGuard here and its `JwtService` is surfaced only by `AuthModule` (imports aren't transitive) → runtime bootstrap crash typecheck can't catch. Added `AuthModule` to the module imports (Task 2 Step 3).
+- **[MUST] FSD `boundaries`: a feature can't import another feature** — the modal (imports `profile`/`presentations`) moved from `features/social-content` to a **widget** `widgets/social-card-modal` (Task 5); the page imports it from `@/widgets/social-card-modal`.
+- **[MUST] `eslint-disable react-hooks/exhaustive-deps` fails the lint gate** (the rule/plugin isn't loaded → ESLint 9 errors) — removed by replacing the `useEffect(generate.mutate)` with a per-listing `useListingContent` **useQuery** (Task 5 Step 1), which also fixes the StrictMode double-POST and the paid-call re-bill on re-open (per-listing cache).
+- **[MUST] `NotFoundException('E'lon topilmadi')`** — the apostrophe closed the single-quoted string (syntax error). Now double-quoted (Task 3).
+- **[MUST] Cover lookup `where:{position:1}`** — a listing whose position-1 photo was deleted (no renumber) would mis-report "no cover". Switched to the codebase idiom `orderBy:{position:'asc'}, take:1` (Task 2).
+- **[SHOULD] `toBlob` not wrapped** (spec §5) — the download's `toBlob` is now in try/catch; the draw promise has `.catch` (Task 4).
+- **[SHOULD] Empty-shareUrl pill flash** — the host pill is drawn only when `hostFrom(shareUrl)` is non-empty (Task 4).
+- **[SHOULD] Seed has no logo** — the smoke expectation now says the seed realtor has no `logoUrl`, so the card shows agency + brand accent WITHOUT a logo (the code omits it correctly).
+- **[NIT] Download filename** now includes the slug (`<slug>-<id>-<format>.png`) per spec §3 (Task 5 modal); **loading** uses skeletons per spec §4 (Task 5 page).
+- **Accepted (documented, no change):** shareUrl's slug-only branch targets `/r/:slug` (the attributed site catalogue, not the specific unit) — spec-intended and tenant-safe; the grid thumb reuses the 1200 variant (fine for ~8 listings); the DTO's `type` field is unused client-side (harmless).
 
 ## Execution Handoff
 
