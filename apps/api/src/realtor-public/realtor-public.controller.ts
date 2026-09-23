@@ -40,6 +40,15 @@ export class RealtorPublicController {
     );
   }
 
+  // Global prefix makes the real URL /api/r/:slug/feed.xml — a Yandex Realty YML
+  // syndication feed of the realtor's PUBLISHED listings. Same siteActive gate as the
+  // microsite, but a paused/unknown slug 404s (a portal should stop syndicating a dark site).
+  @Get(':slug/feed.xml')
+  @Header('content-type', 'application/xml; charset=utf-8')
+  feed(@Param('slug') slug: string): Promise<string> {
+    return this.realtors.getFeed(slug, this.config.get('PUBLIC_BASE_URL', { infer: true }));
+  }
+
   // PUBLIC (no guard) — a site visitor's "Qo'ng'iroq so'rash" form. In-process
   // rate-limited by [ip, slug] inside the service; @Ip() is the client IP (behind
   // `trust proxy`, the first X-Forwarded-For hop).
