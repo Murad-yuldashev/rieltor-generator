@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { RealtorGuard } from '../agent/realtor.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -16,5 +16,10 @@ export class RealtorContentController {
   @Get('listings')
   listings(@CurrentUser() user: { id: string; role: string }) {
     return this.content.ownListings(user.id);
+  }
+
+  @Post('listings/:id/social')
+  social(@CurrentUser() user: { id: string; role: string }, @Param('id') id: string) {
+    return this.content.generate(user.id, id);
   }
 }
