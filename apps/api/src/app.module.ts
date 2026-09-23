@@ -22,6 +22,7 @@ import { OrgWalletModule } from './org-wallet/org-wallet.module';
 import { PresentationsModule } from './presentations/presentations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PropertiesModule } from './properties/properties.module';
+import { RealtorContentModule } from './realtor-content/realtor-content.module';
 import { RealtorPublicModule } from './realtor-public/realtor-public.module';
 import { RequestsModule } from './requests/requests.module';
 import { SavedSearchModule } from './saved-search/saved-search.module';
@@ -56,6 +57,7 @@ import { WalletModule } from './wallet/wallet.module';
     OrgWalletModule,
     PresentationsModule,
     PropertiesModule,
+    RealtorContentModule,
     RealtorPublicModule,
     RequestsModule,
     SavedSearchModule,

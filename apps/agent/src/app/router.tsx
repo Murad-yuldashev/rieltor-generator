@@ -4,6 +4,7 @@ import { CollectionDetailPage } from '@/pages/collection-detail';
 import { CollectionsPage } from '@/pages/collections';
 import { DashboardPage } from '@/pages/dashboard';
 import { LeadsPage } from '@/pages/leads';
+import { MyListingsPage } from '@/pages/my-listings';
 import { NotesPage } from '@/pages/notes';
 import { PresentationDetailPage } from '@/pages/presentation-detail';
 import { PresentationsPage } from '@/pages/presentations';
@@ -37,6 +38,7 @@ export const router = createBrowserRouter(
                 { path: 'wallet', element: <WalletPage /> },
                 { path: 'leads', element: <LeadsPage /> },
                 { path: 'browse', element: <BrowsePage /> },
+                { path: 'my-listings', element: <MyListingsPage /> },
                 { path: 'notes', element: <NotesPage /> },
                 { path: 'collections', element: <CollectionsPage /> },
                 { path: 'collections/:id', element: <CollectionDetailPage /> },

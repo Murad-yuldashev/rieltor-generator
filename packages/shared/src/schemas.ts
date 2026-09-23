@@ -306,6 +306,25 @@ export const AiContentResponseSchema = z.object({
   hashtags: z.string(),
 });
 
+/** A realtor's own listing, shaped for the social-content card (Phase 10 / C11). */
+export const RealtorOwnListingSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  priceSom: z.string(), // BigInt-as-string; RENT = per month
+  deal: DealSchema,
+  type: ListingTypeSchema,
+  rooms: z.number().int().nullable(),
+  areaM2: z.number(),
+  district: z.string(),
+  /** Same-origin 1200-wide cover variant, or null when the listing has no image. */
+  imageUrl: z.string().nullable(),
+});
+
+/** The social-content generate result: AI (or template) caption/hashtags + the closed-loop share URL. */
+export const AiSocialContentSchema = AiContentResponseSchema.extend({
+  shareUrl: z.string(),
+});
+
 /** The request body for the buyer AI search parser. */
 export const AiSearchRequestSchema = z.object({
   query: z.string().trim().min(1).max(200), // cap: public + paid model call
@@ -1327,6 +1346,8 @@ export type AiDescriptionRequest = z.infer<typeof AiDescriptionRequestSchema>;
 export type AiDescriptionResult = z.infer<typeof AiDescriptionResultSchema>;
 export type AiContentRequest = z.infer<typeof AiContentRequestSchema>;
 export type AiContentResponse = z.infer<typeof AiContentResponseSchema>;
+export type RealtorOwnListing = z.infer<typeof RealtorOwnListingSchema>;
+export type AiSocialContent = z.infer<typeof AiSocialContentSchema>;
 export type AiSearchRequest = z.infer<typeof AiSearchRequestSchema>;
 export type AiSearchCriteria = z.infer<typeof AiSearchCriteriaSchema>;
 export type AiSearchResponse = z.infer<typeof AiSearchResponseSchema>;

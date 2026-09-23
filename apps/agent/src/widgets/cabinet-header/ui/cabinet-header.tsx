@@ -17,6 +17,7 @@ const SECTIONS: {
   { to: '/', end: true, icon: 'home', label: 'Boshqaruv' },
   { to: '/leads', icon: 'phone', label: 'Mijozlar' },
   { to: '/browse', icon: 'search', label: 'Qidiruv' },
+  { to: '/my-listings', icon: 'camera', label: "Mening e'lonlarim" },
   { to: '/collections', icon: 'heart', label: 'Kolleksiyalar' },
   { to: '/presentations', icon: 'share', label: 'Taqdimotlar' },
   { to: '/notes', icon: 'doc', label: 'Eslatmalar' },
