@@ -157,6 +157,20 @@ function jsonLdScript(data: unknown): string {
   return `<script type="application/ld+json">${json}</script>`;
 }
 
+/**
+ * Inline classic <script> that hands the realtor slug (and optional embed mode) to
+ * the web SPA before its module script runs. Placed at OG_MARKER (top of <head>),
+ * far above the deferred bundle in <body>, so window.__REALTOR_SITE__ is set first.
+ * The JSON is unicode-escaped (like jsonLdScript) — escapeHtml would corrupt it.
+ */
+export function realtorBootstrapScript(slug: string, mode?: 'embed'): string {
+  const json = JSON.stringify(mode ? { slug, mode } : { slug })
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+  return `<script>window.__REALTOR_SITE__=${json};</script>`;
+}
+
 /** RealEstateAgent structured data for the microsite (rich-result eligibility). */
 function buildRealtorJsonLd(site: RealtorSiteMeta, pageUrl: string, baseUrl: string): string {
   const image = site.coverImageUrl ?? site.logoUrl ?? site.firstListingImageOgUrl;
@@ -192,8 +206,13 @@ function buildRealtorJsonLd(site: RealtorSiteMeta, pageUrl: string, baseUrl: str
  * The first param is `site`, NOT `meta` — a `meta` param would shadow the
  * module-level meta() helper used to build every tag below.
  */
-export function buildRealtorMetaTags(site: RealtorSiteMeta, slug: string, baseUrl: string): string {
-  const pageUrl = `${baseUrl}/r/${slug}`;
+export function buildRealtorMetaTags(
+  site: RealtorSiteMeta,
+  slug: string,
+  baseUrl: string,
+  pageUrlOverride?: string,
+): string {
+  const pageUrl = pageUrlOverride ?? `${baseUrl}/r/${slug}`;
   if (!site.siteActive) {
     // Known-but-paused slug: served @200 (not 404) with a noindex head so search
     // engines drop it while the SPA still renders its own "site paused" state.

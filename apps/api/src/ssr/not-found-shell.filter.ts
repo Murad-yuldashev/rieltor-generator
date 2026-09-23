@@ -12,7 +12,9 @@ import {
   buildComplexMetaTags,
   buildPresentationMetaTags,
   buildRealtorMetaTags,
+  realtorBootstrapScript,
 } from './meta';
+import { realtorHostBaseUrl } from './realtor-host.middleware';
 
 /** Public presentation page path: /p/:token (a single token segment). */
 const PRESENTATION_PATH = /^\/p\/([^/]+)\/?$/;
@@ -101,6 +103,29 @@ export class NotFoundShellFilter implements ExceptionFilter {
     }
 
     const shell = await this.html.shell();
+
+    // Custom apex domain: any unmatched GET on a verified host (except the /embed page
+    // handled below) serves the realtor site shell, so a deep link like
+    // https://ali.uz/xyz still boots realtor mode. Canonical is the apex '/'.
+    if (req.method === 'GET' && req.realtorSlug && !req.path.endsWith('/embed')) {
+      try {
+        const meta = await this.realtors.getSiteMeta(req.realtorSlug);
+        const baseUrl = realtorHostBaseUrl(req.hostname);
+        res
+          .status(200)
+          .type('html')
+          .send(
+            this.html.injectMeta(
+              shell,
+              realtorBootstrapScript(req.realtorSlug) +
+                buildRealtorMetaTags(meta, req.realtorSlug, baseUrl, `${baseUrl}/`),
+            ),
+          );
+        return;
+      } catch (error) {
+        if (!(error instanceof NotFoundException)) throw error;
+      }
+    }
 
     const presentationMatch = req.method === 'GET' ? PRESENTATION_PATH.exec(req.path) : null;
     const token = presentationMatch?.[1];
