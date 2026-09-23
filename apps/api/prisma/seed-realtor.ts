@@ -80,6 +80,11 @@ export async function seedRealtorCabinet(prisma: PrismaClient): Promise<void> {
       seoDescription:
         'Toshkent bo‘ylab yangi qurilish va ikkilamchi bozordan kvartira, uy va tijorat ob‘ektlari. Sotib olish hamda ijara bo‘yicha bepul maslahat.',
       sitePublished: true,
+      // Phase 9.2 — a VERIFIED custom domain so host-routing + feed/embed demo
+      // without real DNS. A tester adds `127.0.0.1 aziz-rieltor.uz` to /etc/hosts.
+      customDomain: 'aziz-rieltor.uz',
+      customDomainVerified: true,
+      customDomainToken: 'seedseedseedseed0000000000000000',
     },
   });
 

@@ -310,31 +310,41 @@ enum SubscriptionStatus {
 }
 
 model RealtorProfile {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agency             String
-  bio                String?
-  regions            String[]
-  experienceYears    Int?
-  slug               String?  @unique
-  verified           Boolean  @default(false)
-  logoUrl            String?
-  brandColor         String?
-  coverImageUrl      String?
-  tagline            String?
-  contactPhone       String?
-  contactTelegram    String?
-  contactWhatsapp    String?
-  instagramUrl       String?
-  telegramChannelUrl String?
-  seoTitle           String?
-  seoDescription     String?
-  sitePublished      Boolean  @default(true)
-  ratingSum          Int      @default(0)
-  ratingCount        Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agency               String
+  bio                  String?
+  regions              String[]
+  experienceYears      Int?
+  slug                 String?  @unique
+  verified             Boolean  @default(false)
+  logoUrl              String?
+  brandColor           String?
+  coverImageUrl        String?
+  tagline              String?
+  contactPhone         String?
+  contactTelegram      String?
+  contactWhatsapp      String?
+  instagramUrl         String?
+  telegramChannelUrl   String?
+  seoTitle             String?
+  seoDescription       String?
+  sitePublished        Boolean  @default(true)
+  // Phase 9.2 — realtor's own apex domain. Stored lowercased, no scheme/port
+  // (e.g. "ali.uz"). Only a VERIFIED domain serves the site (host middleware).
+  // NOT @unique: an unverified claim must never lock out the real owner — each
+  // realtor proves ownership with its own DNS TXT token, so uniqueness among
+  // VERIFIED holders is enforced in ProfileService.verifyDomain, not by the DB.
+  customDomain         String?
+  customDomainVerified Boolean  @default(false)
+  customDomainToken    String?
+  ratingSum            Int      @default(0)
+  ratingCount          Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([customDomain])
 }
 
 model Subscription {

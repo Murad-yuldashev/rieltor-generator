@@ -8,8 +8,10 @@ import { useSubscription } from '@/features/subscription';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { Icon } from '@/shared/ui/icon';
+import { DomainSection } from './domain-section';
 import { ProfilePreview } from './profile-preview';
 import { RatingsPanel } from './ratings-panel';
+import { SyndicationSection } from './syndication-section';
 
 /**
  * The regions a realtor can select as their coverage area. Defined locally because
@@ -391,6 +393,9 @@ export function ProfilePage() {
                 </p>
               )}
             </section>
+
+            <DomainSection profile={profile} />
+            <SyndicationSection slug={profile.slug} siteLive={siteLive} />
 
             {/* agency */}
             <div className="rounded-card bg-card p-4 shadow-card">

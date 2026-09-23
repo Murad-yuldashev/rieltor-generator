@@ -6,6 +6,7 @@ import {
   CollectionReorderSchema,
   CollectionUpdateSchema,
   NoteUpsertSchema,
+  RealtorDomainSetSchema,
   RealtorProfileUpdateSchema,
 } from '@rieltor/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -57,6 +58,24 @@ export class AgentController {
   @UseGuards(RealtorGuard)
   updateProfile(@CurrentUser() user: { id: string; role: string }, @Body() body: unknown) {
     return this.profiles.update(user.id, RealtorProfileUpdateSchema.parse(body));
+  }
+
+  @Post('profile/domain')
+  @UseGuards(RealtorGuard)
+  setDomain(@CurrentUser() user: { id: string; role: string }, @Body() body: unknown) {
+    return this.profiles.setDomain(user.id, RealtorDomainSetSchema.parse(body).domain);
+  }
+
+  @Post('profile/domain/verify')
+  @UseGuards(RealtorGuard)
+  verifyDomain(@CurrentUser() user: { id: string; role: string }) {
+    return this.profiles.verifyDomain(user.id);
+  }
+
+  @Delete('profile/domain')
+  @UseGuards(RealtorGuard)
+  clearDomain(@CurrentUser() user: { id: string; role: string }) {
+    return this.profiles.clearDomain(user.id);
   }
 
   @Get('notes')

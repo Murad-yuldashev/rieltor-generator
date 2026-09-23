@@ -5,14 +5,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { canonicalizePhone, type PublicRealtor, type RealtorInquiryCreate } from '@rieltor/shared';
+import {
+  canonicalizePhone,
+  imageVariantSrc,
+  type PublicRealtor,
+  type RealtorInquiryCreate,
+} from '@rieltor/shared';
 import { SubscriptionService } from '../agent/subscription.service';
 import { computeLeadScore, priceForScore } from '../leads/lead-scoring';
 import { FULL_INCLUDE } from '../listings/listings.service';
 import { toListingSummary } from '../listings/mapper';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import type { RealtorSiteMeta } from '../ssr/meta';
+import { escapeHtml, type RealtorSiteMeta } from '../ssr/meta';
 
 @Injectable()
 export class RealtorPublicService {
@@ -50,10 +55,7 @@ export class RealtorPublicService {
       throw new NotFoundException(); // ONLY an unknown slug 404s.
     }
 
-    const siteActive =
-      profile.user.role === 'REALTOR' &&
-      this.subscriptions.isActive(profile.user.subscription) &&
-      profile.sitePublished;
+    const siteActive = this.isSiteActive(profile);
     const name = profile.user.name ?? 'Rieltor';
 
     // Ratings + APPROVED reviews are PUBLIC (not subscription-gated) and ALSO power
@@ -164,10 +166,7 @@ export class RealtorPublicService {
       throw new NotFoundException(); // ONLY an unknown slug 404s.
     }
 
-    const siteActive =
-      profile.user.role === 'REALTOR' &&
-      this.subscriptions.isActive(profile.user.subscription) &&
-      profile.sitePublished;
+    const siteActive = this.isSiteActive(profile);
 
     // Only pay for the catalogue count + first cover (the OG image fallback) when the
     // site is live; a paused site emits the minimal noindex head and needs neither.
@@ -200,6 +199,33 @@ export class RealtorPublicService {
       ratingCount: profile.ratingCount,
       siteActive,
     };
+  }
+
+  /**
+   * The <script>-tag payload for GET /api/r/:slug/widget.js. When an external site
+   * includes it, it injects a full-width, auto-height iframe pointing at the embed
+   * page on the platform origin (PUBLIC_BASE_URL — a SERVER-trusted value, never the
+   * request Host, so a spoofed/poisoned Host can't repoint the iframe at an attacker
+   * origin), and resizes on the embed's `rieltor-embed-height` postMessage. slug +
+   * origin are JSON-encoded so neither can break out of the JS string. No deps.
+   */
+  buildWidgetScript(slug: string, origin: string): string {
+    const src = JSON.stringify(`${origin}/r/${slug}/embed`);
+    return `(function(){
+  var d=document,s=d.currentScript;
+  if(!s)return;
+  var f=d.createElement('iframe');
+  f.src=${src};
+  f.title='Rieltor katalog';
+  f.loading='lazy';
+  f.style.width='100%';f.style.border='0';f.style.height='640px';
+  s.parentNode.insertBefore(f,s);
+  window.addEventListener('message',function(e){
+    if(e.source===f.contentWindow&&e.data&&e.data.type==='rieltor-embed-height'&&typeof e.data.height==='number'){
+      f.style.height=e.data.height+'px';
+    }
+  });
+})();`;
   }
 
   // PUBLIC: a site visitor's inquiry. Gated on the SAME siteActive computation as
@@ -238,10 +264,7 @@ export class RealtorPublicService {
     if (!profile) {
       throw new NotFoundException();
     }
-    const siteActive =
-      profile.user.role === 'REALTOR' &&
-      this.subscriptions.isActive(profile.user.subscription) &&
-      profile.sitePublished;
+    const siteActive = this.isSiteActive(profile);
     if (!siteActive) {
       throw new ForbiddenException('Sayt faol emas');
     }
@@ -299,5 +322,111 @@ export class RealtorPublicService {
       targetId: lead.id,
     });
     return { ok: true };
+  }
+
+  /**
+   * The Phase-9 site gate — an active REALTOR subscription + a published site —
+   * previously inlined in getBySlug / getSiteMeta / createInquiry. Extract it here
+   * and reuse it at all four call sites (including getFeed below) so the rule lives
+   * once. `Parameters<…isActive>[0]` types the subscription exactly as isActive expects.
+   */
+  private isSiteActive(profile: {
+    sitePublished: boolean;
+    user: { role: string; subscription: Parameters<SubscriptionService['isActive']>[0] };
+  }): boolean {
+    return (
+      profile.user.role === 'REALTOR' &&
+      this.subscriptions.isActive(profile.user.subscription) &&
+      profile.sitePublished
+    );
+  }
+
+  /**
+   * Yandex Realty YML feed of the realtor's PUBLISHED listings (GET
+   * /api/r/:slug/feed.xml). Same siteActive gate as the microsite, but a paused or
+   * unknown slug 404s (a portal should stop syndicating a dark site). Listing <url>
+   * points at the realtor's verified custom domain when set, else PUBLIC_BASE_URL;
+   * image URLs always use PUBLIC_BASE_URL (the platform serves /images). Prices are
+   * BigInt → string (never Number()).
+   */
+  async getFeed(slug: string, publicBaseUrl: string): Promise<string> {
+    const profile = await this.prisma.realtorProfile.findUnique({
+      where: { slug },
+      include: {
+        user: {
+          select: {
+            role: true,
+            subscription: { select: { status: true, currentPeriodEnd: true } },
+          },
+        },
+      },
+    });
+    if (!profile || !this.isSiteActive(profile)) {
+      throw new NotFoundException(); // unknown or paused slug → stop syndicating.
+    }
+
+    const siteBase =
+      profile.customDomain && profile.customDomainVerified
+        ? `https://${profile.customDomain}`
+        : publicBaseUrl;
+
+    const rows = await this.prisma.listing.findMany({
+      where: { ownerId: profile.userId, status: 'PUBLISHED' },
+      include: { images: { orderBy: { position: 'asc' } } },
+      orderBy: { listedAt: 'desc' },
+    });
+
+    const esc = escapeHtml;
+    // The Cyrillic literals below (deal type, category, unit "кв.м") are Yandex Realty
+    // YML schema values — external-schema data, NOT translatable UI copy; leave as-is.
+    const categoryOf = (type: string): string =>
+      type === 'HOUSE' ? 'дом' : type === 'COMMERCIAL' ? 'коммерческая' : 'квартира';
+
+    const offers = rows
+      .map((r) => {
+        const images = r.images
+          .map(
+            (img) =>
+              `      <image>${esc(`${publicBaseUrl}${imageVariantSrc(img.base, 1200)}`)}</image>`,
+          )
+          .join('\n');
+        const rentPeriod = r.deal === 'RENT' ? '\n        <period>месяц</period>' : '';
+        const rooms = r.rooms != null ? `\n      <rooms>${r.rooms}</rooms>` : '';
+        const floor = r.floor ? `\n      <floor>${esc(r.floor)}</floor>` : '';
+        const coords =
+          r.latitude != null && r.longitude != null
+            ? `\n        <latitude>${r.latitude}</latitude>\n        <longitude>${r.longitude}</longitude>`
+            : '';
+        return `    <offer internal-id="${esc(r.id)}">
+      <type>${r.deal === 'RENT' ? 'аренда' : 'продажа'}</type>
+      <property-type>${r.type === 'COMMERCIAL' ? 'коммерческая' : 'жилая'}</property-type>
+      <category>${categoryOf(r.type)}</category>
+      <url>${esc(`${siteBase}/obj/${r.id}`)}</url>
+      <creation-date>${r.listedAt.toISOString()}</creation-date>
+      <location>
+        <country>Узбекистан</country>
+        <locality-name>${esc(r.district)}</locality-name>
+        <address>${esc(r.landmark)}</address>${coords}
+      </location>
+      <price>
+        <value>${r.priceSom}</value>
+        <currency>UZS</currency>${rentPeriod}
+      </price>
+      <area>
+        <value>${r.areaM2}</value>
+        <unit>кв.м</unit>
+      </area>${rooms}${floor}
+${images}
+      <description>${esc(r.description)}</description>
+    </offer>`;
+      })
+      .join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<realty-feed xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06">
+  <generation-date>${new Date().toISOString()}</generation-date>
+${offers}
+</realty-feed>
+`;
   }
 }

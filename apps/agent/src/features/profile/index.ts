@@ -4,5 +4,8 @@ export {
   useSaveProfile,
   useSaveLogo,
   useSaveCover,
+  useSetDomain,
+  useVerifyDomain,
+  useClearDomain,
 } from './use-profile';
 export { myRatingQueryOptions, useMyRating } from './use-my-rating';

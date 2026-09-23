@@ -18,6 +18,13 @@ export function configureApp(app: NestExpressApplication): void {
   // Must come before the other handlers, otherwise their output is not compressed.
   app.use(compression());
 
+  // Clickjacking default: every page is same-origin-frame-only. The realtor embed
+  // (/r/:slug/embed) deliberately overrides this (see NotFoundShellFilter).
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    next();
+  });
+
   // SSR routes must stay outside the 'api' prefix.
   app.setGlobalPrefix('api', {
     exclude: [

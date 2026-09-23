@@ -615,10 +615,32 @@ export const RealtorProfileSchema = z.object({
   seoTitle: z.string().nullable(),
   seoDescription: z.string().nullable(),
   sitePublished: z.boolean(),
+  /** Phase 9.2 — the realtor's own apex domain (lowercase host, no scheme), or null. */
+  customDomain: z.string().nullable(),
+  /** True only after the DNS-TXT ownership check passes. */
+  customDomainVerified: z.boolean(),
+  /** The token to publish as a DNS TXT record; shown to the owner only. */
+  customDomainToken: z.string().nullable(),
 });
 
 /** Slug rule: lowercase kebab, 3–40 chars, [a-z0-9-], not starting/ending with '-'. */
 export const RealtorSlugSchema = z.string().regex(/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/);
+
+/**
+ * A bare apex/host name: lowercase labels (letters, digits, hyphen — not
+ * leading/trailing), one or more labels then an alphabetic TLD (≥2 chars, so
+ * "1.2" is rejected), total ≤ 253 chars. No scheme, port, path or "www."
+ * stripping — the caller sends exactly the host.
+ */
+export const RealtorHostnameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(253)
+  .regex(/^(?:(?!-)[a-z0-9-]{1,63}(?<!-)\.)+[a-z]{2,63}$/, 'Domen manzili noto‘g‘ri');
+
+/** Body of `POST /api/agent/profile/domain`. */
+export const RealtorDomainSetSchema = z.object({ domain: RealtorHostnameSchema });
 
 export const RealtorProfileUpdateSchema = z.object({
   agency: z.string().min(2).max(80).optional(),
@@ -1336,6 +1358,7 @@ export type RealtorProfile = z.infer<typeof RealtorProfileSchema>;
 export type RealtorProfileUpdate = z.infer<typeof RealtorProfileUpdateSchema>;
 export type PublicRealtor = z.infer<typeof PublicRealtorSchema>;
 export type RealtorInquiryCreate = z.infer<typeof RealtorInquiryCreateSchema>;
+export type RealtorDomainSet = z.infer<typeof RealtorDomainSetSchema>;
 export type ModeratorRealtorRow = z.infer<typeof ModeratorRealtorRowSchema>;
 export type RealtorVerify = z.infer<typeof RealtorVerifySchema>;
 export type ReviewStatus = z.infer<typeof ReviewStatusSchema>;

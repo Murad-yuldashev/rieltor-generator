@@ -4,7 +4,7 @@ import {
   type RealtorProfile,
   type RealtorProfileUpdate,
 } from '@rieltor/shared';
-import { apiGet, apiPatch, apiUpload } from '@/shared/api/client';
+import { apiDelete, apiGet, apiPatch, apiPost, apiUpload } from '@/shared/api/client';
 
 export const PROFILE_QUERY_KEY = ['profile'] as const;
 
@@ -78,6 +78,45 @@ export function useSaveCover() {
       formData.append('file', file);
       return apiUpload('/api/agent/profile/cover', formData, RealtorProfileSchema);
     },
+    onSuccess: (profile) => {
+      queryClient.setQueryData<RealtorProfile>(PROFILE_QUERY_KEY, profile);
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
+    },
+  });
+}
+
+/** `POST /api/agent/profile/domain` — claim a custom domain; returns the reconciled
+ *  profile (with the fresh token to publish). Mirrors useSaveProfile's cache dance. */
+export function useSetDomain() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (domain: string) =>
+      apiPost('/api/agent/profile/domain', RealtorProfileSchema, { domain }),
+    onSuccess: (profile) => {
+      queryClient.setQueryData<RealtorProfile>(PROFILE_QUERY_KEY, profile);
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
+    },
+  });
+}
+
+/** `POST /api/agent/profile/domain/verify` — run the DNS-TXT check; returns the
+ *  reconciled profile (customDomainVerified reflects the result). */
+export function useVerifyDomain() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost('/api/agent/profile/domain/verify', RealtorProfileSchema),
+    onSuccess: (profile) => {
+      queryClient.setQueryData<RealtorProfile>(PROFILE_QUERY_KEY, profile);
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
+    },
+  });
+}
+
+/** `DELETE /api/agent/profile/domain` — remove the custom domain. */
+export function useClearDomain() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiDelete('/api/agent/profile/domain', RealtorProfileSchema),
     onSuccess: (profile) => {
       queryClient.setQueryData<RealtorProfile>(PROFILE_QUERY_KEY, profile);
       void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
