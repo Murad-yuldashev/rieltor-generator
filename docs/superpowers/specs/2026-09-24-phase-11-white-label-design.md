@@ -70,7 +70,7 @@ apps/api NestJS 11 (Prisma read-only — extend one `select`), packages/shared Z
 
 ## Section 4 — Seed (so the logo path demos)
 
-The seed realtor (`998900000003`) already has `brandColor: '#7c3aed'` but no `logoUrl`, so today only the color path would demo. In `apps/api/prisma/seed-realtor.ts`, add a `logoUrl` to the seed `realtorProfile.create` — an existing image variant as a stand-in (e.g. `logoUrl: '/images/bx-001/01-360.webp'`) — so the presentation header + cabinet header both show a logo in the smoke. Additive, inside the existing `subscription.count()` idempotency guard.
+The seed realtor (`998900000003`) has `brandColor: '#7c3aed'` (violet) and no `logoUrl`, so today only the color path would demo — and the violet seed makes the presentation rebrand _unfalsifiable_, because `#7c3aed` equals both Tailwind's `violet-600` (the hardcoded header color this phase replaces) and the violet web accent (the broken-override fallback): a forgotten replacement, a broken CSS-var override, and a correct rebrand would all render the same purple. In `apps/api/prisma/seed-realtor.ts`, therefore: (1) change `brandColor` to a **non-violet, non-teal** demo hue (`#e11d48`, rose) so the rebrand is visibly falsifiable in the smoke; and (2) add a `logoUrl` — an existing image variant as a stand-in (e.g. `logoUrl: '/images/bx-001/01-360.webp'`) — so the presentation header + cabinet header both show a logo. Additive, inside the existing `subscription.count()` idempotency guard.
 
 ## Testing / Verification
 
@@ -78,11 +78,11 @@ No new test files. Per task + at phase end:
 
 1. `yarn turbo run typecheck lint build --filter=@rieltor/shared --filter=@rieltor/api --filter=@rieltor/web --filter=@rieltor/agent` green (watch for orphaned imports after the brand-theme relocation — the Phase-8.3 lesson).
 2. **Live browser smoke** (dev API on a free port serving built dist against the seeded throwaway DB):
-   - **Presentation** `/p/<seed token>`: the header shows the realtor's logo + a **brand-color** (`#7c3aed`) background (no violet); the item "Rieltor izohi" chips, "Batafsil" links, and accents are brand-colored; the `realtorName · agency tayyorladi` line is intact.
-   - **Cabinet** (`/agent`, realtor `998900000003`): the header brand tile shows the realtor's logo + agency; the active nav pill, account avatar, and page accents are brand-colored (`#7c3aed`), not teal.
+   - **Presentation** `/p/<seed token>`: the header shows the realtor's logo + a **brand-color** (`#e11d48`, rose) background — NOT violet (proving `from-violet-600` was replaced) and NOT the teal cabinet default (proving the override reached the gradient); the item "Rieltor izohi" chips, "Batafsil" links, and accents are brand-colored; the `realtorName · agency tayyorladi` line is intact.
+   - **Cabinet** (`/agent`, realtor `998900000003`): the header brand tile shows the realtor's logo + agency; the active nav pill, account avatar, and page accents are brand-colored (`#e11d48`), not teal.
    - **Fallback:** a realtor / presentation with `brandColor = null` renders the platform default (web accent / cabinet teal) and the platform mark; confirm the null path in review or by temporarily clearing the seed color.
    - 0 console errors; existing presentation analytics (opens/dwell) still fire.
 
 ## Decomposition note
 
-Phase 11, one plan, ~5 tasks: shared schema + brand-theme relocation/copy → presentation DTO/API → presentation-page white-label → cabinet shell + header white-label → seed + smoke. The standard flow applies (spec → plan → multi-lens critique → SDD per-task review → whole-branch review → live smoke → merge on explicit authorization → memory update). C12 (sub-agent hierarchy — which generalizes white-label to an agency) and C13 (training) are later phases.
+Phase 11, one plan, ~4 tasks: shared schema + brand-theme relocation/copy + presentation DTO/API (one green commit — the required nullable fields make api red until the DTO returns them, so schema + API land together) → presentation-page white-label → cabinet shell + header white-label → seed + smoke. The standard flow applies (spec → plan → multi-lens critique → SDD per-task review → whole-branch review → live smoke → merge on explicit authorization → memory update). C12 (sub-agent hierarchy — which generalizes white-label to an agency) and C13 (training) are later phases.
