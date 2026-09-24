@@ -9,7 +9,7 @@ import { Icon } from '@/shared/ui/icon';
 import { RatingStars, StarPicker } from '@/shared/ui/rating-stars';
 import { NotFoundView } from '@/widgets/not-found';
 import { myReviewQuery, realtorQuery, useSubmitReview } from '../api';
-import { brandThemeVars } from '../lib/brand-theme';
+import { brandThemeVars } from '@/shared/lib/brand-theme';
 import { ContactSection } from './contact-section';
 import { RealtorCatalogue } from './realtor-catalogue';
 
