@@ -31,13 +31,12 @@ function Brand() {
   const { user } = useSession();
   const logoUrl = profile?.logoUrl ?? null;
   const agency = profile?.agency ?? null;
-  const wordmark = agency ?? user?.name ?? null;
   return (
     <Link to="/" className="flex shrink-0 items-center gap-2.5">
       {logoUrl ? (
         <img
           src={logoUrl}
-          alt={wordmark ?? 'Rieltor'}
+          alt=""
           className="h-[34px] w-[34px] shrink-0 rounded-[10px] object-cover"
         />
       ) : (

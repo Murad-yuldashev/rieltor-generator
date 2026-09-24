@@ -167,7 +167,7 @@ export function PresentationPage() {
         {data.logoUrl && (
           <img
             src={data.logoUrl}
-            alt={data.agency ?? data.realtorName}
+            alt=""
             className="mb-3 h-12 w-12 rounded-xl border-2 border-white/40 bg-white object-cover"
           />
         )}
