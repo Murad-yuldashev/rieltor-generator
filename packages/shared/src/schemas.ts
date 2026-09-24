@@ -857,6 +857,9 @@ export const PublicPresentationSchema = z.object({
   title: z.string(),
   realtorName: z.string(), // User.name (or a fallback)
   agency: z.string().nullable(), // RealtorProfile.agency, if any
+  /** Realtor branding for the white-labeled presentation page (Phase 11 / C15). */
+  logoUrl: z.string().nullable(),
+  brandColor: z.string().nullable(),
   items: z.array(PublicPresentationItemSchema), // ordered by position asc
 });
 

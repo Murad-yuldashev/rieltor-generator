@@ -174,7 +174,12 @@ export class PresentationsService {
           orderBy: { position: 'asc' },
           include: { listing: { include: LISTING_SUMMARY_INCLUDE } },
         },
-        realtor: { select: { name: true, realtorProfile: { select: { agency: true } } } },
+        realtor: {
+          select: {
+            name: true,
+            realtorProfile: { select: { agency: true, logoUrl: true, brandColor: true } },
+          },
+        },
       },
     });
     if (!presentation) throw new NotFoundException();
@@ -183,6 +188,8 @@ export class PresentationsService {
       title: presentation.title,
       realtorName: presentation.realtor.name ?? 'Rieltor',
       agency: presentation.realtor.realtorProfile?.agency ?? null,
+      logoUrl: presentation.realtor.realtorProfile?.logoUrl ?? null,
+      brandColor: presentation.realtor.realtorProfile?.brandColor ?? null,
       items: presentation.items.map((it) => ({
         listingId: it.listingId,
         position: it.position,

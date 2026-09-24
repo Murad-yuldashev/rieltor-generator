@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+
 function shade(hex: string, target: 0 | 255, t: number): string {
   const n = parseInt(hex.slice(1), 16);
   const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) =>
@@ -8,6 +9,10 @@ function shade(hex: string, target: 0 | 255, t: number): string {
   );
   return `#${ch.join('')}`;
 }
+
+/** Override the accent CSS custom properties from a realtor's brand hex; undefined
+ *  (no hex) leaves the platform default in place. Every bg-accent/text-accent/
+ *  border-accent descendant rebrands with no per-component edit. */
 export function brandThemeVars(hex: string | null): CSSProperties | undefined {
   if (!hex) return undefined;
   return {

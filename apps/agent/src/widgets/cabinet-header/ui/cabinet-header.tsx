@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation } from 'react-router';
 import { useSession } from '@/entities/session';
+import { useProfile } from '@/features/profile';
 import { Icon, type IconName } from '@/shared/ui/icon';
 
 // `alsoActiveFor`: a route prefix that should ALSO light this section, for detail
@@ -26,13 +27,33 @@ const SECTIONS: {
 ];
 
 function Brand() {
+  const { data: profile } = useProfile();
+  const { user } = useSession();
+  const logoUrl = profile?.logoUrl ?? null;
+  const agency = profile?.agency ?? null;
   return (
     <Link to="/" className="flex shrink-0 items-center gap-2.5">
-      <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-linear-to-br from-accent to-accent-dark text-white">
-        <Icon name="homeSolid" className="h-[18px] w-[18px]" strokeWidth={2.2} />
-      </span>
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt=""
+          className="h-[34px] w-[34px] shrink-0 rounded-[10px] object-cover"
+        />
+      ) : (
+        <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-linear-to-br from-accent to-accent-dark text-white">
+          <Icon name="homeSolid" className="h-[18px] w-[18px]" strokeWidth={2.2} />
+        </span>
+      )}
       <span className="text-[17px] font-extrabold tracking-tight">
-        Rieltor<span className="text-accent">Agent</span>
+        {agency ? (
+          agency
+        ) : logoUrl && user?.name ? (
+          user.name
+        ) : (
+          <>
+            Rieltor<span className="text-accent">Agent</span>
+          </>
+        )}
       </span>
     </Link>
   );

@@ -68,8 +68,9 @@ export async function seedRealtorCabinet(prisma: PrismaClient): Promise<void> {
       ratingCount: 3, // == 5 + 4 + 5 (the APPROVED reviews)
       // Realtor-site branding + contact/SEO (Phase 9). UI copy Uzbek; contact
       // stored CANONICAL (998XXXXXXXXX), Telegram handle without '@'.
-      brandColor: '#7c3aed',
+      brandColor: '#e11d48', // distinct demo hue (rose) — NOT violet/teal so the white-label rebrand is visible & falsifiable in the smoke
       coverImageUrl: '/images/bx-001/og.jpg', // real 1200x630 OG asset (bx-001 pos-1)
+      logoUrl: '/images/bx-001/01-360.webp', // stand-in logo (existing variant) for the white-label demo
       tagline: 'Toshkent bo‘ylab yangi va ikkilamchi uy-joyni ishonchli tanlab beraman.',
       contactPhone: '998901112233',
       contactTelegram: 'aziz_rieltor',

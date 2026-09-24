@@ -2,7 +2,7 @@ import { useEffect, useRef, type MouseEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ApiError } from '@/shared/api/client';
 import { realtorQuery } from '../api';
-import { brandThemeVars } from '../lib/brand-theme';
+import { brandThemeVars } from '@/shared/lib/brand-theme';
 import { RealtorCatalogue } from './realtor-catalogue';
 
 /**
