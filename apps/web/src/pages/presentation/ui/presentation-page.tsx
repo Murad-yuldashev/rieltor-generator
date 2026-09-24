@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
 import type { PublicPresentationItem } from '@rieltor/shared';
 import { ListingCard } from '@/entities/listing';
 import { ApiError } from '@/shared/api/client';
+import { brandThemeVars } from '@/shared/lib/brand-theme';
 import { NotFoundView } from '@/widgets/not-found';
 import { presentationQuery } from '../api';
 
@@ -158,8 +159,18 @@ export function PresentationPage() {
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-content bg-surface pb-10">
-      <header className="bg-linear-to-br from-violet-600 to-accent-dark px-5 pt-8 pb-7 text-white">
+    <main
+      className="mx-auto min-h-dvh max-w-content bg-surface pb-10"
+      style={brandThemeVars(data.brandColor)}
+    >
+      <header className="bg-linear-to-br from-accent to-accent-dark px-5 pt-8 pb-7 text-white">
+        {data.logoUrl && (
+          <img
+            src={data.logoUrl}
+            alt={data.agency ?? data.realtorName}
+            className="mb-3 h-12 w-12 rounded-xl border-2 border-white/40 bg-white object-cover"
+          />
+        )}
         <p className="text-[12.5px] font-bold tracking-wide text-white/70 uppercase">Taqdimot</p>
         <h1 className="mt-1.5 text-2xl leading-tight font-extrabold">{data.title}</h1>
         <p className="mt-2.5 text-[13.5px] font-semibold text-white/85">
